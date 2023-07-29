@@ -1,0 +1,10 @@
+build
+.vs/
+.vscode/
+*.nds
+*.o
+*.a
+*.d
+*.elf
+*.map
+*.bin

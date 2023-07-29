@@ -1,0 +1,8 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T ../test9.mem%s -T ../test9.ld%s --gc-sections --no-warn-rwx-segments
+
+*startfile:
+ds_arm9_crt0%O%s crti%O%s crtbegin%O%s
+

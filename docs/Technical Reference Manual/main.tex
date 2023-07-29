@@ -1,0 +1,303 @@
+% !TeX spellcheck = en_US
+\documentclass[a4paper,10pt]{report}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[british]{babel}
+\hyphenation{GBARunner}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{hhline}
+\usepackage{bytefield}
+\usepackage{adjustbox}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\setmonofont{Consolas}
+\title{GBARunner 3\\Technical Reference Manual}
+\author{Gericom}
+
+% facilitates the creation of memory maps. Start address at the bottom, end address at the top.
+% syntax: \memsection{end address}{start address}{height in lines}{text in box}
+\newcommand{\memsection}[4]{
+	\bytefieldsetup{bitheight=#3\baselineskip}    % define the height of the memsection
+	\bitbox[]{10}{
+		\texttt{#1}     % print end address
+		\\ \vspace{#3\baselineskip} \vspace{-2\baselineskip} \vspace{-#3pt} % do some spacing
+		\texttt{#2} % print start address
+	}
+	\bitbox{16}{#4} % print box with caption
+}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{Introduction}
+	GBARunner 2 is a hypervisor that can run GBA games on the DS in DS mode. Because GBARunner 2 started out as a proof of concept and grew into a large project, it contains some fundamental design flaws and has become hard to maintain. GBARunner 3 is supposed to be the successor to GBARunner 2, attempting to improve its major flaws.
+	
+	The following points should be improved on project level:
+	\begin{itemize}
+		\item Compile properly with the latest devkitARM version (and not be dependent on a specific version in general).
+		\item Natively support the DSi/3DS SD card.
+		\item Better documented and maintainable code.
+	\end{itemize}
+
+	On a technical level the following points should be improved:
+	\begin{itemize}
+		\item Allow code to run, even if it is in higher parts of the rom that have not been linearly loaded into memory (also called hicode).
+		\item Improve the sound emulation; in particular the direct sound channels and especially on regular DS devices.
+		\item Have more control over the running game.
+	\end{itemize}
+
+	The following additional features were commonly requested for GBARunner 2 but were never realized:
+	\begin{itemize}
+		\item Cheat support
+		\item Save states
+		\item Sleep support; both when closing the lid and when selected ingame in supported games.
+	\end{itemize}
+
+	In this document various new ideas for GBARunner 3 will be documented, together with lessons learned from GBARunner 2 and the things that already worked well.
+
+\chapter{System Overview}
+	In this chapter an overview will be given of the GBARunner 3 system, including block diagrams and memory maps.
+	\newpage
+	\section{Memory Map}
+	\subsection{ARM 9}
+	\begin{figure}[htb]
+		\centering
+		\begin{minipage}[t]{0.5\linewidth}%
+			\hspace{-0.75cm}%
+			\begin{bytefield}{24}
+				\memsection{05FFFFFF}{05000800}{4}{Palette Mirrors}\\
+				\memsection{050007FF}{05000600}{2}{Sub OBJ Palette (0.5 KB)}\\
+				\memsection{050005FF}{05000400}{2}{Sub BG Palette (0.5 KB)}\\
+				\memsection{050003FF}{05000200}{2}{GBA OBJ Palette (0.5 KB)}\\
+				\memsection{050001FF}{05000000}{2}{GBA BG Palette (0.5 KB)}\\
+				\memsection{04FFFFFF}{04000000}{4}{IO Registers}\\
+				\memsection{03FFFFFF}{03008000}{4}{GBA IWRAM Mirrors}\\
+				\memsection{03007FFF}{03000000}{2}{GBA IWRAM (32 KB)}\\
+				\memsection{02FFFFFF}{02400000}{4}{Main Memory Mirrors}\\
+				\memsection{023FFFFF}{02200000}{2}{JIT (linear 2 MB)}\\
+				\memsection{021FFFFF}{021C0000}{2}{JIT (dynamic 256 KB)}\\
+				\memsection{021BFFFF}{020C0000}{2}{SD Cache (1 MB)}\\
+				\memsection{020BFFFF}{020A0000}{2}{Save (128 KB)}\\
+				\memsection{0209FFFF}{02040000}{2}{GBARunner 3 Data (384 KB)}\\
+				\memsection{0203FFFF}{02000000}{2}{GBA EWRAM (256 KB)}\\
+				\memsection{01FFFFFF}{00008000}{4}{Unmapped}\\
+				\memsection{00007FFF}{00000000}{2}{ITCM (32 KB)}
+			\end{bytefield}
+		\end{minipage}%
+		\begin{minipage}[t]{0.5\linewidth}%
+			\hspace{-0.75cm}%
+			\begin{bytefield}{24}
+				\memsection{FFFFFFFF}{FFFFC000}{2}{DTCM (16 KB)}\\
+				\memsection{FFFFBFFF}{80000000}{4}{DTCM Mirrors}\\
+				\memsection{7FFFFFFF}{08000000}{4}{Unmapped}\\
+				\memsection{07FFFFFF}{07000800}{3}{OAM Mirrors}\\
+				\memsection{070007FF}{07000400}{2}{Sub OAM (1 KB)}\\
+				\memsection{070003FF}{07000000}{2}{GBA OAM (1 KB)}\\
+				\memsection{}{}{2}{}\\
+				\memsection{0683FFFF}{06820000}{2}{LCDC VRAM B (128 KB)}\\
+				\memsection{0682FFFF}{06800000}{2}{LCDC VRAM A (128 KB)}\\
+				\memsection{067FFFFF}{06600000}{3}{Sub OBJ VRAM}\\
+				\memsection{065FFFFF}{06408000}{3}{Main OBJ VRAM Mirrors}\\
+				\memsection{06407FFF}{06404000}{2}{GBA OBJ VRAM (G, 16 KB)}\\
+				\memsection{06403FFF}{06400000}{2}{GBA OBJ VRAM (F, 16 KB)\footnote{For BG modes 0, 1 and 2}}\\
+				\memsection{063FFFFF}{06200000}{3}{Sub BG VRAM}\\
+				\memsection{061FFFFF}{06014000}{3}{Main BG VRAM Mirrors}\\
+				\memsection{06013FFF}{06010000}{2}{GBA BG VRAM (F, 16 KB)\footnote{For BG modes 3, 4 and 5}}\\
+				\memsection{0600FFFF}{06000000}{2}{GBA BG VRAM (E, 64 KB)}
+			\end{bytefield}
+		\end{minipage}%
+		\caption{Physical ARM 9 memory map for GBARunner 3 running on regular DS hardware.}
+	\end{figure}
+
+	\section{Memory Protection Regions}
+		Regions with a higher index take priority over regions with a lower index. When the ARM 9 is running in non-privileged user mode the rights from the ``user" column apply, when running in a privileged mode the rights from the ``system" column apply.
+		\begin{table}[htb]
+			\centering
+			\begin{tabular}{l|l|l|l|l|l}
+				\# & region & description & user & system & cache \& wrbuf \\ \hline
+				7 & \texttt{02000000-0203FFFF} & GBA EWRAM & \texttt{R/W/X} & \texttt{R/W/X} & \texttt{i/-/-} \\
+				6 & \texttt{03000000-03FFFFFF} & GBA IWRAM & \texttt{R/W/X} & \texttt{R/W/X} & \texttt{i/-/-} \\
+				5 & \texttt{06800000-0683FFFF} & LCDC VRAM A, B & \texttt{-/-/-} & \texttt{R/W/X} & \texttt{i/d/wrbuf} \\
+				2 & \texttt{06000000-067FFFFF} & VRAM & \texttt{R/-/X} & \texttt{R/W/X} & \texttt{i/-/-} \\
+				1 & \texttt{02000000-023FFFFF} & Main Memory & \texttt{R/-/X} & \texttt{R/W/X} & \texttt{i/d/wrbuf} \\
+				0 & \texttt{00000000-FFFFFFFF} & ITCM, DTCM, uncached mmem, IO & \texttt{-/-/-} & \texttt{R/W/X} & \texttt{-/-/-}
+			\end{tabular}
+			\caption{Overview of the memory protection regions for GBARunner 3.}			
+		\end{table}
+	
+\chapter{Virtual Machine}\label{chap_vm}
+	To have more control over the running game GBARunner 3 will use a Virtual Machine (hereafter VM) in which the GBA code runs. All code inside the VM will run in user mode (non-privileged). The actual mode of the virtualized ARM core will be held in the state of the VM. An additional advantage of this is that emulating aborted memory access instructions is easier when all code runs in user mode. By using the VM the GBA code will not be able to fully turn off interrupts by using the CPSR I bit. In such a case the VM will not receive any interrupts, but interrupts that are essential for the functioning of GBARunner 3 can still be handled.
+	
+	\section{Sensitive Instructions}
+	Sensitive instructions are instructions that can change the state of the virtualized processor and that the VM needs to emulate. For GBA code there are no sensitive Thumb instructions. The following ARM instructions are sensitive:
+	\begin{description}[leftmargin=!,labelwidth=4.5cm]
+		\item[\texttt{mrs reg, cpsr}] Needs to read the CPSR from the VM state (combined with flags in the actual CPSR register).
+		\item[\texttt{mrs reg, spsr}] Needs to read the SPSR from the VM state.
+		\item[\texttt{msr cpsr, ...}] When a MSR instruction changes any of the control bits the change needs to be emulated by the VM.
+		\item[\texttt{msr spsr, ...}] Needs to write the SPSR in the VM state.
+		\item[\texttt{\textit{ALU}s pc, ...}] The SPSR to CPSR copy needs to be emulated by the VM.
+		\item[\texttt{ldm\textit{XX} reg, \{...\}\textasciicircum}] Loading to user mode registers needs to be emulated by the VM.
+		\item[\texttt{stm\textit{XX} reg, \{...\}\textasciicircum}] Storing from user mode registers needs to be emulated by the VM.
+		\item[\texttt{ldm\textit{XX} reg, \{..., pc\}\textasciicircum}] The SPSR to CPSR copy needs to be emulated by the VM.
+	\end{description}
+	Because none of these instructions will cause an exception when executed in user mode they need to be replaced by exception generating instructions. This will be the task of the JIT (see Chapter \ref{chap_jit}).
+	
+	\section{Undefined Instructions}
+	To emulate sensitive instructions the VM will support undefined instructions that are drop-in replacements for the instructions. Additionally, the VM will support undefined instructions for unresolved branches.
+	
+		\begin{table}[htb]
+		\begin{adjustbox}{center}
+			\texttt{
+				\arrayrulecolor{black}
+				\begin{tabular}{l|c|ccc|c|c|c|c|c|c|c|c|c|cccc|ccc|}
+					& \footnotesize 31 \quad 28 & \footnotesize 27 & \footnotesize 26 & \footnotesize 25 & \footnotesize 24 & \footnotesize 23 & \footnotesize 22 & \footnotesize 21 & \footnotesize 20 & \footnotesize 19 & \footnotesize 18 & \footnotesize 17 & \footnotesize 16 & \footnotesize 15 & \footnotesize 14 & \footnotesize 13 & \footnotesize 12 & \multicolumn{1}{c|}{\footnotesize 11 \quad 5} & \multicolumn{1}{c|}{\footnotesize 4} & \footnotesize 3 \qquad\qquad\quad 0 \\
+					\hline
+					MRS                      & \multirow{2}{*}{cond} & \multirow{2}{*}{0} & \multicolumn{1}{c|}{\multirow{2}{*}{0}} & 0                     & \multicolumn{1}{c}{\multirow{2}{*}{1}} & \multirow{2}{*}{0}    & \multirow{2}{*}{psr}  & 0                     & \multirow{2}{*}{0} & \multicolumn{1}{c}{1} & \multicolumn{1}{c}{1} & \multicolumn{1}{c}{1} & 1 & \multicolumn{4}{c|}{Rd} & \multicolumn{3}{c|}{000000000000} \\ 
+					\cline{1-1}\cline{5-5}\cline{9-9}\cline{11-21}
+					MSR                      &                       &                    & \multicolumn{1}{c|}{}                   & I                     & \multicolumn{1}{c}{}                   &                       &                       & 1                     &                    & F                     & S                     & X                     & C & 1 & 1 & 1 & 1           & \multicolumn{3}{c|}{op2}                                                            \\ 
+					\hline
+					& cond                  & 0                  & 0                                       & \multicolumn{1}{c}{1} & \multicolumn{1}{c}{1}                  & 0                     & psr                   & \multicolumn{1}{c}{0} & 0                  & F                     & I                     & op                    & C & \multicolumn{4}{c|}{Rd} & \multicolumn{3}{c|}{op2}                                                            \\ 
+					\hline
+					ALUs pc                  & cond                  & 0                  & \multicolumn{1}{c|}{0}                  & I                     & \multicolumn{4}{c|}{op}                                                                                        & 1                  & \multicolumn{4}{c|}{Rn}                                                   & 1 & 1 & 1 & 1           & \multicolumn{3}{c|}{op2}                                                            \\ 
+					\hline
+					& cond                  & 1                  & 1                                       & \multicolumn{1}{c}{0} & \multicolumn{1}{c}{0}                  & \multicolumn{1}{c}{0} & 0                     & I                     & 0                  & \multicolumn{4}{c|}{Rn}                                                   & \multicolumn{4}{c|}{op} & \multicolumn{3}{c|}{op2}                                                            \\ 
+					\hline
+					LDM\^{}                  & cond                  & 1                  & 0                                       & 0                     & P                                      & U                     & 1                     & W                     & 1                  & \multicolumn{4}{c|}{Rn}                                                   & \multicolumn{7}{c|}{register\_list}                                                                           \\ 
+					\hline
+					& cond                  & 1                  & 1                                       & 0                     & P                                      & U                     & 1                     & W                     & 1                  & \multicolumn{4}{c|}{Rn}                                                   & \multicolumn{7}{c|}{register\_list}                                                                           \\ 
+					\hline
+					STM\^{}                  & cond                 & 1                  & 0                                       & 0                     & P                                      & U                     & \multicolumn{1}{c}{1} & \multicolumn{1}{c}{0} & 0                  & \multicolumn{4}{c|}{Rn}                                                   & \multicolumn{7}{c|}{register\_list}                                                                           \\ 
+					\hline
+					& cond              & 1                  & 1                                       & 0                     & P                                      & U                     & \multicolumn{1}{c}{1} & \multicolumn{1}{c}{0} & 0                  & \multicolumn{4}{c|}{Rn}                                                   & \multicolumn{7}{c|}{register\_list}                                                                           \\ 
+					\hline
+					B                        & cond                  & 1                  & 0                                       & \multicolumn{1}{c}{1} & 0                                      & \multicolumn{15}{c|}{offset}                                                                                                                                                                                                                                                            \\ 
+					\hline
+					& cond                  & 0                  & 1                                       & 1                     & \multicolumn{14}{c|}{offset\_hi} & 1                     & \multicolumn{1}{|c|}{offset\_lo}  \\ 
+					\hline
+					BL                       & cond                  & 1                  & 0                                       & \multicolumn{1}{c}{1} & 1                                      & \multicolumn{15}{c|}{offset}                                                                                                                                                                                                                                                            \\ 
+					\hline
+					\multicolumn{1}{r|}{\quad uncond.} & 1111   & 1                  & 1                                       & \multicolumn{1}{c}{1} & 1                                      & \multicolumn{15}{c|}{offset}                                                                                                                                                                                                                                                            \\ 
+					\hline
+					\multicolumn{1}{r|}{\quad 01/10\dots}              & cond                  & 1                  & 1                                       & 0                     & \multicolumn{2}{c|}{off\_h}                                    & 0                     & o                     & 1                  & \multicolumn{11}{c|}{offset\_lo}
+					\\
+					\hline
+					\multicolumn{1}{r|}{\quad 00/11\dots}               & cond                  & 1                  & 1                                       & \multicolumn{1}{c}{1} & 0                                      & \multicolumn{13}{c|}{offset\_hi}                                                                                                                                    & 0                     & \multicolumn{1}{|c|}{offset\_lo}  \\
+					\hline
+			\end{tabular}}
+		\end{adjustbox}
+		\caption{Overview of ARM instructions and their undefined substitutions emulated by the VM.}
+	\end{table}
+	
+\chapter{JIT Patcher}\label{chap_jit}
+\chapter{Memory Emulator}\label{chap_mememu}
+	Various memory accesses need to be emulated to allow the GBA code to access the right data and registers. The ARM946E-S has no MMU (memory mapping unit), but it does have a MPU (memory protection unit) that can be used to protect up to 8 regions of memory. When a data abort happens the abort handler code emulates the memory instruction. The performance of the abort handler plays an important role in the performance of the entire system.
+	\section{Memory Instructions}
+	In this section an overview will be given of the instructions that need to be emulated.
+	\subsection{ARM Memory Instructions}
+	\begin{table}[htb]
+		\begin{adjustbox}{center}
+		\texttt{
+		\arrayrulecolor{black}
+		\begin{tabular}{l|c|ccc|c|c|c|c|c|c|c|ccccc|cc|c|c|}
+		& \footnotesize 31 \quad 28 & \footnotesize 27 & \footnotesize 26 & \footnotesize 25 & \footnotesize 24 & \footnotesize 23 & \footnotesize 22 & \footnotesize 21 & \footnotesize 20 & \footnotesize 19 \quad 16 & \footnotesize 15 \quad 12 & \footnotesize 11 & \footnotesize 10 & \footnotesize 9 & \footnotesize 8 & \footnotesize 7 & \footnotesize 6 & \footnotesize 5 & \footnotesize 4 & \footnotesize 3 \qquad\qquad\quad 0 \\
+		\hline
+		SWP                                                          & \multirow{16}{*}{cond} & \multirow{2}{*}{0}                   & \multirow{2}{*}{0}                                        & \multicolumn{1}{c}{\multirow{2}{*}{0}}                  & \multicolumn{1}{c}{\multirow{2}{*}{1}} & \multirow{2}{*}{0}  & 0                                                       & \multicolumn{1}{c}{\multirow{2}{*}{0}} & \multirow{2}{*}{0}                   & \multirow{16}{*}{Rn} & \multirow{14}{*}{Rd} & \multirow{2}{*}{0} & \multirow{2}{*}{0} & \multirow{2}{*}{0} & \multirow{2}{*}{0}     & \multicolumn{1}{c}{\multirow{2}{*}{1}}                   & \multirow{2}{*}{0}                   & \multicolumn{1}{c}{\multirow{2}{*}{0}}                   & \multirow{2}{*}{1}                   & \multirow{2}{*}{Rm}                                               \\ 
+		\cline{1-1}\cline{8-8}
+		SWPB                                                         &                        &                                      &                                                           & \multicolumn{1}{c}{}                                    & \multicolumn{1}{c}{}                   &                     & 1                                                       & \multicolumn{1}{c}{}                   &                                      &                      &                      &                    &                    &                    &                        & \multicolumn{1}{c}{}                                     &                                      & \multicolumn{1}{c}{}                                     &                                      &                                                                   \\ 
+		\hhline{-~--------~~---------|}
+		STRH                                                         &                        & \multirow{4}{*}{0}                   & \multirow{4}{*}{0}                                        & \multirow{4}{*}{0}                                      & \multirow{12}{*}{P}                    & \multirow{12}{*}{U} & {\cellcolor[rgb]{0.502,0.502,0.502}}                    & \multirow{12}{*}{W}                    & 0                                    &                      &                      & \multicolumn{4}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                             & \multirow{4}{*}{1}                                       & \multirow{2}{*}{0}                   & \multirow{2}{*}{1}                                       & \multirow{4}{*}{1}                   & {\cellcolor[rgb]{0.502,0.502,0.502}}                              \\ 
+		\hhline{-~~~~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~>{\arrayrulecolor{black}}-~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}----~~~~->{\arrayrulecolor{black}}|}
+		LDRH                                                         &                        &                                      &                                                           &                                                         &                                        &                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        & \multirow{3}{*}{1}                   &                      &                      & \multicolumn{4}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                             &                                                          &                                      &                                                          &                                      & {\cellcolor[rgb]{0.502,0.502,0.502}}                              \\ 
+		\hhline{-~~~~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~~~----~>{\arrayrulecolor{black}}--~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}->{\arrayrulecolor{black}}|}
+		LDRSB                                                        &                        &                                      &                                                           &                                                         &                                        &                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                                      &                      &                      & \multicolumn{4}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                             &                                                          & 1                                    & 0                                                        &                                      & {\cellcolor[rgb]{0.502,0.502,0.502}}                              \\ 
+		\hhline{-~~~~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~~~----~>{\arrayrulecolor{black}}--~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}->{\arrayrulecolor{black}}|}
+		LDRSH                                                        &                        &                                      &                                                           &                                                         &                                        &                     & \multirow{-4}{*}{{\cellcolor[rgb]{0.502,0.502,0.502}}I} &                                        &                                      &                      &                      & \multicolumn{4}{c|}{\multirow{-4}{*}{{\cellcolor[rgb]{0.502,0.502,0.502}}addr\_mode}} &                                                          & 1                                    & 1                                                        &                                      & \multirow{-4}{*}{{\cellcolor[rgb]{0.502,0.502,0.502}}addr\_mode}  \\ 
+		\hhline{-~---~~-~-~~---------|}
+		\multicolumn{1}{r|}{{\cellcolor[rgb]{0.502,0.502,0.502}}reg} &                        & {\cellcolor[rgb]{0.502,0.502,0.502}} & {\cellcolor[rgb]{0.502,0.502,0.502}}                      & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                     & 0                                                       &                                        & {\cellcolor[rgb]{0.502,0.502,0.502}} &                      &                      & 0                  & 0                  & 0                  & \multicolumn{1}{c|}{0} & \multicolumn{1}{c}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & {\cellcolor[rgb]{0.502,0.502,0.502}} & \multicolumn{1}{c}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & {\cellcolor[rgb]{0.502,0.502,0.502}} & Rm                                                                \\ 
+		\hhline{>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~---~~>{\arrayrulecolor{black}}-~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~>{\arrayrulecolor{black}}---->{\arrayrulecolor[rgb]{0.502,0.502,0.502}}---->{\arrayrulecolor{black}}-|}
+		\multicolumn{1}{r|}{{\cellcolor[rgb]{0.502,0.502,0.502}}imm} &                        & {\cellcolor[rgb]{0.502,0.502,0.502}} & {\cellcolor[rgb]{0.502,0.502,0.502}}                      & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                     & 1                                                       &                                        & {\cellcolor[rgb]{0.502,0.502,0.502}} &                      &                      & \multicolumn{4}{c|}{immH}                                                             & \multicolumn{1}{c}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & {\cellcolor[rgb]{0.502,0.502,0.502}} & \multicolumn{1}{c}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & {\cellcolor[rgb]{0.502,0.502,0.502}} & immL                                                              \\ 
+		\hhline{-~---~~-~-~~---------|}
+		STR                                                          &                        & \multirow{4}{*}{0}                   & \multicolumn{1}{c|}{\multirow{4}{*}{1}}                   & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                     & \multirow{2}{*}{0}                                      &                                        & 0                                    &                      &                      & \multicolumn{9}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                                                                                                                                                                                                                                                                                                     \\ 
+		\hhline{-~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~~~>{\arrayrulecolor{black}}-~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}--------->{\arrayrulecolor{black}}|}
+		LDR                                                          &                        &                                      & \multicolumn{1}{c|}{}                                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                     &                                                         &                                        & 1                                    &                      &                      & \multicolumn{9}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                                                                                                                                                                                                                                                                                                     \\ 
+		\hhline{-~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~>{\arrayrulecolor{black}}-~-~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}--------->{\arrayrulecolor{black}}|}
+		STRB                                                         &                        &                                      & \multicolumn{1}{c|}{}                                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        &                     & \multirow{2}{*}{1}                                      &                                        & 0                                    &                      &                      & \multicolumn{9}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}}                                                                                                                                                                                                                                                                                                     \\ 
+		\hhline{-~~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~~~~>{\arrayrulecolor{black}}-~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}--------->{\arrayrulecolor{black}}|}
+		LDRB                                                         &                        &                                      & \multicolumn{1}{c|}{}                                     & \multirow{-4}{*}{{\cellcolor[rgb]{0.502,0.502,0.502}}I} &                                        &                     &                                                         &                                        & 1                                    &                      &                      & \multicolumn{9}{c|}{\multirow{-4}{*}{{\cellcolor[rgb]{0.502,0.502,0.502}}addr\_mode}}                                                                                                                                                                                                                                                                         \\ 
+		\hhline{-~---~~-~-~~---------|}
+		\multicolumn{1}{r|}{{\cellcolor[rgb]{0.502,0.502,0.502}}imm} &                        & {\cellcolor[rgb]{0.502,0.502,0.502}} & \multicolumn{1}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & 0                                                       &                                        &                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        & {\cellcolor[rgb]{0.502,0.502,0.502}} &                      &                      & \multicolumn{9}{c|}{offset\_12}                                                                                                                                                                                                                                                                                                                               \\ 
+		\hhline{>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~-->{\arrayrulecolor{black}}-~~>{\arrayrulecolor[rgb]{0.502,0.502,0.502}}-~-~~>{\arrayrulecolor{black}}---------|}
+		\multicolumn{1}{r|}{{\cellcolor[rgb]{0.502,0.502,0.502}}reg} &                        & {\cellcolor[rgb]{0.502,0.502,0.502}} & \multicolumn{1}{c|}{{\cellcolor[rgb]{0.502,0.502,0.502}}} & 1                                                       &                                        &                     & {\cellcolor[rgb]{0.502,0.502,0.502}}                    &                                        & {\cellcolor[rgb]{0.502,0.502,0.502}} &                      &                      & \multicolumn{5}{c|}{shift\_imm}                                                                                                                  & \multicolumn{2}{c|}{shift}                                                                      & 0                                    & Rm                                                                \\ 
+		\cline{1-1}\cline{3-10}\cline{12-21}
+		STM                                                          &                        & \multirow{2}{*}{1}                   & \multirow{2}{*}{0}                                        & \multirow{2}{*}{0}                                      & \multirow{2}{*}{P}                     & \multirow{2}{*}{U}  & \multirow{2}{*}{0}                                      & \multirow{2}{*}{W}                     & 0                                    &                      & \multicolumn{10}{c|}{\multirow{2}{*}{register\_list}}                                                                                                                                                                                                                                                                                                                                \\ 
+		\cline{1-1}\cline{10-10}
+		LDM                                                          &                        &                                      &                                                           &                                                         &                                        &                     &                                                         &                                        & 1                                    &                      & \multicolumn{10}{c|}{}                                                                                                                                                                                                                                                                                                                                                               \\
+		\hline
+		\end{tabular}}
+		\end{adjustbox}
+		\caption{Overview of ARM memory instructions that could cause an abort.}
+	\end{table}
+	\subsection{Thumb Memory Instructions}
+	\begin{table}[htb]
+		\centering
+		\texttt{
+		\begin{tabular}{l|cccc|c|cc|cl|c|c|}
+		& \footnotesize 15 & \footnotesize 14 & \footnotesize 13 & \footnotesize 12 & \footnotesize 11 & \footnotesize 10 & \footnotesize 9 & \footnotesize 8 & \footnotesize 7 \quad 6 & \footnotesize 5 \quad 3 & \footnotesize 2 \quad 0 \\
+		\hline
+		STR reg   & \multirow{8}{*}{0} & \multirow{8}{*}{1} & \multirow{8}{*}{0}                      & \multirow{8}{*}{1}    & \multicolumn{1}{c}{0} & 0                  & 0                  & \multicolumn{2}{c|}{\multirow{8}{*}{Rm}} & \multirow{14}{*}{Rn} & \multirow{14}{*}{Rd}  \\ 
+		\cline{1-1}\cline{6-8}
+		STRH reg  &                    &                    &                                         &                       & \multicolumn{1}{c}{0} & 0                  & 1                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		STRB reg  &                    &                    &                                         &                       & \multicolumn{1}{c}{0} & 1                  & 0                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		LDRSB reg &                    &                    &                                         &                       & \multicolumn{1}{c}{0} & 1                  & 1                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		LDR reg   &                    &                    &                                         &                       & \multicolumn{1}{c}{1} & 0                  & 0                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		LDRH reg  &                    &                    &                                         &                       & \multicolumn{1}{c}{1} & 0                  & 1                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		LDRB reg  &                    &                    &                                         &                       & \multicolumn{1}{c}{1} & 1                  & 0                  &                                         &                   &                      &                       \\ 
+		\cline{1-1}\cline{6-8}
+		LDRSH reg &                    &                    &                                         &                       & \multicolumn{1}{c}{1} & 1                  & 1                  &                                         &                   &                      &                       \\ 
+		\cline{1-10}
+		STR imm   & \multirow{4}{*}{0} & \multirow{4}{*}{1} & \multicolumn{1}{c|}{\multirow{4}{*}{1}} & \multirow{2}{*}{0}    & 0                     & \multicolumn{4}{c|}{\multirow{6}{*}{imm}}                                                             &                      &                       \\ 
+		\cline{1-1}\cline{6-6}
+		LDR imm   &                    &                    & \multicolumn{1}{c|}{}                   &                       & 1                     & \multicolumn{4}{c|}{}                                                                                 &                      &                       \\ 
+		\cline{1-1}\cline{5-6}
+		STRB imm  &                    &                    & \multicolumn{1}{c|}{}                   & \multirow{2}{*}{1}    & 0                     & \multicolumn{4}{c|}{}                                                                                 &                      &                       \\ 
+		\cline{1-1}\cline{6-6}
+		LDRB imm  &                    &                    & \multicolumn{1}{c|}{}                   &                       & 1                     & \multicolumn{4}{c|}{}                                                                                 &                      &                       \\ 
+		\cline{1-6}
+		STRH imm  & \multirow{2}{*}{1} & \multirow{2}{*}{0} & \multirow{2}{*}{0}                      & \multirow{2}{*}{0}    & 0                     & \multicolumn{4}{c|}{}                                                                                 &                      &                       \\ 
+		\cline{1-1}\cline{6-6}
+		LDRH imm  &                    &                    &                                         &                       & 1                     & \multicolumn{4}{c|}{}                                                                                 &                      &                       \\ 
+		\hline
+		LDR pc    & 0                  & 1                  & 0                                       & \multicolumn{1}{c}{0} & 1                     & \multicolumn{3}{c|}{\multirow{3}{*}{Rd}}                                          & \multicolumn{3}{c|}{\multirow{3}{*}{imm}}                        \\ 
+		\cline{1-6}
+		STR sp    & \multirow{2}{*}{1} & \multirow{2}{*}{0} & \multirow{2}{*}{0}                      & \multirow{2}{*}{1}    & 0                     & \multicolumn{3}{c|}{}                                                             & \multicolumn{3}{c|}{}                                            \\ 
+		\cline{1-1}\cline{6-6}
+		LDR sp    &                    &                    &                                         &                       & 1                     & \multicolumn{3}{c|}{}                                                             & \multicolumn{3}{c|}{}                                            \\ 
+		\hline
+		PUSH      & \multirow{2}{*}{1} & \multirow{2}{*}{0} & \multirow{2}{*}{1}                      & \multirow{2}{*}{1}    & 0                     & \multirow{2}{*}{1} & \multirow{2}{*}{0} & \multicolumn{1}{c|}{\multirow{2}{*}{R}} & \multicolumn{3}{c|}{\multirow{4}{*}{register\_list}}             \\ 
+		\cline{1-1}\cline{6-6}
+		POP       &                    &                    &                                         &                       & 1                     &                    &                    & \multicolumn{1}{c|}{}                   & \multicolumn{3}{c|}{}                                            \\ 
+		\cline{1-9}
+		STMIA     & \multirow{2}{*}{1} & \multirow{2}{*}{1} & \multirow{2}{*}{0}                      & \multirow{2}{*}{0}    & 0                     & \multicolumn{3}{c|}{\multirow{2}{*}{Rn}}                                          & \multicolumn{3}{c|}{}                                            \\ 
+		\cline{1-1}\cline{6-6}
+		LDMIA     &                    &                    &                                         &                       & 1                     & \multicolumn{3}{c|}{}                                                             & \multicolumn{3}{c|}{}                                            \\
+		\hline
+		\end{tabular}}
+		\caption{Overview of Thumb memory instructions that could cause an abort.}
+	\end{table}
+\chapter{SD Cache}
+	GBARunner 2 used a least-recently-used (LRU) cache. Using a simpler replacement algorithm such as pseudo-random might be more efficient in practice, because LRU requires an update to the cache block list for every access.
+\chapter{GBA Peripherals Emulation}
+	\section{Graphics}
+	\section{Timers}
+	\section{Sound}
+	\section{DMA}
+	\section{SIO}
+\end{document}
