@@ -39,6 +39,7 @@ generate memu_armStrRd, 16
             ldr r9, [r9]
             add r9, r9, #4 // pc + 12
         .endif
+        and r9, r9, #0xFF
         bl memu_store8
         memu_armReturn
 .endm
