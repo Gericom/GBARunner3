@@ -172,10 +172,12 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
-		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o) .dtcm)
+		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o) .dtcm)
 		*(.dtcm.*)
 		. = 0x3F00;
 		KEEP (MemoryEmuDtcmPool.o(.dtcm))
+		. = 0x3F80;
+		KEEP (VMDtcm.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>ewram :dtcm = 0xff
@@ -185,6 +187,12 @@ SECTIONS
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
 		KEEP (vectors.o(.itcm))
+		. = 0x100;
+		KEEP (VMIrq.o(.itcm))
+		. = 0x200;
+		KEEP (VMMode.o(.itcm))
+		. = 0x600;
+		KEEP (VMUndefined.o(.itcm))
 		. = 0x900;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0xB00;

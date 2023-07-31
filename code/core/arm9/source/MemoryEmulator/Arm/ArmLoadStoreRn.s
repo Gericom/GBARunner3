@@ -2,6 +2,7 @@
 .altmacro
 
 #include "AsmMacros.inc"
+#include "../MemoryEmuDtcm.inc"
 
 .macro memu_armLoadStoreRn rn, p, w
     arm_func memu_armLoadStoreR\rn\()_\p\w

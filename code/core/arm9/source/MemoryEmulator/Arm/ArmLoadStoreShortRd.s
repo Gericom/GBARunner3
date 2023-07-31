@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
+#include "../MemoryEmuDtcm.inc"
 
 .macro memu_armStrhRd rd
     arm_func memu_armStrhR\rd
@@ -15,7 +16,7 @@
             ldrne r9, [r13, #-4]
             bic r8, r8, #1
         .else
-            mov r9, #0xFFFFFF00 // memu_inst_addr
+            mov r9, #memu_inst_addr
             ldr r9, [r9]
             bic r8, r8, #1
             add r9, r9, #4 // pc + 12
@@ -34,7 +35,7 @@ generate memu_armStrhRd, 16
         .if \rd < 8
             mov r\rd, r9
         .elseif \rd < 15
-            mov r8, #0xFFFFFF00 // memu_inst_addr
+            mov r8, #memu_inst_addr
             str r9, [r8]
             ldmia r8, {r\rd}^
         .else
@@ -56,7 +57,7 @@ generate memu_armLdrhRd, 16
         .elseif \rd < 15
             mov r9, r9, asr #16
             movne r9, r9, asr #8
-            mov r8, #0xFFFFFF00 // memu_inst_addr
+            mov r8, #memu_inst_addr
             str r9, [r8]
             ldmia r8, {r\rd}^
         .else
@@ -75,7 +76,7 @@ generate memu_armLdrshRd, 16
             mov r\rd, r9, asr #24
         .elseif \rd < 15
             mov r9, r9, asr #24
-            mov r8, #0xFFFFFF00 // memu_inst_addr
+            mov r8, #memu_inst_addr
             str r9, [r8]
             ldmia r8, {r\rd}^
         .else

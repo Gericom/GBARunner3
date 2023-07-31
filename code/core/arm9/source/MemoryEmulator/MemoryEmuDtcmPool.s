@@ -1,17 +1,14 @@
 .section ".dtcm", "aw"
 
-.global memu_inst_addr
-memu_inst_addr:
+#include "MemoryEmuDtcm.inc"
+
+.org memu_inst_addr - MEMU_DTCM_BASE
     .word 0
 
-.space 0xC
-
-.global memu_thumb_table_addr
-memu_thumb_table_addr:
+.org memu_thumb_table_addr - MEMU_DTCM_BASE
     .word 0x800000FC
 
-.global memu_arm_table_addr
-memu_arm_table_addr:
+.org memu_arm_table_addr - MEMU_DTCM_BASE
     .word memu_armDispatchTable
 
 .end

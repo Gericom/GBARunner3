@@ -7,16 +7,16 @@
 
 thumb_dispatch_base:
 
-#define DTCM(x) #(thumb_dispatch_base - 0xB00 - 0x4000 + x)
+#define DTCM(x) #(thumb_dispatch_base - 0xB00 + x)
 
 arm_func memu_thumbDispatch
-    str lr, DTCM(MEMU_INST_ADDR)
+    str lr, DTCM(memu_inst_addr)
     msr cpsr_c, #0xD1 // switch to fiq mode
-    ldr lr, DTCM(MEMU_INST_ADDR)
+    ldr lr, DTCM(memu_inst_addr)
     // interlock
     ldrh lr, [lr, #-8] // lr = instruction
     mvn r9, #0xFF000 // mask for dtcm mirroring
-    ldr r13, DTCM(MEMU_THUMB_TABLE_ADDR)
+    ldr r13, DTCM(memu_thumb_table_addr)
 
     orr r8, lr, lr, lsl #16
     and r8, r9, r8, lsr #7 // dtcm must mirror

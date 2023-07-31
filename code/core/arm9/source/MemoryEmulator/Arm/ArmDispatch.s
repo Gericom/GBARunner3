@@ -6,15 +6,15 @@
 
 arm_dispatch_base:
 
-#define DTCM(x) #(arm_dispatch_base - 0x900 - 0x4000 + x)
+#define DTCM(x) #(arm_dispatch_base - 0x900 + x)
 
 arm_func memu_armDispatch
-    str lr, DTCM(MEMU_INST_ADDR)
+    str lr, DTCM(memu_inst_addr)
     msr cpsr_c, #0xD1 // switch to fiq mode
-    ldr r11, DTCM(MEMU_INST_ADDR)
+    ldr r11, DTCM(memu_inst_addr)
     // interlock
     ldr lr, [r11, #-8] // lr = instruction
-    ldr r13, DTCM(MEMU_ARM_TABLE_ADDR)
+    ldr r13, DTCM(memu_arm_table_addr)
     and r8, lr, #0x0FF00000
     tst lr, #0x0E000000
 
