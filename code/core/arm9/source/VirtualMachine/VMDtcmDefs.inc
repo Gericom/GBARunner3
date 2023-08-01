@@ -22,10 +22,8 @@ vm_hwIrqMask:
              // It is very well possible that the DS REG_DISPSTAT has the VBLANK irq enabled
              // while the emulated REG_DISPSTAT has not. In that case the VBLANK bit in the
              // emulated REG_IF should not become set.
-vm_emulatedIF:
-    .short 0 // Emulated REG_IF presented to the GBA game
-vm_emulatedIE:
-    .short 0 // Emulated REG_IE
+vm_emulatedIfImeIe:
+    .word 0 // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IF, M = IME, F = IE)
 
 vm_undefinedInstructionAddr:
     .word 0

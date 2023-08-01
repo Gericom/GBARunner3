@@ -187,11 +187,11 @@ SECTIONS
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
 		KEEP (vectors.o(.itcm))
-		. = 0x100;
+		. = 0x80;
 		KEEP (VMIrq.o(.itcm))
-		. = 0x200;
+		. = 0x380;
 		KEEP (VMMode.o(.itcm))
-		. = 0x600;
+		. = 0x700;
 		KEEP (VMUndefined.o(.itcm))
 		. = 0x900;
 		KEEP (ArmDispatch.o(.itcm))

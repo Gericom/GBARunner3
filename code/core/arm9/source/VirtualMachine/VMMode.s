@@ -6,7 +6,7 @@
 
 vm_mode_base:
 
-#define DTCM(x) (vm_mode_base - 0x200 + (x))
+#define DTCM(x) (vm_mode_base - 0x380 + (x))
 
 vm_regs_1 = vm_regs_fiq
 vm_regs_2 = vm_regs_irq

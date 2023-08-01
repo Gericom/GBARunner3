@@ -6,7 +6,7 @@
 
 vm_undefined_base:
 
-#define DTCM(x) (vm_undefined_base - 0x600 + (x))
+#define DTCM(x) (vm_undefined_base - 0x700 + (x))
 
 arm_func vm_undefined
     str lr, DTCM(vm_undefinedInstructionAddr)
