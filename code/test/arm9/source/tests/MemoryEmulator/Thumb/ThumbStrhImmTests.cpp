@@ -3,6 +3,7 @@
 #include "gmock/gmock.h"
 #include "../MemoryStub.h"
 #include "../../ThumbTest.h"
+#include "../../ContextTest.h"
 #include "ThumbInstructions.h"
 
 using namespace ::testing;

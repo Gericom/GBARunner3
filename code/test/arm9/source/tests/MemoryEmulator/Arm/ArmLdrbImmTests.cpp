@@ -3,6 +3,7 @@
 #include "gmock/gmock.h"
 #include "../MemoryStub.h"
 #include "../../ArmTest.h"
+#include "../../ContextTest.h"
 
 using namespace ::testing;
 

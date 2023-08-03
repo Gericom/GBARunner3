@@ -30,7 +30,7 @@ SOURCES		:=	source \
 				../../core/arm9/source/VirtualMachine \
 				../../libs/googlemock/src \
 				../../libs/googletest/src
-INCLUDES	:=	include source ../../libs/googlemock ../../libs/googletest ../../libs/googlemock/include ../../libs/googletest/include ../../core/common
+INCLUDES	:=	include source ../../libs/googlemock ../../libs/googletest ../../core/arm9/source ../../libs/googlemock/include ../../libs/googletest/include ../../core/common
 DATA		:=  
 
 

@@ -12,4 +12,7 @@
 .org vm_undefinedArmTableAddr - VM_DTCM_BASE
     .word vm_armUndefinedDispatchTable
 
+.org vm_svcRegsAddr - VM_DTCM_BASE
+    .word vm_regs_svc
+
 .end

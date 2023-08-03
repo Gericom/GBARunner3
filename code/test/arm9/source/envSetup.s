@@ -72,5 +72,5 @@ main:
     // switch to user mode
     msr cpsr, #0x90
 
-    ldr sp,= __dtcm_start + (8 * 1024)
+    ldr sp,= 0xFFFFF000 // in dtcm
     b testMain

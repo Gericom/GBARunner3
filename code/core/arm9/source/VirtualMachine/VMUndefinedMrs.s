@@ -6,9 +6,8 @@
 
 .macro vm_armUndefinedMrsCpsrRm rm
     arm_func vm_armUndefinedMrsCpsrR\rm
-        ldr r9, [r13, #(vm_cpsr - vm_undefinedArmTableAddr)]
-        ldrb r10, [r13, #(vm_undefinedSpsr - vm_undefinedArmTableAddr + 3)]
-        mov r9, r9, lsr #1
+        ldrb r10, [r13, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable + 3)]
+        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
         .if \rm < 8
             orr r\rm, r9, r10, lsl #24
         .elseif \rm < 15
@@ -18,7 +17,7 @@
         .else
             // pc is not allowed
         .endif
-        msr cpsr_c, #0xD7
+        msr cpsr_c, #0xDB
         movs pc, lr
 .endm
 
@@ -26,19 +25,19 @@ generate vm_armUndefinedMrsCpsrRm, 16
 
 .macro vm_armUndefinedMrsSpsrRm rm
     arm_func vm_armUndefinedMrsSpsrR\rm
-        ldr r9, [r13, #(vm_cpsr - vm_undefinedArmTableAddr)]
-        add r10, r13, #(vm_spsr - vm_undefinedArmTableAddr)
-        and r9, r9, #(0xF << 1)
+        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+        and r9, r9, #0xF
+        add r13, r13, r9, lsl #2
         .if \rm < 8
-            ldr r\rm, [r10, r9, lsl #1]
+            ldr r\rm, [r13, #(vm_spsr - vm_armUndefinedDispatchTable)]
         .elseif \rm < 15
-            ldr r9, [r10, r9, lsl #1]
+            ldr r9, [r10, r9, lsl #2]
             str r9, [r13, #-4]
             ldmdb r13, {r\rm}^
         .else
             // pc is not allowed
         .endif
-        msr cpsr_c, #0xD7
+        msr cpsr_c, #0xDB
         movs pc, lr
 .endm
 

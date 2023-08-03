@@ -1,5 +1,8 @@
 #pragma once
 
+.global vm_armUndefinedDispatchTable
+.set vm_armUndefinedDispatchTable, 0xFFFFF600
+
 #define VM_DTCM_BASE 0xFFFFFE00
 
 .struct VM_DTCM_BASE
@@ -9,7 +12,11 @@ vm_irqSavedR9:
     .word 0
 vm_irqSavedLR:
     .word 0
+.global vm_irqVector
 vm_irqVector:
+    .word 0
+.global vm_swiVector
+vm_swiVector:
     .word 0
 vm_toIrqSwitchTableAddr:
     .word 0
@@ -33,7 +40,10 @@ vm_undefinedRegTmp:
     .word 0
 vm_undefinedArmTableAddr:
     .word 0
+vm_svcRegsAddr:
+    .word 0
 
+.global vm_cpsr
 vm_cpsr:
     .word 0
 vm_spsr:

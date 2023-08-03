@@ -14,9 +14,9 @@ __dtcm_top	=	ORIGIN(dtcm) + LENGTH(dtcm);
 __irq_flags	=	__dtcm_top - 0x08;
 __irq_vector	=	__dtcm_top - 0x04;
 
-__sp_svc	=	__dtcm_top - 0x100;
-__sp_irq	=	__sp_svc - 0x100;
-__sp_usr	=	__sp_irq - 0x100;
+__sp_svc	=	__dtcm_top - 0x1000;
+__sp_irq	=	__dtcm_top - 0x1100;
+__sp_usr	=	__dtcm_top - 0x1200;
 
 PHDRS {
 	main    PT_LOAD FLAGS(7);
@@ -172,12 +172,14 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
-		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o) .dtcm)
+		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o VMUndefined.o) .dtcm)
 		*(.dtcm.*)
+		. = 0x3600;
+		KEEP (VMUndefined.o(.dtcm))
+		. = 0x3E00;
+		KEEP (VMDtcm.o(.dtcm))
 		. = 0x3F00;
 		KEEP (MemoryEmuDtcmPool.o(.dtcm))
-		. = 0x3F80;
-		KEEP (VMDtcm.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>ewram :dtcm = 0xff
@@ -189,14 +191,16 @@ SECTIONS
 		KEEP (vectors.o(.itcm))
 		. = 0x80;
 		KEEP (VMIrq.o(.itcm))
-		. = 0x380;
+		. = 0x320;
 		KEEP (VMMode.o(.itcm))
-		. = 0x700;
+		. = 0x690;
 		KEEP (VMUndefined.o(.itcm))
 		. = 0x900;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0xB00;
 		KEEP (ThumbDispatch.o(.itcm))
+		. = 0xB40;
+		KEEP (VMSwi.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);

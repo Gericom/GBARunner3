@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "../ArmTest.h"
+#include "../ThumbTest.h"
+#include "../ContextTest.h"
 
 using namespace ::testing;
 
@@ -153,5 +155,65 @@ using namespace ::testing;
 //             bool isUndefined = test_isArmInstructionUndefined(0xEE000000u | (hi << 5) | lo, &inContext, &outContext);
 //             EXPECT_THAT(isUndefined, Eq(true));
 //         }
+//     }
+// }
+
+// TEST(UndefinedInstructionTests, ThumbTest)
+// {
+//     // Arrange
+//     context_t outContext;
+
+//     // Act + Assert
+//     for (u32 i = 0; i < 0x10000; i++)
+//     {
+//         if ((i & 0xFF00) == 0x4700)
+//         {
+//             // bx
+//             continue;
+//         }
+//         if ((i & 0xFF00) == 0x4400 && (i & 0x87) == 0x87)
+//         {
+//             // add pc
+//             continue;
+//         }
+//         if ((i & 0xFF00) == 0x4600 && (i & 0x87) == 0x87)
+//         {
+//             // mov pc
+//             continue;
+//         }
+//         if ((i & 0xFF00) == 0xBD00)
+//         {
+//             // pop pc
+//             continue;
+//         }
+//         if ((i & 0xF000) == 0xD000 && (i & 0x0F00) != 0x0E00)
+//         {
+//             // bcond and swi
+//             continue;
+//         }
+//         if ((i & 0xF800) == 0xE000)
+//         {
+//             // b
+//             continue;
+//         }
+//         if ((i & 0xF800) == 0xF800)
+//         {
+//             // bl
+//             continue;
+//         }
+//         if (((i & 0xF800) == 0xE800) && (i & 1) == 0)
+//         {
+//             // blx
+//             continue;
+//         }
+//         if ((i & 0xFF00) == 0xBE00)
+//         {
+//             // bkpt
+//             continue;
+//         }
+//         context_t inContext { };
+//         bool isUndefined = test_isThumbInstructionUndefined(i, &inContext, &outContext);
+//         if (isUndefined)
+//             LOG_DEBUG("%x\n", i);
 //     }
 // }

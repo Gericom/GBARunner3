@@ -1,9 +1,5 @@
 #pragma once
-
-struct context_t
-{
-    u32 r[15];
-};
+#include "Context.h"
 
 #define EXPECT_CONTEXT_EQ(actual, expected) do { \
     EXPECT_THAT((actual).r[0], Eq((expected).r[0]));\

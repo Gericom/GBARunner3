@@ -103,7 +103,7 @@ dtcm_done:
     bne 1b
 bss_done:
 
-    ldr sp,= __dtcm_start + (8 * 1024)
+    ldr sp,= __dtcm_start + (12 * 1024)
     b gbaRunnerMain
 
 .pool

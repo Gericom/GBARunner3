@@ -6,7 +6,7 @@
 
 vm_undefined_base:
 
-#define DTCM(x) (vm_undefined_base - 0x700 + (x))
+#define DTCM(x) (vm_undefined_base - 0x690 + (x))
 
 arm_func vm_undefined
     str lr, DTCM(vm_undefinedInstructionAddr)
@@ -32,13 +32,10 @@ arm_func vm_undefined
 
 arm_func vm_undefinedThumb
     ldrh r13, [lr, #-2]
-    msr cpsr_c, #0xD7
+    msr cpsr_c, #0xDB
     movs pc, lr
 
 .section ".dtcm", "aw"
-
-.global vm_armUndefinedDispatchTable
-vm_armUndefinedDispatchTable:
 
 .macro vm_armUndefinedInstructionPointer2 prefix, d, e, f, g, h, x, y
     .if (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\g == 0)

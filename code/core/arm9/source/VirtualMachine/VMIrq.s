@@ -30,30 +30,30 @@ arm_func vm_irq
 
 vm_emu_irq_continue:
     ldr r8, DTCM(vm_irqSavedR8)
-    ldr lr, DTCM(vm_irqSavedLR)
     // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IF, M = IME, F = IE)
     //M0FFF FFFF FFFF FFF0
     tst r13, r13, lsl #17 // IF & IE
-    ldr r13, DTCM(vm_cpsr)
-    sublss pc, lr, #4 // IME = 0 or (IF & IE == 0)
+    ldr r13, DTCM(vm_irqSavedLR)
+    ldr lr, DTCM(vm_cpsr)
+    sublss pc, r13, #4 // IME = 0 or (IF & IE == 0)
 
-    teq r13, r13, lsl #24 // C = I flag, N = F flag
-    subcss pc, lr, #4 // vm doesn't want irqs; nothing changed; resume where we left off
+    teq lr, lr, lsl #25 // C = I flag, N = F flag
+    subcss pc, r13, #4 // vm doesn't want irqs; nothing changed; resume where we left off
 
-    str lr, DTCM(vm_regs_irq + 4)
+    str r13, DTCM(vm_regs_irq + 4)
 
-    mrs lr, spsr
-    bic lr, lr, #0xCF
-    orr lr, lr, r13, lsr #1
-    str lr, DTCM(vm_spsr_irq)
-    and lr, lr, #(0xF << 1)
-    mov r13, #(0x92 << 1)
-    orrmi r13, r13, #(0x40 << 1)
-    str r13, DTCM(vm_cpsr)
+    mrs r13, spsr
+    bic r13, r13, #0xCF
+    orr r13, r13, lr
+    str r13, DTCM(vm_spsr_irq)
+    and r13, r13, #0xF
+    mov lr, #0x92
+    orrmi lr, lr, #0x40
+    str lr, DTCM(vm_cpsr)
 
     msr spsr, #0x10 // user mode, irqs stay on, arm mode
     adr lr, DTCM(vm_regs_irq)
-    add pc, pc, lr, lsl #4
+    add pc, pc, r13, lsl #5
     nop
 old_mode_usr:
     stmdb lr, {r13,lr}^
@@ -65,7 +65,7 @@ old_mode_usr:
     nop
     nop
 old_mode_fiq:
-    adr r13, DTCM(vm_regs_sys)
+    add r13, lr, #(vm_regs_sys - vm_regs_irq)
     stmdb r13, {r8,r9,r10,r11,r12,r13,lr}^
     nop
     ldmia r13, {r8,r9,r10,r11,r12}^
@@ -74,7 +74,7 @@ old_mode_fiq:
     ldr pc, DTCM(vm_irqVector)
     nop
 old_mode_irq:
-    ldmib r13, {lr}^
+    ldmib lr, {lr}^
     ldr pc, DTCM(vm_irqVector)
     nop
     nop
@@ -83,7 +83,7 @@ old_mode_irq:
     nop
     nop
 old_mode_svc:
-    adr lr, DTCM(vm_regs_svc)
+    add lr, lr, #(vm_regs_svc - vm_regs_irq)
     stmia lr, {r13,lr}^
     nop
     ldmdb lr, {r13,lr}^
@@ -119,12 +119,12 @@ old_mode_6:
     nop
     nop
 old_mode_abt:
-    adr lr, DTCM(vm_regs_abt)
-    stmia lr, {r13,lr}^
+    add r13, lr, #(vm_regs_abt - vm_regs_irq)
+    stmia r13, {r13,lr}^
     nop
-    adr lr, DTCM(vm_regs_irq)
     ldmia lr, {r13,lr}^
     ldr pc, DTCM(vm_irqVector)
+    nop
     nop
     nop
 old_mode_8:
@@ -155,12 +155,12 @@ old_mode_10:
     nop
     nop
 old_mode_und:
-    adr lr, DTCM(vm_regs_und)
-    stmia lr, {r13,lr}^
+    add r13, lr, #(vm_regs_und - vm_regs_irq)
+    stmia r13, {r13,lr}^
     nop
-    adr lr, DTCM(vm_regs_irq)
     ldmia lr, {r13,lr}^
     ldr pc, DTCM(vm_irqVector)
+    nop
     nop
     nop
 old_mode_12:
