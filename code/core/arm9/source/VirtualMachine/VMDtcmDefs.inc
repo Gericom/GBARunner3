@@ -42,6 +42,8 @@ vm_undefinedArmTableAddr:
     .word 0
 vm_svcRegsAddr:
     .word 0
+vm_modeSwitchTableAddr:
+    .word 0
 
 .global vm_cpsr
 vm_cpsr:

@@ -15,4 +15,7 @@
 .org vm_svcRegsAddr - VM_DTCM_BASE
     .word vm_regs_svc
 
+.org vm_modeSwitchTableAddr - VM_DTCM_BASE
+    .word vm_modeSwitchTable
+
 .end

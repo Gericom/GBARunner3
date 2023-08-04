@@ -40,12 +40,16 @@ arm_func vm_undefinedThumb
 .macro vm_armUndefinedInstructionPointer2 prefix, d, e, f, g, h, x, y
     .if (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\g == 0)
         // MSR
-        @ .if \h == 1
-        @     .short vm_armUndefinedMsrImm\f
-        @ .else
-        @     .short vm_armUndefinedMsrReg\f
-        @ .endif
-        .short 0
+        .if \h == 1
+            @ .short vm_armUndefinedMsrImm\f
+            .short 0
+        .else
+            .if \f == 1
+                .short vm_armUndefinedMsrRegSpsrRmTable
+            .else
+                .short vm_armUndefinedMsrRegCpsrRmTable
+            .endif
+        .endif
     .elseif (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\g == 1) && (\h == 0)
         // MRS
         .if \f == 1
