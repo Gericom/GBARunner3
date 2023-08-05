@@ -6,10 +6,10 @@
 
 .macro vm_armUndefinedMsrRegCpsrRm rm
     arm_func vm_armUndefinedMsrRegCpsrR\rm
+        ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rm < 8
             mov r8, r\rm
         .elseif \rm < 15
-            ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
             stmia r13, {r\rm}^
             nop
             ldr r8, [r13]
@@ -25,7 +25,7 @@ vm_updateCpsr:
     beq 1f // skip updating control part of cpsr
     ldr r10, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
     and r10, r10, #0xF
-    and r8, r8, #0xFF
+    and r8, r8, #0xDF // note that the thumb bit is set to 0
     orr r8, r8, #0x10
     ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_undefinedRegTmp)]
     strb r8, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
@@ -45,9 +45,9 @@ vm_updateCpsr:
     movs pc, lr
 
 vm_updateCpsrWithFlags:
-    ldrb r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     and r8, r8, #0xF0000000
-    ldr lr, [r13, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
     orr r10, r10, r8
     msr spsr, r10
     movs pc, lr
