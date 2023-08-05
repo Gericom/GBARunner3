@@ -50,20 +50,25 @@ vm_cpsr:
     .word 0
 vm_spsr:
     .word 0
+.global vm_spsr_fiq
 vm_spsr_fiq:
     .word 0
+.global vm_spsr_irq
 vm_spsr_irq:
     .word 0
+.global vm_spsr_svc
 vm_spsr_svc:
     .word 0
     .word 0
     .word 0
     .word 0
+.global vm_spsr_abt
 vm_spsr_abt:
     .word 0
     .word 0
     .word 0
     .word 0
+.global vm_spsr_und
 vm_spsr_und:
     .word 0
 

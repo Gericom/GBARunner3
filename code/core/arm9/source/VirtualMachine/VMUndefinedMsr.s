@@ -9,10 +9,10 @@
         .if \rm < 8
             mov r8, r\rm
         .elseif \rm < 15
-            add r12, r13, #(vm_cpsr - vm_undefinedRegTmp)
-            stmia r12, {r\rm}^
+            ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
+            stmia r13, {r\rm}^
             nop
-            ldr r8, [r12]
+            ldr r8, [r13]
         .else
             // pc is not allowed
         .endif
@@ -23,12 +23,12 @@ vm_updateCpsr:
     mov r9, r13
     tst lr, #0x10000
     beq 1f // skip updating control part of cpsr
-    ldr r10, [r9, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+    ldr r10, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
     and r10, r10, #0xF
     and r8, r8, #0xFF
     orr r8, r8, #0x10
-    ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_armUndefinedDispatchTable)]
-    strb r8, [r9, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+    ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_undefinedRegTmp)]
+    strb r8, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
     // todo: special processing when irqs were enabled
     and r11, r8, #0xF
     add r12, r12, r11, lsl #5
@@ -45,9 +45,9 @@ vm_updateCpsr:
     movs pc, lr
 
 vm_updateCpsrWithFlags:
-    ldrb r10, [r13, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable)]
+    ldrb r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     and r8, r8, #0xF0000000
-    ldr lr, [r13, #(vm_undefinedInstructionAddr - vm_armUndefinedDispatchTable)]
+    ldr lr, [r13, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
     orr r10, r10, r8
     msr spsr, r10
     movs pc, lr
@@ -56,13 +56,14 @@ generate vm_armUndefinedMsrRegCpsrRm, 16
 
 .macro vm_armUndefinedMsrRegSpsrRm rm
     arm_func vm_armUndefinedMsrRegSpsrR\rm
+        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]!
         .if \rm < 8
             mov r8, r\rm
         .elseif \rm < 15
-            add r12, r13, #(vm_cpsr - vm_undefinedRegTmp)
+            add r12, r13, #(vm_undefinedRegTmp - vm_cpsr)
             stmia r12, {r\rm}^
             nop
-            ldr r8, [r13]
+            ldr r8, [r12]
         .else
             // pc is not allowed
         .endif
@@ -72,20 +73,19 @@ generate vm_armUndefinedMsrRegCpsrRm, 16
 generate vm_armUndefinedMsrRegSpsrRm, 16
 
 vm_updateSpsr:
-    ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
     and r9, r9, #0xF
     add r12, r13, r9, lsl #2
     orr r8, r8, #0x10
-    ldr r10, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
+    ldr r10, [r12, #(vm_spsr - vm_cpsr)]
     mov r11, #0
     tst lr, #0x80000
     movne r11, #0xF0000000
     tst lr, #0x10000
-    orrne r11, r11, #0xF
+    orrne r11, r11, #0xFF
     and r8, r8, r11
     bic r10, r10, r11
     orr r10, r10, r8
-    str r10, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
+    str r10, [r12, #(vm_spsr - vm_cpsr)]
     msr cpsr_c, #0xDB
     movs pc, lr
 

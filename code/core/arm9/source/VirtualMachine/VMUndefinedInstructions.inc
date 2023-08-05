@@ -31,12 +31,16 @@
 .macro vmMSR psr, rd
     .if (\psr == "cpsr") || (\psr == "cpsr_fc")
         .word (0xE1890090 | (regToInt_\rd))
-    .if \psr == "cpsr_f"
+    .elseif \psr == "cpsr_f"
         .word (0xE1880090 | (regToInt_\rd))
+    .elseif \psr == "cpsr_c"
+        .word (0xE1810090 | (regToInt_\rd))
     .elseif (\psr == "spsr") || (\psr == "spsr_fc")
         .word (0xE1C90090 | (regToInt_\rd))
     .elseif \psr == "spsr_f"
         .word (0xE1C80090 | (regToInt_\rd))
+    .elseif \psr == "spsr_c"
+        .word (0xE1C10090 | (regToInt_\rd))
     .else
         .error "Invalid psr specified"
     .endif
