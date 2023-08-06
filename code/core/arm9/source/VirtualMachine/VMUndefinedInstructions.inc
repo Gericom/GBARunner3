@@ -45,3 +45,11 @@
         .error "Invalid psr specified"
     .endif
 .endm
+
+.macro vmSUBS rd, rn, imm
+    .if (\rd != "pc") && (\rd != "r15")
+        .error "Rd must be PC"
+    .else
+        .word (0xEE640000 | (regToInt_\rn) | (\imm << 5))
+    .endif
+.endm

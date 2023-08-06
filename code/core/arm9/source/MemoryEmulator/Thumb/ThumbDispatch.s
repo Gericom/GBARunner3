@@ -7,7 +7,7 @@
 
 thumb_dispatch_base:
 
-#define DTCM(x) #(thumb_dispatch_base - 0xB00 + x)
+#define DTCM(x) #(thumb_dispatch_base - 0x600 + x)
 
 arm_func memu_thumbDispatch
     str lr, DTCM(memu_inst_addr)

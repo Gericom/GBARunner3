@@ -6,6 +6,10 @@
 main:
     // disable irqs
     msr cpsr, #0x9F
+    mov r0, #0x04000000
+    mov r1, #0
+    str r1, [r0, #0x208]
+    str r1, [r0, #0x210]
     
     // configure cp15
     // disable itcm, dtcm, caches and mpu
@@ -70,7 +74,7 @@ main:
     mcr p15, 0, r0, c1, c0
     
     // switch to user mode
-    msr cpsr, #0x90
+    msr cpsr, #0x10
 
     ldr sp,= 0xFFFFF000 // in dtcm
     b testMain

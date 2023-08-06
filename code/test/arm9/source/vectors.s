@@ -11,9 +11,8 @@ vec_prefetchAbort:
     b .
 vec_dataAbort:
     mrs r13, spsr
-    // r13 = ???? ?000 0000 0000 0000 0000 10T1 0000
-    // assume Q flag is 0
-    mov pc, r13, lsl #4 // arm -> 0x900, thumb -> 0xB00
+    // r13 = ???? ?000 0000 0000 0000 0000 00T1 0000
+    mov pc, r13, lsl #5 // arm -> 0x200, thumb -> 0x600
 vec_irq:
     b .
 vec_fiq:

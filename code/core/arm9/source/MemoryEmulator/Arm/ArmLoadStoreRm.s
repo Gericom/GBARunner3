@@ -16,6 +16,7 @@
             nop
         .endif
         nop
+        nop
         1:
         .if \u == 0
             sub r9, r12, r0, lsl #1 // u=0 -> negate offset

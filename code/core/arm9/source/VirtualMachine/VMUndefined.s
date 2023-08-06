@@ -6,7 +6,7 @@
 
 vm_undefined_base:
 
-#define DTCM(x) (vm_undefined_base - 0x690 + (x))
+#define DTCM(x) (vm_undefined_base - 0x80 + (x))
 
 arm_func vm_undefined
     str lr, DTCM(vm_undefinedInstructionAddr)
@@ -60,6 +60,14 @@ arm_func vm_undefinedThumb
     @ .elseif (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\f == 0) && (\g == 1) && (\h == 1)
     @     // BX
     @     .short vm_armUndefinedBx
+    .elseif (\prefix == 0b111) && (\d == 0) && (\e == 0) && (\y == 0)
+        // ALU pc
+        .if (\f == 1) && (\g == 1)
+            // ALUs pc, rn, #imm
+            .short vm_armUndefinedAluSPCImmRnTable
+        .else
+            .short 0
+        .endif
     .else
         .short 0
     .endif

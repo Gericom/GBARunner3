@@ -6,7 +6,7 @@
 
 vm_mode_base:
 
-#define DTCM(x) (vm_mode_base - 0x320 + (x))
+#define DTCM(x) (vm_mode_base - 0x680 + (x))
 
 vm_regs_1 = vm_regs_fiq
 vm_regs_2 = vm_regs_irq
@@ -16,7 +16,7 @@ vm_regs_11 = vm_regs_und
 vm_regs_15 = vm_regs_sys
 
 arm_func vm_modeSwitchOldEqualsNew
-    bx lr
+    bx r13
 
 // note: ldm sp, {sp,lr}^ is a broken instruction according to arm946e-s errata
 
@@ -64,7 +64,7 @@ arm_func vm_modeSwitchOldEqualsNew
                 nop
             .endif
         .elseif ((\old == 0xF) && (\new == 2)) || ((\old == 2) && (\new == 3)) || ((\old == 3) && (\new == 7)) || ((\old == 7) && (\new == 11))
-            mov lr, #(vm_regs_\old + 3)
+            mov lr, #(vm_regs_\new + 3)
             stmdb lr, {sp,lr}^
             nop
             ldmia lr, {sp,lr}^

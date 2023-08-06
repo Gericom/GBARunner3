@@ -22,35 +22,66 @@
 vm_updateCpsr:
     mov r9, r13
     tst lr, #0x10000
-    beq 1f // skip updating control part of cpsr
+    beq vm_cpsrNoControlChange // skip updating control part of cpsr
     ldr r10, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
-    and r10, r10, #0xF
+    and r13, r10, #0xF
     and r8, r8, #0xDF // note that the thumb bit is set to 0
     orr r8, r8, #0x10
     ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_undefinedRegTmp)]
     strb r8, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
-    // todo: special processing when irqs were enabled
     and r11, r8, #0xF
     add r12, r12, r11, lsl #5
-    add r12, r12, r10, lsl #1
+    add r12, r12, r13, lsl #1
     ldrh r12, [r12]
     tst lr, #0x80000
-    adr r13, 2f
+    adreq r13, vm_finishCpsrOnlyControl
+    adrne r13, vm_finishCpsrControlAndFlags
     bx r12
-1:
+
+vm_cpsrNoControlChange:
     tst lr, #0x80000
-2:
-    bne vm_updateCpsrWithFlags
+    bne vm_finishCpsrWithFlags
+vm_cpsrFinish:
     msr cpsr_c, #0xDB
     movs pc, lr
 
-vm_updateCpsrWithFlags:
+vm_finishCpsrWithFlags:
     ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     and r8, r8, #0xF0000000
     ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
     orr r10, r10, r8
     msr spsr, r10
     movs pc, lr
+    
+vm_finishCpsrOnlyControl:
+    bic r11, r10, r8
+    tst r11, #0x80
+    beq vm_cpsrFinish
+    // irqs were enabled
+    ldr r11, [r9, #(vm_emulatedIfImeIe - vm_undefinedRegTmp)]
+    tst r11, r11, lsl #17 // IF & IE
+    bls vm_cpsrFinish // no irqs to handle
+    ldr r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+    msr spsr, r10
+    add lr, lr, #4 // because irq return is subs pc, lr, #4
+    b vm_irq
+
+vm_finishCpsrControlAndFlags:
+    bic r11, r10, r8
+    tst r11, #0x80
+    beq vm_finishCpsrWithFlags
+    // irqs were enabled
+    ldr r11, [r9, #(vm_emulatedIfImeIe - vm_undefinedRegTmp)]
+    tst r11, r11, lsl #17 // IF & IE
+    bls vm_finishCpsrWithFlags // no irqs to handle
+    ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    and r8, r8, #0xF0000000
+    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+    orr r10, r10, r8
+    msr spsr, r10
+    add lr, lr, #4 // because irq return is subs pc, lr, #4
+    b vm_irq
 
 generate vm_armUndefinedMsrRegCpsrRm, 16
 

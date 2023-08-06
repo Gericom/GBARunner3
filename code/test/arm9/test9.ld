@@ -190,16 +190,16 @@ SECTIONS
 		__itcm_start = ABSOLUTE(.);
 		KEEP (vectors.o(.itcm))
 		. = 0x80;
-		KEEP (VMIrq.o(.itcm))
-		. = 0x320;
-		KEEP (VMMode.o(.itcm))
-		. = 0x690;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0x900;
+		. = 0x200;
 		KEEP (ArmDispatch.o(.itcm))
-		. = 0xB00;
+		. = 0x280;
+		KEEP (VMIrq.o(.itcm))
+		. = 0x600;
 		KEEP (ThumbDispatch.o(.itcm))
-		. = 0xB40;
+		. = 0x680;
+		KEEP (VMMode.o(.itcm))
+		. = 0xA00;
 		KEEP (VMSwi.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)

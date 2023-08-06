@@ -14,5 +14,7 @@ u32 VirtualMachine::Run(const context_t* context)
     vm_spsr_svc = 0;
     vm_spsr_abt = 0;
     vm_spsr_und = 0;
+    vm_hwIrqMask = 0;
+    vm_emulatedIfImeIe = 0;
     return vm_run(_startAddress, context, &_storeContext);
 }

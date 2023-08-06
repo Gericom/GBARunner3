@@ -6,7 +6,7 @@
 
 vm_irq_base:
 
-#define DTCM(x) (vm_irq_base - 0x80 + (x))
+#define DTCM(x) (vm_irq_base - 0x280 + (x))
 
 arm_func vm_irq
     str r8, DTCM(vm_irqSavedR8)
@@ -52,16 +52,17 @@ vm_emu_irq_continue:
     str lr, DTCM(vm_cpsr)
 
     msr spsr, #0x10 // user mode, irqs stay on, arm mode
-    adr lr, DTCM(vm_regs_irq)
+    mov lr, #(vm_regs_irq + 3)
     add pc, pc, r13, lsl #5
     nop
 old_mode_usr:
     stmdb lr, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
     nop
-    nop
+1:
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
     nop
     nop
 old_mode_fiq:
@@ -71,13 +72,13 @@ old_mode_fiq:
     ldmia r13, {r8,r9,r10,r11,r12}^
     nop
     ldmia lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
+    b 1b
     nop
 old_mode_irq:
     ldmib lr, {lr}^
-    ldr pc, DTCM(vm_irqVector)
     nop
-    nop
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
     nop
     nop
     nop
@@ -87,9 +88,9 @@ old_mode_svc:
     stmia lr, {r13,lr}^
     nop
     ldmdb lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
     nop
-    nop
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
     nop
 old_mode_4:
     nop
@@ -123,9 +124,9 @@ old_mode_abt:
     stmia r13, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
     nop
-    nop
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
     nop
 old_mode_8:
     nop
@@ -159,9 +160,9 @@ old_mode_und:
     stmia r13, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
     nop
-    nop
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
     nop
 old_mode_12:
     nop
@@ -194,7 +195,9 @@ old_mode_sys:
     stmdb lr, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
-    ldr pc, DTCM(vm_irqVector)
+    nop
+    ldr lr, DTCM(vm_irqVector)
+    movs pc, lr
 
 vm_emuIrq:
     tst r8, #(1 << 16) // ARM7 IRQ

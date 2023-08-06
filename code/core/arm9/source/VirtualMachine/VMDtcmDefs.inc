@@ -22,6 +22,7 @@ vm_toIrqSwitchTableAddr:
     .word 0
 vm_hwIEAddr:
     .word 0  // Address of DS REG_IE; 0x04000210
+.global vm_hwIrqMask
 vm_hwIrqMask:
     .word 0  // DS irq mask indicating which bits of IF should be passed through to the VM
              // This is related to the underlying sources being enabled or not.
@@ -29,6 +30,7 @@ vm_hwIrqMask:
              // It is very well possible that the DS REG_DISPSTAT has the VBLANK irq enabled
              // while the emulated REG_DISPSTAT has not. In that case the VBLANK bit in the
              // emulated REG_IF should not become set.
+.global vm_emulatedIfImeIe
 vm_emulatedIfImeIe:
     .word 0 // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IF, M = IME, F = IE)
 
