@@ -24,9 +24,11 @@ export TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source \
 				../common \
+				source/Emulator \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \
-				source/MemoryEmulator/Thumb
+				source/MemoryEmulator/Thumb \
+				source/VirtualMachine
 DATA		:=	data
 INCLUDES	:=	include source ../common
 

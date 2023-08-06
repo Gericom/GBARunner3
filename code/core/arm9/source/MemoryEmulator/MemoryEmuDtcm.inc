@@ -1,6 +1,6 @@
 #pragma once
 
-#define MEMU_DTCM_BASE  0xFFFFFF00
+#define MEMU_DTCM_BASE  0xFFFFFF80
 
 .struct MEMU_DTCM_BASE
 

@@ -23,12 +23,13 @@
         .endif
     .elseif (\type == 0b10) && (\i == 0)
         // ldm/stm
-        @ .word memu_armLdmStmRmTable
-        @ .word memu_armLdmStmRnTable_\p\u\w
-        @ .word memu_armLdmStmRdTable
-        .word 0
-        .word 0
-        .word 0
+        .word memu_armLdmStmRmTable_\p\u
+        .word memu_armLdmStmRnTable_\w
+        .if \l == 1
+            .word memu_armLdmRdTable
+        .else
+            .word memu_armStmRdTable
+        .endif
     .elseif (\type == 0b10) && (\i == 1)
         // ldrh/strh
         .if \b == 0

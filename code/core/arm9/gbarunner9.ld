@@ -156,9 +156,13 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
-		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o) .dtcm)
+		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o VMUndefined.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x3F00;
+		. = 0x3640;
+		KEEP (VMUndefined.o(.dtcm))
+		. = 0x3E80;
+		KEEP (VMDtcm.o(.dtcm))
+		. = 0x3F80;
 		KEEP (MemoryEmuDtcmPool.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
@@ -168,11 +172,19 @@ SECTIONS
 	{
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
-		*(.itcm.vectors)
-		. = 0x900;
-		KEEP (*ArmDispatch.o(.itcm))
-		. = 0xB00;
-		KEEP (*ThumbDispatch.o(.itcm))
+		KEEP (vectors.o(.itcm))
+		. = 0x80;
+		KEEP (VMUndefined.o(.itcm))
+		. = 0x200;
+		KEEP (ArmDispatch.o(.itcm))
+		. = 0x280;
+		KEEP (VMIrq.o(.itcm))
+		. = 0x600;
+		KEEP (ThumbDispatch.o(.itcm))
+		. = 0x680;
+		KEEP (VMMode.o(.itcm))
+		. = 0xA00;
+		KEEP (VMSwi.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);

@@ -37,7 +37,7 @@ DATA		:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-marm -mthumb-interwork
+ARCH	:=	-marm -mthumb-interwork -DARM9 -DLIBTWL_ARM9 -DGBAR3_TEST
 
 CFLAGS	:=	-g -Wall -O2\
  			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
@@ -45,7 +45,7 @@ CFLAGS	:=	-g -Wall -O2\
 			-ffast-math \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DARM9 -DLIBTWL_ARM9
+CFLAGS	+=	$(INCLUDE)
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-threadsafe-statics
 
 ASFLAGS	:=	-g $(ARCH) $(INCLUDE) -march=armv5te -mtune=arm946e-s
@@ -83,7 +83,7 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
-SFILES += MemoryEmuDtcmPool.s
+SFILES += MemoryEmuDtcmPool.s DtcmStack.s
 CPPFILES += PopCountTable.cpp
  
 #---------------------------------------------------------------------------------

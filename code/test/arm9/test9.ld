@@ -174,11 +174,11 @@ SECTIONS
 		KEEP (ThumbDtcm.o(.dtcm))
 		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o VMUndefined.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x3600;
+		. = 0x3640;
 		KEEP (VMUndefined.o(.dtcm))
-		. = 0x3E00;
+		. = 0x3E80;
 		KEEP (VMDtcm.o(.dtcm))
-		. = 0x3F00;
+		. = 0x3F80;
 		KEEP (MemoryEmuDtcmPool.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);

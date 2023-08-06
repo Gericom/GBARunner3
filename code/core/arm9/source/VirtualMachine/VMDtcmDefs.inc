@@ -1,9 +1,9 @@
 #pragma once
 
 .global vm_armUndefinedDispatchTable
-.set vm_armUndefinedDispatchTable, 0xFFFFF600
+.set vm_armUndefinedDispatchTable, 0xFFFFF640
 
-#define VM_DTCM_BASE 0xFFFFFE00
+#define VM_DTCM_BASE 0xFFFFFE80
 
 .struct VM_DTCM_BASE
 vm_irqSavedR8:
