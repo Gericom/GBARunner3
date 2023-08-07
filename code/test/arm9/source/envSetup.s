@@ -76,5 +76,5 @@ main:
     // switch to user mode
     msr cpsr, #0x10
 
-    ldr sp,= dtcmStackEnd
+    ldr sp,= ewramStackEnd
     b testMain

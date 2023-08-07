@@ -6,18 +6,19 @@
 #include "../MemoryEmuDtcm.inc"
 
 arm_func memu_armStmRd
+    mov r9, r8
+    add r8, r8, r10
+
     rsb r10, lr, #0
     and r10, r10, lr
     cmp r10, r12
 
     biceq lr, lr, r10
     bic r13, r13, lr, lsl #15
+    orr r13, r13, #0x80000000
 
-    mov r9, r8
-    add r8, r8, r10
+    subne r8, r8, #4
     bleq memu_store32
-
-    sub r8, r8, #4
 
     .macro memu_armStmRd_storeLoReg reg
         tst r13, #(1 << (\reg + 15))
@@ -32,19 +33,19 @@ arm_func memu_armStmRd
         tst r13, #(1 << (\reg + 15))
         stmeqdb r13, {r\reg}^
         bne 1f
-        ldreq r9, [r13, #-4]
-        addeq r8, r8, #4
-        bleq memu_store32
+        ldr r9, [r13, #-4]
+        add r8, r8, #4
+        bl memu_store32
     1:
     .endm
 
-    generate memu_armStmRd_storeHiReg 16, 8
+    generate memu_armStmRd_storeHiReg 15, 8
 
     tst r13, #(1 << 30)
     bne 1f
     ldr r9,= memu_inst_addr
     ldr r9, [r9]
-    add r9, r9, #12
+    add r9, r9, #4
     add r8, r8, #4
     bl memu_store32
 1:
@@ -52,6 +53,7 @@ arm_func memu_armStmRd
 
 arm_func memu_armLdmRd
     bic r13, r13, lr, lsl #15
+    orr r13, r13, #0x80000000
     add r8, r8, r10
 
     .macro memu_armLdmRd_storeLoReg reg

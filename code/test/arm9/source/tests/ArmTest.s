@@ -17,6 +17,7 @@ arm_func test_runArmInstruction
     stmia r12, {r0-r14}
     ldmia r1, {r0-r14}
     msr cpsr_f, #0
+.global test_runArmInstruction_instruction
 test_runArmInstruction_instruction:
     nop
     str r0, new_context

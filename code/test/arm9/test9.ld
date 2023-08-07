@@ -14,9 +14,9 @@ __dtcm_top	=	ORIGIN(dtcm) + LENGTH(dtcm);
 __irq_flags	=	__dtcm_top - 0x08;
 __irq_vector	=	__dtcm_top - 0x04;
 
-__sp_svc	=	__dtcm_top - 0x1000;
-__sp_irq	=	__dtcm_top - 0x1100;
-__sp_usr	=	__dtcm_top - 0x1200;
+__sp_svc	=	ewramStackEnd;
+__sp_irq	=	ewramStackEnd - 0x80;
+__sp_usr	=	ewramStackEnd - 0x100;
 
 PHDRS {
 	main    PT_LOAD FLAGS(7);

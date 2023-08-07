@@ -5,22 +5,21 @@
 #include "../MemoryEmuDtcm.inc"
     
 .macro memu_armLdmStmRm_pu p, u
-arm_func memu_armLdmStmRm_\p\u
-    mov r9, lr, lsl #16
-    
+arm_func memu_armLdmStmRm_\p\u    
     //count nr bits
-    ldr r11,= gPopCountTable
-    and r12, r9, #0xFF0000
-    ldrb r12, [r11, r12, lsr #16]
-    ldrb r11, [r11, r9, lsr #24]
-    add r11, r11, r12
+    ldr r9,= gPopCountTable
+    mov r10, lr, lsl #16
+    and r12, r10, #0xFF0000
+    ldrb r12, [r9, r12, lsr #16]
+    ldrb r9, [r9, r10, lsr #24]
+    add r12, r9, r12
 
     mov r10, #0
     .if \u == 0
-        sub r10, r10, r11, lsl #2
+        sub r10, r10, r12, lsl #2
         mov r9, r10 // for writeback
     .else
-        mov r9, r11, lsl #2
+        mov r9, r12, lsl #2
     .endif
 
     .if \p == \u

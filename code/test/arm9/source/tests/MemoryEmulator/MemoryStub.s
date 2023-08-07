@@ -1,5 +1,4 @@
-.section ".itcm", "ax"
-
+.text
 #include "AsmMacros.inc"
 
 .global memu_stubStoredAddress8
@@ -26,16 +25,24 @@ arm_func memu_store16
     str r9, memu_stubStoredValue16
     bx lr
 
-.global memu_stubStoredAddress32
-memu_stubStoredAddress32:
-    .word 0
-.global memu_stubStoredValue32
-memu_stubStoredValue32:
+.global memu_stubStoredAddresses32
+memu_stubStoredAddresses32:
+    .space (4 * 16)
+.global memu_stubStoredValues32
+memu_stubStoredValues32:
+    .space (4 * 16)
+.global memu_stubStore32Count
+memu_stubStore32Count:
     .word 0
 
 arm_func memu_store32
-    str r8, memu_stubStoredAddress32
-    str r9, memu_stubStoredValue32
+    adr r10, memu_stubStoredAddresses32
+    ldr r11, memu_stubStore32Count
+    str r8, [r10, r11, lsl #2]
+    adr r10, memu_stubStoredValues32
+    str r9, [r10, r11, lsl #2]
+    add r11, r11, #1
+    str r11, memu_stubStore32Count
     bx lr
 
 .global memu_stubLoadedAddress8
@@ -62,14 +69,22 @@ arm_func memu_load16
     ldr r9, memu_stubLoadValue16
     bx lr
 
-.global memu_stubLoadedAddress32
-memu_stubLoadedAddress32:
-    .word 0
-.global memu_stubLoadValue32
-memu_stubLoadValue32:
+.global memu_stubLoadedAddresses32
+memu_stubLoadedAddresses32:
+    .space (4 * 16)
+.global memu_stubLoadValues32
+memu_stubLoadValues32:
+    .space (4 * 16)
+.global memu_stubLoad32Count
+memu_stubLoad32Count:
     .word 0
 
 arm_func memu_load32
-    str r8, memu_stubLoadedAddress32
-    ldr r9, memu_stubLoadValue32
+    adr r10, memu_stubLoadedAddresses32
+    ldr r11, memu_stubLoad32Count
+    str r8, [r10, r11, lsl #2]
+    adr r10, memu_stubLoadValues32
+    ldr r9, [r10, r11, lsl #2]
+    add r11, r11, #1
+    str r11, memu_stubLoad32Count
     bx lr

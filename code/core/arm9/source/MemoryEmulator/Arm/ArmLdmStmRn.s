@@ -30,7 +30,6 @@
         .endif
 
         mov r12, #(1 << \rn)
-
         bx r11
 .endm
 

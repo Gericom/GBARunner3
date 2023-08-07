@@ -10,7 +10,7 @@ arm_dispatch_base:
 
 arm_func memu_armDispatch
     str lr, DTCM(memu_inst_addr)
-    msr cpsr_c, #0xD1 // switch to fiq mode
+    msr cpsr_c, #0x91 // switch to fiq mode
     ldr r11, DTCM(memu_inst_addr)
     // interlock
     ldr lr, [r11, #-8] // lr = instruction
