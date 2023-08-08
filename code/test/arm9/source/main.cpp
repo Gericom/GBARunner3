@@ -17,26 +17,31 @@ static void initLogger()
     {
         outputStream = std::make_unique<NitroEmulatorOutputStream>();
     }
-    else if (Environment::SupportsNocashPrint())
+    else //if (Environment::SupportsNocashPrint())
     { 
         outputStream = std::make_unique<NocashOutputStream>();
     }
-    else
-    {
-        gLogger = new NullLogger();
-        return;
-    }
+    // else
+    // {
+    //     gLogger = new NullLogger();
+    //     return;
+    // }
     gLogger = new PlainLogger(LogLevel::All, std::move(outputStream));
 }
 
-extern "C" void testMain()
+extern "C" void testMain(int argc, char* argv[])
 {
     Environment::Initialize();
 
     initLogger();
     LOG_DEBUG("ARM9 Start\n");
-    testing::InitGoogleMock();
+    testing::InitGoogleMock(&argc, argv);
     RUN_ALL_TESTS();
+
+    // send semihosting exit command
+    u32 agbMem = *(u32*)0x027FFF7C;
+    *(vu16*)(agbMem + 0x10002) = 0xFF; // exit command
+    *(vu16*)(agbMem + 0x10000) = 0x55;
 
     while (true);
 }

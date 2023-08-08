@@ -8,6 +8,7 @@
 arm_func memu_armStmRd
     mov r9, r8
     add r8, r8, r10
+    bic r8, r8, #3
 
     rsb r10, lr, #0
     and r10, r10, lr
@@ -55,6 +56,7 @@ arm_func memu_armLdmRd
     bic r13, r13, lr, lsl #15
     orr r13, r13, #0x80000000
     add r8, r8, r10
+    bic r8, r8, #3
 
     .macro memu_armLdmRd_storeLoReg reg
         tst r13, #(1 << (\reg + 15))

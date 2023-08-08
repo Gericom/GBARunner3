@@ -4,6 +4,8 @@
 .global main
 .type main, %function
 main:
+    mov r6, r0
+    mov r7, r1
     // disable irqs
     msr cpsr, #0x9F
     mov r0, #0x04000000
@@ -77,4 +79,6 @@ main:
     msr cpsr, #0x10
 
     ldr sp,= ewramStackEnd
+    mov r0, r6
+    mov r1, r7
     b testMain
