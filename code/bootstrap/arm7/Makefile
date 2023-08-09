@@ -1,61 +1,42 @@
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
-
 ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-%.size.o: %.size.cpp
-	$(SILENTMSG) $(notdir $<)
-	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.size.d $(CXXFLAGS) -mthumb -Os -c $< -o $@ $(ERROR_FILTER)
-
 include $(DEVKITARM)/ds_rules
 
 #---------------------------------------------------------------------------------
-# TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
 # SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
-# SPECS is the directory containing the important build and link files
+# INCLUDES is a list of directories containing extra header files
+# DATA is a list of directories containing binary files
+# all directories are relative to this makefile
 #---------------------------------------------------------------------------------
-export TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source \
-				../common \
-				source/Core \
-				source/Emulator \
-				source/Fat \
-				source/MemoryEmulator \
-				source/MemoryEmulator/Arm \
-				source/MemoryEmulator/Thumb \
-				source/VirtualMachine
-DATA		:=	data
-INCLUDES	:=	include source ../common
-
-
+SOURCES		:=	source  
+INCLUDES	:=	include build
+DATA		:=
+ 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-marm -mthumb-interwork -march=armv5te -mtune=arm946e-s -DLIBTWL_ARM9 -DARM9
+ARCH	:=	-mthumb-interwork
 
 CFLAGS	:=	-g -Wall -O2\
-			 -fomit-frame-pointer\
-			-ffunction-sections -fdata-sections\
-			-ffast-math \
-			-Werror=return-type \
-			$(ARCH)
+		-mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer\
+		-ffast-math \
+		$(ARCH)
 
-CFLAGS	+=	$(INCLUDE)
+CFLAGS	+=	$(INCLUDE) -DARM7
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-rtti
 
-CXXFLAGS	:= $(CFLAGS) -std=gnu++23 -Wno-volatile -fno-rtti -fno-exceptions -fno-threadsafe-statics\
-				-Wsuggest-override -Werror=suggest-override
 
-ASFLAGS	:=	-g $(ARCH) $(INCLUDE)
-LDFLAGS	=	-T ../gbarunner9.ld -g $(ARCH) -Wl,-Map,$(notdir $*.map),--use-blx,--no-warn-rwx-segments,--gc-sections -ffunction-sections -fdata-sections
+ASFLAGS	:=	-g $(ARCH)
+LDFLAGS	=	-specs=../gbarunner7.specs -g $(ARCH) -Wl,--nmagic -Wl,-Map,$(notdir $*).map
 
-LIBS	:= -lnds9
+LIBS	:=	-ldswifi7 -lmm7 -lnds7
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -71,17 +52,24 @@ LIBDIRS	:=	$(LIBNDS)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
  
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
+export ARM7ELF	:=	$(CURDIR)/$(TARGET).elf
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
+ 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+ 
+export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
+			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+ 
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+			-I$(CURDIR)/$(BUILD)
+ 
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -97,20 +85,9 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
-			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
-
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
-
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) clean
  
 #---------------------------------------------------------------------------------
-all: $(BUILD)
-
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
@@ -118,7 +95,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
+	@rm -fr $(BUILD) *.elf
  
  
 #---------------------------------------------------------------------------------
@@ -129,18 +106,20 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT).bin	:	$(OUTPUT).elf
-$(OUTPUT).elf	:	$(OFILES)
+$(ARM7ELF)	:	$(OFILES)
+	@echo linking $(notdir $@)
+	@$(LD)  $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 
 
 #---------------------------------------------------------------------------------
-%.bin: %.elf
-	@$(OBJCOPY) -O binary $< $@
-	@echo built ... $(notdir $@)
- 
+# you need a rule like this for each extension you use as binary data 
+#---------------------------------------------------------------------------------
+%.bin.o	:	%.bin
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
 
 -include $(DEPENDS)
-
  
 #---------------------------------------------------------------------------------------
 endif

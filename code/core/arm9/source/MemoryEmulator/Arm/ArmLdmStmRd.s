@@ -80,7 +80,7 @@ arm_func memu_armLdmRd
     1:
     .endm
 
-    generate memu_armLdmRd_storeHiReg 16, 8
+    generate memu_armLdmRd_storeHiReg 15, 8
 
     tst r13, #(1 << 30)
     bne 1f

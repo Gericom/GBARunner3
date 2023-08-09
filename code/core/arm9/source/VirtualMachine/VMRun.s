@@ -23,6 +23,17 @@ arm_func vm_run
     mov r12, r12, lsr #2
 	orr r12, r12, #0xEA000000
 	str r12, [r3, #0x18]
+    mrs r2, cpsr
+    tst r2, #0xF
+    beq from_usr
+from_privileged:
+    msr cpsr_c, #0xD3 // svc mode
+    mov lr, r0
+    ldmia r1, {r0-sp}^
+    msr spsr, #0x10 // usr mode, irqs on
+    movs pc, lr // boot the vm by jumping to the start address in user mode
+
+from_usr:
     mov lr, r0
     ldmia r1, {r0-sp}
     blx lr
