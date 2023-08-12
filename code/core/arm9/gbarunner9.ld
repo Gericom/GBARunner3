@@ -10,6 +10,7 @@ ENTRY(_start)
 MEMORY
 {
 	itcm	: ORIGIN = 0x00000000, LENGTH = 32K
+	ewram   : ORIGIN = 0x02040000, LENGTH = 4M - 256K
 	dtcm	: ORIGIN = 0xFFFFC000, LENGTH = 16K
 	vram	: ORIGIN = 0x06800000, LENGTH = 256K
 }
@@ -190,6 +191,17 @@ SECTIONS
 		. = ALIGN(4);
 		__itcm_end = ABSOLUTE(.);
 	} >itcm AT>vram :itcm = 0xff
+
+	.ewram.bss (NOLOAD):
+	{
+		__ewram_bss_start = ABSOLUTE(.);
+		__ewram_bss_start__ = ABSOLUTE(.);
+		*(.ewram.bss*)
+		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+	} >ewram :NONE
+
+	__ewram_bss_end = . ;
+	__ewram_bss_end__ = . ;
 
 	.bss __bss_vma (NOLOAD):
 	{

@@ -50,6 +50,9 @@ arm_func memu_load8Io
     ldrh r11, [r11, r9]
     cmp r9, #0x20C
         bxlo r11
+    cmp r9, #0x300
+        moveq r9, #0
+        bxeq lr
     b memu_load8Undefined
 
 arm_func memu_load8Pltt

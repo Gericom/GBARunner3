@@ -1,4 +1,5 @@
 #include "common.h"
+#include <string.h>
 #include "VMDtcm.h"
 #include "VirtualMachine.h"
 
@@ -14,6 +15,12 @@ u32 VirtualMachine::Run(const context_t* context)
     vm_spsr_svc = 0;
     vm_spsr_abt = 0;
     vm_spsr_und = 0;
+    memset(vm_regs_fiq, 0, sizeof(vm_regs_fiq));
+    memset(vm_regs_sys, 0, sizeof(vm_regs_sys));
+    memset(vm_regs_irq, 0, sizeof(vm_regs_irq));
+    memset(vm_regs_svc, 0, sizeof(vm_regs_svc));
+    memset(vm_regs_abt, 0, sizeof(vm_regs_abt));
+    memset(vm_regs_und, 0, sizeof(vm_regs_und));
     vm_hwIrqMask = 0;
     vm_emulatedIfImeIe = 0;
     return vm_run(_startAddress, context, &_storeContext);

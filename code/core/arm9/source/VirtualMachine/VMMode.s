@@ -76,10 +76,20 @@ arm_func vm_modeSwitchOldEqualsNew
             ldmdb lr, {sp,lr}^
             nop
         .else
-            mov lr, #(vm_regs_\old + 3)
+            .if (\old == 0xF)
+                mov lr, #(vm_regs_sys + (5 * 4) + 3)
+            .else
+                mov lr, #(vm_regs_\old + 3)
+            .endif
             stmia lr, {sp,lr}^
             nop
-            add lr, lr, #(vm_regs_\new - vm_regs_\old)
+            .if (\old == 0xF)
+                add lr, lr, #(vm_regs_\new - (vm_regs_sys + (5 * 4)))
+            .elseif (\new == 0xF)
+                add lr, lr, #((vm_regs_sys + (5 * 4)) - vm_regs_\old)
+            .else
+                add lr, lr, #(vm_regs_\new - vm_regs_\old)
+            .endif
             ldmia lr, {sp,lr}^
             nop
         .endif

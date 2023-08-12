@@ -4,8 +4,10 @@
 #include "AsmMacros.inc"
 
 .macro memu_ioRegLoad32Pointer index
-    .if (\index << 1) == 0x00
+    .if (\index << 2) == 0x00
         .short emu_ioFallbackLoad32
+    .elseif (\index << 2) == 0x200
+        .short emu_regIeIfLoad32 // REG_IE and REG_IF
     .else
         .short emu_ioFallbackLoad32
     .endif

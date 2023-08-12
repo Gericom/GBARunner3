@@ -439,7 +439,7 @@ static FATFS* FatFs[FF_VOLUMES];	/* Pointer to the filesystem objects (logical d
 static WORD Fsid;					/* Filesystem mount ID */
 
 #if FF_FS_RPATH != 0
-static BYTE CurrVol;				/* Current drive */
+static /*BYTE*/WORD CurrVol;				/* Current drive */
 #endif
 
 #if FF_FS_LOCK != 0

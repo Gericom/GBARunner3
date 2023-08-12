@@ -13,9 +13,9 @@ export TOPDIR	:=	$(CURDIR)
 NITRO_FILES	:=
 
 # These set the information text in the nds file
-#GAME_TITLE     := My Wonderful Homebrew
-#GAME_SUBTITLE1 := built with devkitARM
-#GAME_SUBTITLE2 := http://devitpro.org
+GAME_TITLE     := GBARunner 3
+GAME_SUBTITLE1 := Tests
+GAME_SUBTITLE2 := By Gericom
 
 include $(DEVKITARM)/ds_rules
 

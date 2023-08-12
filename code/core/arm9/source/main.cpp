@@ -1,12 +1,17 @@
 #include "common.h"
+#include <string.h>
+#include "cp15.h"
 #include "Fat/ff.h"
 #include "VirtualMachine/VirtualMachine.h"
+#include "Emulator/IoRegisters.h"
 #include "Core/Environment.h"
 
+[[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
+[[gnu::section(".ewram.bss")]]
 static FIL sFile;
 
-u32 gGbaBios[16 * 1024 / 4];
+u32 gGbaBios[16 * 1024 / 4] alignas(32);
 
 static bool mountAgbSemihosting()
 {
@@ -125,6 +130,9 @@ extern "C" void gbaRunnerMain(void)
     *(vu32*)0x05000000 = 0x1F;
     *(vu32*)0x0400006C = 0;
 
+    *(vu8*)0x04000244 = 0x81; // VRAM E -> BG
+    *(vu8*)0x04000245 = 0x82; // VRAM F -> OBJ
+    *(vu8*)0x04000246 = 0x8A; // VRAM G -> OBJ
     *(vu8*)0x04000247 = 0; // iwram to arm9
     Environment::Initialize();
     if (Environment::SupportsAgbSemihosting())
@@ -132,6 +140,14 @@ extern "C" void gbaRunnerMain(void)
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
+	while (((*(vu16*)0x04000130) & 1) == 1);
+	memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+	dc_flushRange(gGbaBios, sizeof(gGbaBios));
+	ic_invalidateAll();
+	*(vu32*)0x04000210 = 1; // REG_IE = 1
+    *(vu32*)0x04000214 = ~0u; // ack REG_IF
+    *(vu32*)0x04000208 = 1; // REG_IME = 1
+	*(vu16*)0x04000004 = 1 << 3; // enable vblank interrupt requests
     VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[8 >> 2], &gGbaBios[0x18 >> 2] };
     context_t runContext { };
     virtualMachine.Run(&runContext);

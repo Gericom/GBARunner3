@@ -30,6 +30,9 @@ SOURCES		:=	source \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \
 				source/MemoryEmulator/Thumb \
+				source/Peripherals \
+				source/Peripherals/Graphics \
+				source/Peripherals/Interrupts \
 				source/VirtualMachine
 DATA		:=	data
 INCLUDES	:=	include source ../common

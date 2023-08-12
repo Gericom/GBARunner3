@@ -61,7 +61,15 @@ arm_func memu_store8IoHi
         biclo r12, r12, #0xFF00
         orrlo r9, r12, r9, lsl #8
         bxlo r11
-    // todo: haltcnt
+    mov r11, #0x300
+    orr r11, r11, #1
+    cmp r10, r11
+        beq haltcnt
+    bx lr
+
+haltcnt:
+    cmp r9, #0
+        mcreq p15, 0, r9, c7, c0, 4
     bx lr
 
 arm_func memu_store8Pltt

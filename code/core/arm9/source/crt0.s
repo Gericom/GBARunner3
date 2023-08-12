@@ -40,16 +40,16 @@ _start:
     ldr r0,= ((1 | (17 << 1)) + 0x06800000)
     mcr	p15, 0, r0, c6, c5, 0
     // mpu region 6: IWRAM (16 MB)
-    ldr r0,= (1 | (23 << 1) + 0x30000000)
+    ldr r0,= (1 | (23 << 1) + 0x03000000)
     mcr	p15, 0, r0, c6, c6, 0
     // mpu region 7: GBA EWRAM (256 KB)
-    ldr r0,= (1 | (17 << 1) | 0x06800000)
+    ldr r0,= (1 | (17 << 1) | 0x02000000)
     mcr	p15, 0, r0, c6, c7, 0
     // data permissions
-    ldr r0,= 0x33100121
+    ldr r0,= 0x33200121
 	mcr p15, 0, r0, c5, c0, 2
     // code permissions
-	ldr r0,= 0x33100221
+	ldr r0,= 0x33300221
 	mcr p15, 0, r0, c5, c0, 3
     // dcache
 	ldr r0,= 0b00100010
@@ -62,7 +62,8 @@ _start:
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu
-    ldr r0,= 0x0005707D
+    // and use low vectors
+    ldr r0,= 0x0005507D
     mcr p15, 0, r0, c1, c0
 
     // copy itcm in place
@@ -102,6 +103,24 @@ dtcm_done:
     cmp r0, r1
     bne 1b
 bss_done:
+
+    // clear ewram bss
+    ldr r0,= __ewram_bss_start
+    ldr r1,= __ewram_bss_end
+    cmp r0, r1
+    beq ewram_bss_done
+    mov r2, #0
+1:
+    str r2, [r0], #4
+    cmp r0, r1
+    bne 1b
+ewram_bss_done:
+    // bkpt #0
+
+    // disable interrupts
+    mrs r0, cpsr
+    orr r0, r0, #0x80
+    msr cpsr_c, r0
 
     ldr sp,= dtcmStackEnd
     b gbaRunnerMain

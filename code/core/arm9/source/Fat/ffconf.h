@@ -163,7 +163,7 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_VOLUMES		4
+#define FF_VOLUMES		3
 /* Number of volumes (logical drives) to be used. (1-10) */
 
 

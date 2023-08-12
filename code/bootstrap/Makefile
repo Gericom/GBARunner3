@@ -13,18 +13,23 @@ export TOPDIR	:=	$(CURDIR)
 NITRO_FILES	:=
 
 # These set the information text in the nds file
-#GAME_TITLE     := My Wonderful Homebrew
-#GAME_SUBTITLE1 := built with devkitARM
+GAME_TITLE     := GBARunner 3
+GAME_SUBTITLE1 := By Gericom
 #GAME_SUBTITLE2 := http://devitpro.org
 
 include $(DEVKITARM)/ds_rules
 
-.PHONY: checkarm7 checkarm9 clean
+.PHONY: checkcorearm9 checkarm7 checkarm9 clean
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checkarm7 checkarm9 $(TARGET).nds
+all: checkcorearm9 checkarm7 checkarm9 $(TARGET).nds
+
+#---------------------------------------------------------------------------------
+checkcorearm9:
+	$(MAKE) -C ../core/arm9
+	cp ../core/arm9/arm9.bin arm9/data/gbarunner9.bin
 
 #---------------------------------------------------------------------------------
 checkarm7:
@@ -50,6 +55,8 @@ arm9/$(TARGET).elf:
 
 #---------------------------------------------------------------------------------
 clean:
+	$(MAKE) -C ../core/arm9 clean
 	$(MAKE) -C arm9 clean
 	$(MAKE) -C arm7 clean
 	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
+	rm -f arm9/data/gbarunner9.bin

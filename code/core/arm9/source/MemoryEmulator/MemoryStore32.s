@@ -44,8 +44,8 @@ arm_func memu_store32Iwram
 arm_func memu_store32Io
     ldr r11,= memu_store32IoTable
     sub r10, r8, #0x04000000
-    mov r11, r10, lsr #1
-    ldrh r11, [r11, r11]
+    mov r12, r10, lsr #1
+    ldrh r11, [r11, r12]
     cmp r10, #0x20C
         bxlo r11
     bx lr

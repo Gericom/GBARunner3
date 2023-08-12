@@ -74,6 +74,7 @@ vm_spsr_abt:
 vm_spsr_und:
     .word 0
 
+.global vm_regs_fiq
 vm_regs_fiq:
     .word 0 // r8
     .word 0 // r9
@@ -83,6 +84,7 @@ vm_regs_fiq:
     .word 0 // sp
     .word 0 // lr
 
+.global vm_regs_sys
 vm_regs_sys:
     .word 0 // r8
     .word 0 // r9
@@ -92,18 +94,22 @@ vm_regs_sys:
     .word 0 // sp
     .word 0 // lr
 
+.global vm_regs_irq
 vm_regs_irq:
     .word 0 // sp
     .word 0 // lr
-    
+
+.global vm_regs_svc
 vm_regs_svc:
     .word 0 // sp
     .word 0 // lr
 
+.global vm_regs_abt
 vm_regs_abt:
     .word 0 // sp
     .word 0 // lr
 
+.global vm_regs_und
 vm_regs_und:
     .word 0 // sp
     .word 0 // lr
