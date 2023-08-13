@@ -16,4 +16,4 @@ arm_func emu_regImeStore16
 
     // todo: if irqs were switched on, we may need to trigger an irq in the vm
 
-	bx lr
+    bx lr

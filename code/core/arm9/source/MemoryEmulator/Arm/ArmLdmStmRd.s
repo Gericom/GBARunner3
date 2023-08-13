@@ -74,7 +74,7 @@ arm_func memu_armLdmRd
         bne 1f
         bl memu_load32
         str r9, [r13, #-4]
-        stmdb r13, {r\reg}^
+        ldmdb r13, {r\reg}^
         nop
         add r8, r8, #4
     1:

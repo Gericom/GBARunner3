@@ -16,6 +16,8 @@
 #define DEV_SD		1 //dsi sd
 #define DEV_PC		2 //image on pc via agb semihosting
 
+static u32 sAgbMem;
+
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
@@ -37,6 +39,7 @@
 {
     if (pdrv == DEV_PC)
     {
+        sAgbMem = *(u32*)0x027FFF7C;
         return 0;
     }
 
@@ -58,7 +61,7 @@
 {
     if (pdrv == DEV_PC)
     {
-        u32 agbMem = *(u32*)0x027FFF7C;
+        u32 agbMem = sAgbMem;
         *(vu16*)(agbMem + 0x10002) = 1;
         *(vu32*)(agbMem + 0x10004) = sector;
         *(vu32*)(agbMem + 0x10008) = count;

@@ -10,56 +10,73 @@
         .short emu_regDispStatStore16 // REG_DISPSTAT
     .elseif (\index << 1) == 0x006
         .short memu_store16Undefined // REG_VCOUNT is read-only
+    // these are sound on the gba
+    .elseif (\index << 1) == 0x60
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x62
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x64
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x66
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x68
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x6A
+        .short memu_store16Undefined
+    .elseif (\index << 1) == 0x6C
+        .short memu_store16Undefined
     .elseif (\index << 1) == 0xB0
-        .short memu_store16Undefined // REG_DMA0SAD_L
+        .short emu_dmaStore16 // REG_DMA0SAD_L
     .elseif (\index << 1) == 0xB2
-        .short memu_store16Undefined // REG_DMA0SAD_H
+        .short emu_dmaStore16 // REG_DMA0SAD_H
     .elseif (\index << 1) == 0xB4
-        .short memu_store16Undefined // REG_DMA0DAD_L
+        .short emu_dmaStore16 // REG_DMA0DAD_L
     .elseif (\index << 1) == 0xB6
-        .short memu_store16Undefined // REG_DMA0DAD_H
+        .short emu_dmaStore16 // REG_DMA0DAD_H
     .elseif (\index << 1) == 0xB8
-        .short memu_store16Undefined // REG_DMA0CNT_L
+        .short emu_dma012CntLStore16 // REG_DMA0CNT_L
     .elseif (\index << 1) == 0xBA
-        .short memu_store16Undefined // REG_DMA0CNT_H
+        .short emu_dmaCntHStore16 // REG_DMA0CNT_H
     .elseif (\index << 1) == 0xBC
-        .short memu_store16Undefined // REG_DMA1SAD_L
+        .short emu_dmaStore16 // REG_DMA1SAD_L
     .elseif (\index << 1) == 0xBE
-        .short memu_store16Undefined // REG_DMA1SAD_H
+        .short emu_dmaStore16 // REG_DMA1SAD_H
     .elseif (\index << 1) == 0xC0
-        .short memu_store16Undefined // REG_DMA1DAD_L
+        .short emu_dmaStore16 // REG_DMA1DAD_L
     .elseif (\index << 1) == 0xC2
-        .short memu_store16Undefined // REG_DMA1DAD_H
+        .short emu_dmaStore16 // REG_DMA1DAD_H
     .elseif (\index << 1) == 0xC4
-        .short memu_store16Undefined // REG_DMA1CNT_L
+        .short emu_dma012CntLStore16 // REG_DMA1CNT_L
     .elseif (\index << 1) == 0xC6
-        .short memu_store16Undefined // REG_DMA1CNT_H
+        .short emu_dmaCntHStore16 // REG_DMA1CNT_H
     .elseif (\index << 1) == 0xC8
-        .short memu_store16Undefined // REG_DMA2SAD_L
+        .short emu_dmaStore16 // REG_DMA2SAD_L
     .elseif (\index << 1) == 0xCA
-        .short memu_store16Undefined // REG_DMA2SAD_H
+        .short emu_dmaStore16 // REG_DMA2SAD_H
     .elseif (\index << 1) == 0xCC
-        .short memu_store16Undefined // REG_DMA2DAD_L
+        .short emu_dmaStore16 // REG_DMA2DAD_L
     .elseif (\index << 1) == 0xCE
-        .short memu_store16Undefined // REG_DMA2DAD_H
+        .short emu_dmaStore16 // REG_DMA2DAD_H
     .elseif (\index << 1) == 0xD0
-        .short memu_store16Undefined // REG_DMA2CNT_L
+        .short emu_dma012CntLStore16 // REG_DMA2CNT_L
     .elseif (\index << 1) == 0xD2
-        .short memu_store16Undefined // REG_DMA2CNT_H
+        .short emu_dmaCntHStore16 // REG_DMA2CNT_H
     .elseif (\index << 1) == 0xD4
-        .short memu_store16Undefined // REG_DMA3SAD_L
+        .short emu_dmaStore16 // REG_DMA3SAD_L
     .elseif (\index << 1) == 0xD6
-        .short memu_store16Undefined // REG_DMA3SAD_H
+        .short emu_dmaStore16 // REG_DMA3SAD_H
     .elseif (\index << 1) == 0xD8
-        .short memu_store16Undefined // REG_DMA3DAD_L
+        .short emu_dmaStore16 // REG_DMA3DAD_L
     .elseif (\index << 1) == 0xDA
-        .short memu_store16Undefined // REG_DMA3DAD_H
+        .short emu_dmaStore16 // REG_DMA3DAD_H
     .elseif (\index << 1) == 0xDC
-        .short memu_store16Undefined // REG_DMA3CNT_L
+        .short emu_dmaStore16 // REG_DMA3CNT_L
     .elseif (\index << 1) == 0xDE
-        .short memu_store16Undefined // REG_DMA3CNT_H
+        .short emu_dmaCntHStore16 // REG_DMA3CNT_H
+    .elseif ((\index << 2) >= 0x180) && ((\index << 2) < 0x200)
+        .short memu_store16Undefined
     .elseif (\index << 1) == 0x200
-        .short emu_regIeStore16 // REG_IE
+        .short emu_regIeIfStore32 // REG_IE
     .elseif (\index << 1) == 0x202
         .short emu_regIfStore16 // REG_IF
     .elseif (\index << 1) == 0x204

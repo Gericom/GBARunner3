@@ -79,6 +79,9 @@ arm_func memu_load16Oam
     bx lr
 
 arm_func memu_load16Rom
+    bic r9, r8, #0xFE000000
+    add r9, r9, #0x02200000
+    ldrh r9, [r9]
     bx lr
 
 arm_func memu_load16Sram

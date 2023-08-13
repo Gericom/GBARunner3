@@ -33,71 +33,71 @@ static void loadGbaBios()
 static void relocateGbaBios()
 {
     const u32 base = (u32)gGbaBios;
-	//swi table
-	for (int i = 0; i < 43; i++)
-		gGbaBios[(0x01C8 >> 2) + i] += base;
-	gGbaBios[0x027C >> 2] += base;
-	gGbaBios[0x0AB8 >> 2] += base;
-	gGbaBios[0x0ABC >> 2] += base;
-	gGbaBios[0x0AC4 >> 2] += base;
-	gGbaBios[0x0ACC >> 2] += base;
-	gGbaBios[0x0ADC >> 2] += base;
-	gGbaBios[0x0AE0 >> 2] += base;
-	gGbaBios[0x0AE4 >> 2] += base;
-	gGbaBios[0x0AEC >> 2] += base;
-	gGbaBios[0x0AF0 >> 2] += base;
-	gGbaBios[0x0B0C >> 2] += base;
-	gGbaBios[0x0B2C >> 2] += base;
-	gGbaBios[0x1430 >> 2] += base;
-	gGbaBios[0x16F8 >> 2] += base;
-	gGbaBios[0x16FC >> 2] += base;
-	gGbaBios[0x1700 >> 2] += base;
-	gGbaBios[0x1788 >> 2] += base;
-	gGbaBios[0x1924 >> 2] += base;
-	gGbaBios[0x1D64 >> 2] += base;
-	gGbaBios[0x1D6C >> 2] += base;
-	gGbaBios[0x1D80 >> 2] += base;
-	gGbaBios[0x1D84 >> 2] += base;
-	gGbaBios[0x1D90 >> 2] += base;
-	gGbaBios[0x1D9C >> 2] += base;
-	gGbaBios[0x23A4 >> 2] += base;
-	gGbaBios[0x2624 >> 2] += base;
-	gGbaBios[0x26C0 >> 2] += base;
-	gGbaBios[0x2C14 >> 2] += base;
-	gGbaBios[0x30AC >> 2] += base;
-	*(vu16*)(((u8*)gGbaBios) + 0x868) = 0; // prevent address check fail
-	for (int i = 0; i < 38; i++)
-		gGbaBios[(0x3738 >> 2) + i] += base;
-	gGbaBios[0x37D4 >> 2] += base;
-	gGbaBios[0x37D8 >> 2] += base;
-	gGbaBios[0x37E0 >> 2] += base;
-	gGbaBios[0x37E4 >> 2] += base;
-	gGbaBios[0x381C >> 2] += base;
-	gGbaBios[0x3820 >> 2] += base;
-	gGbaBios[0x3824 >> 2] += base;
-	gGbaBios[0x3828 >> 2] += base;
-	gGbaBios[0x38A0 >> 2] += base;
-	gGbaBios[0x38A4 >> 2] += base;
-	gGbaBios[0x38A8 >> 2] += base;
-	gGbaBios[0x38AC >> 2] += base;
-	gGbaBios[0x38B0 >> 2] += base;
-	gGbaBios[0x390C >> 2] += base;
-	gGbaBios[0x3910 >> 2] += base;
-	gGbaBios[0x3914 >> 2] += base;
-	gGbaBios[0x3918 >> 2] += base;
-	gGbaBios[0x391C >> 2] += base;
-	gGbaBios[0x3920 >> 2] += base;
-	gGbaBios[0x3924 >> 2] += base;
-	gGbaBios[0x3984 >> 2] += base;
-	gGbaBios[0x3988 >> 2] += base;
-	gGbaBios[0x398C >> 2] += base;
-	gGbaBios[0x3990 >> 2] += base;
-	gGbaBios[0x3994 >> 2] += base;
-	gGbaBios[0x3998 >> 2] += base;
-	gGbaBios[0x399C >> 2] += base;
-	gGbaBios[0x39C4 >> 2] += base;
-	gGbaBios[0x39C8 >> 2] += base;
-	gGbaBios[0x39CC >> 2] += base;
+    //swi table
+    for (int i = 0; i < 43; i++)
+        gGbaBios[(0x01C8 >> 2) + i] += base;
+    gGbaBios[0x027C >> 2] += base;
+    gGbaBios[0x0AB8 >> 2] += base;
+    gGbaBios[0x0ABC >> 2] += base;
+    gGbaBios[0x0AC4 >> 2] += base;
+    gGbaBios[0x0ACC >> 2] += base;
+    gGbaBios[0x0ADC >> 2] += base;
+    gGbaBios[0x0AE0 >> 2] += base;
+    gGbaBios[0x0AE4 >> 2] += base;
+    gGbaBios[0x0AEC >> 2] += base;
+    gGbaBios[0x0AF0 >> 2] += base;
+    gGbaBios[0x0B0C >> 2] += base;
+    gGbaBios[0x0B2C >> 2] += base;
+    gGbaBios[0x1430 >> 2] += base;
+    gGbaBios[0x16F8 >> 2] += base;
+    gGbaBios[0x16FC >> 2] += base;
+    gGbaBios[0x1700 >> 2] += base;
+    gGbaBios[0x1788 >> 2] += base;
+    gGbaBios[0x1924 >> 2] += base;
+    gGbaBios[0x1D64 >> 2] += base;
+    gGbaBios[0x1D6C >> 2] += base;
+    gGbaBios[0x1D80 >> 2] += base;
+    gGbaBios[0x1D84 >> 2] += base;
+    gGbaBios[0x1D90 >> 2] += base;
+    gGbaBios[0x1D9C >> 2] += base;
+    gGbaBios[0x23A4 >> 2] += base;
+    gGbaBios[0x2624 >> 2] += base;
+    gGbaBios[0x26C0 >> 2] += base;
+    gGbaBios[0x2C14 >> 2] += base;
+    gGbaBios[0x30AC >> 2] += base;
+    *(vu16*)(((u8*)gGbaBios) + 0x868) = 0; // prevent address check fail
+    for (int i = 0; i < 38; i++)
+        gGbaBios[(0x3738 >> 2) + i] += base;
+    gGbaBios[0x37D4 >> 2] += base;
+    gGbaBios[0x37D8 >> 2] += base;
+    gGbaBios[0x37E0 >> 2] += base;
+    gGbaBios[0x37E4 >> 2] += base;
+    gGbaBios[0x381C >> 2] += base;
+    gGbaBios[0x3820 >> 2] += base;
+    gGbaBios[0x3824 >> 2] += base;
+    gGbaBios[0x3828 >> 2] += base;
+    gGbaBios[0x38A0 >> 2] += base;
+    gGbaBios[0x38A4 >> 2] += base;
+    gGbaBios[0x38A8 >> 2] += base;
+    gGbaBios[0x38AC >> 2] += base;
+    gGbaBios[0x38B0 >> 2] += base;
+    gGbaBios[0x390C >> 2] += base;
+    gGbaBios[0x3910 >> 2] += base;
+    gGbaBios[0x3914 >> 2] += base;
+    gGbaBios[0x3918 >> 2] += base;
+    gGbaBios[0x391C >> 2] += base;
+    gGbaBios[0x3920 >> 2] += base;
+    gGbaBios[0x3924 >> 2] += base;
+    gGbaBios[0x3984 >> 2] += base;
+    gGbaBios[0x3988 >> 2] += base;
+    gGbaBios[0x398C >> 2] += base;
+    gGbaBios[0x3990 >> 2] += base;
+    gGbaBios[0x3994 >> 2] += base;
+    gGbaBios[0x3998 >> 2] += base;
+    gGbaBios[0x399C >> 2] += base;
+    gGbaBios[0x39C4 >> 2] += base;
+    gGbaBios[0x39C8 >> 2] += base;
+    gGbaBios[0x39CC >> 2] += base;
 }
 
 static void applyBiosVmPatches()
@@ -124,6 +124,26 @@ static void applyBiosVmPatches()
     gGbaBios[0x0388 >> 2] = 0xE189009C; // msr cpsr_cf, r12
 }
 
+static void loadAgbAging()
+{
+    f_open(&sFile, "/AGB_CHECKER_TCHK10.gba", FA_OPEN_EXISTING | FA_READ);
+    UINT br;
+    f_read(&sFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    f_close(&sFile);
+    // agb aging
+    *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // mgba suite
+    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
+    // *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
+    // *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
+    // *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
+    // *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
+    // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
+}
+
 extern "C" void gbaRunnerMain(void)
 {
     *(vu32*)0x04000000 = 0x10000;
@@ -140,14 +160,16 @@ extern "C" void gbaRunnerMain(void)
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
-	while (((*(vu16*)0x04000130) & 1) == 1);
-	memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
-	dc_flushRange(gGbaBios, sizeof(gGbaBios));
-	ic_invalidateAll();
-	*(vu32*)0x04000210 = 1; // REG_IE = 1
+    loadAgbAging();
+    // while (((*(vu16*)0x04000130) & 1) == 1);
+    memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+    dc_flushRange((void*)0x02200000, 0x200000);
+    dc_flushRange(gGbaBios, sizeof(gGbaBios));
+    ic_invalidateAll();
+    *(vu32*)0x04000210 = 1; // REG_IE = 1
     *(vu32*)0x04000214 = ~0u; // ack REG_IF
     *(vu32*)0x04000208 = 1; // REG_IME = 1
-	*(vu16*)0x04000004 = 1 << 3; // enable vblank interrupt requests
+    *(vu16*)0x04000004 = 1 << 3; // enable vblank interrupt requests
     VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[8 >> 2], &gGbaBios[0x18 >> 2] };
     context_t runContext { };
     virtualMachine.Run(&runContext);

@@ -83,6 +83,9 @@ arm_func memu_load32Oam
     bx lr
 
 arm_func memu_load32Rom
+    bic r9, r8, #0xFE000000
+    add r9, r9, #0x02200000
+    ldr r9, [r9]
     bx lr
 
 arm_func memu_load32Sram

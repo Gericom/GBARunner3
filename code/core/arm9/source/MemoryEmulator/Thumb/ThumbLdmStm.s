@@ -35,11 +35,11 @@ arm_func memu_thumbLdmiaCommon
 
 .macro memu_thumbStmiaRn rn
     arm_func memu_thumbStmiaR\rn
-        and r13, lr, #0xFF
         ldr r12,= gPopCountTable
+        and r13, lr, #0xFF
         ldrb r12, [r12, r13]
 
-        bic r8, r\rn, #3
+        bic r8, r\rn, #3 // this is probably wrong
 
         rsb r11, r13, #0
         and r11, r11, r13
