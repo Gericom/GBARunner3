@@ -23,6 +23,34 @@ arm_func emu_dmaStore32
     str r9, [r11, r10]
     bx lr
 
+arm_func emu_dmaInternalMemoryAddressHiStore16
+    ldr r11,= emu_ioRegisters
+    bic r9, r9, #0xF800
+    sub r10, r8, #0x04000000
+    strh r9, [r11, r10]
+    bx lr
+
+arm_func emu_dmaAnyMemoryAddressHiStore16
+    ldr r11,= emu_ioRegisters
+    bic r9, r9, #0xF000
+    sub r10, r8, #0x04000000
+    strh r9, [r11, r10]
+    bx lr
+
+arm_func emu_dmaInternalMemoryAddressStore32
+    ldr r11,= emu_ioRegisters
+    bic r9, r9, #0xF8000000
+    sub r10, r8, #0x04000000
+    str r9, [r11, r10]
+    bx lr
+
+arm_func emu_dmaAnyMemoryAddressStore32
+    ldr r11,= emu_ioRegisters
+    bic r9, r9, #0xF0000000
+    sub r10, r8, #0x04000000
+    str r9, [r11, r10]
+    bx lr
+
 arm_func emu_dma012CntStore32
     ldr r11,= emu_ioRegisters
     sub r10, r8, #0x04000000

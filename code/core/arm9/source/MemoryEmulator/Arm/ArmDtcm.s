@@ -11,24 +11,24 @@
         .else
             .word memu_armLoadStoreRmTable_\u
         .endif
-        .word memu_armLoadStoreRnTable_\p\w
+        .short memu_armLoadStoreRnTable_\p\w
         .if (\b == 0) && (\l == 0)
-            .word memu_armStrRdTable
+            .short memu_armStrRdTable
         .elseif (\b == 0) && (\l == 1)
-            .word memu_armLdrRdTable
+            .short memu_armLdrRdTable
         .elseif (\b == 1) && (\l == 0)
-            .word memu_armStrbRdTable
+            .short memu_armStrbRdTable
         .else
-            .word memu_armLdrbRdTable
+            .short memu_armLdrbRdTable
         .endif
     .elseif (\type == 0b10) && (\i == 0)
         // ldm/stm
         .word memu_armLdmStmRmTable_\p\u
-        .word memu_armLdmStmRnTable_\w
+        .short memu_armLdmStmRnTable_\w
         .if \l == 1
-            .word memu_armLdmRdTable
+            .short memu_armLdmRdTable
         .else
-            .word memu_armStmRdTable
+            .short memu_armStmRdTable
         .endif
     .elseif (\type == 0b10) && (\i == 1)
         // ldrh/strh
@@ -37,11 +37,11 @@
         .else
             .word memu_armLoadStoreShortImmTable_\u
         .endif
-        .word memu_armLoadStoreRnTable_\p\w
+        .short memu_armLoadStoreRnTable_\p\w
         .if \l == 0
-            .word memu_armStrhRdTable
+            .short memu_armStrhRdTable
         .else
-            .word memu_armLdrhRdTable
+            .short memu_armLdrhRdTable
         .endif
     .elseif (\type == 0b11) && (\i == 0) && (\l == 1)
         // ldrsb
@@ -50,8 +50,8 @@
         .else
             .word memu_armLoadStoreShortImmTable_\u
         .endif
-        .word memu_armLoadStoreRnTable_\p\w
-        .word memu_armLdrsbRdTable
+        .short memu_armLoadStoreRnTable_\p\w
+        .short memu_armLdrsbRdTable
     .elseif (\type == 0b11) && (\i == 1) && (\l == 1)
         // ldrsh
         .if \b == 0
@@ -59,14 +59,13 @@
         .else
             .word memu_armLoadStoreShortImmTable_\u
         .endif
-        .word memu_armLoadStoreRnTable_\p\w
-        .word memu_armLdrshRdTable
+        .short memu_armLoadStoreRnTable_\p\w
+        .short memu_armLdrshRdTable
     .else
         .word 0
-        .word 0
-        .word 0
+        .short 0
+        .short 0
     .endif
-    .word 0
 .endm
 
 .macro memu_instructionPointer index

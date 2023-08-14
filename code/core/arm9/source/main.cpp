@@ -126,22 +126,22 @@ static void applyBiosVmPatches()
 
 static void loadAgbAging()
 {
-    f_open(&sFile, "/AGB_CHECKER_TCHK10.gba", FA_OPEN_EXISTING | FA_READ);
+    f_open(&sFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     UINT br;
     f_read(&sFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
     f_close(&sFile);
     // agb aging
-    *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
     // mgba suite
-    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
-    // *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
-    // *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
-    // *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
-    // *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
-    // *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
-    // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
+    *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
+    *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
+    *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
+    *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
+    *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
+    *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
+    *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
 }
 
 extern "C" void gbaRunnerMain(void)

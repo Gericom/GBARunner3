@@ -6,14 +6,12 @@
 arm_func emu_regVCountLoad16
     ldrh r9, [r8]
     cmp r9, #160
-        blt 1f
+        bxlt lr
     cmp r9, #192
         movlt r9, #159
-        blt 1f
+        bxlt lr
     sub r9, r9, #32
     cmp r9, #227
         movgt r9, #227
-1:
-    tst r8, #1
-        movne r9, r9, ror #8
     bx lr
+

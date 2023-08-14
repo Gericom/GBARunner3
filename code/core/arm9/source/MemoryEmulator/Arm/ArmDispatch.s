@@ -12,16 +12,17 @@ arm_func memu_armDispatch
     str lr, DTCM(memu_inst_addr)
     msr cpsr_c, #0x91 // switch to fiq mode
     ldr r11, DTCM(memu_inst_addr)
-    // interlock
+    ldr r12, DTCM(memu_arm_table_addr)
     ldr lr, [r11, #-8] // lr = instruction
-    ldr r13, DTCM(memu_arm_table_addr)
+    mov r13, r12
     and r8, lr, #0x0FF00000
     tst lr, #0x0E000000
 
     and r9, lr, #0xE0
     orreq r8, r9, lsl #20
-    add r8, r13, r8, lsr #16
-    ldmia r8, {r8, r10, r11}
+    ldr r8, [r12, r8, lsr #17]!
+    ldrsh r10, [r12, #4]
+    ldrsh r11, [r12, #6]
     // Rm
     and r9, lr, #0xF
     ldr r12, [r8, r9, lsl #2]

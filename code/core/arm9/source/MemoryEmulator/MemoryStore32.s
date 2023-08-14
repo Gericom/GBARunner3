@@ -2,6 +2,10 @@
 
 #include "AsmMacros.inc"
 
+// r8: address, must be 4-aligned, preserved
+// r9: value
+// r13: preserved
+// lr: return address
 arm_func memu_store32
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]

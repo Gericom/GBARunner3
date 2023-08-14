@@ -8,13 +8,9 @@ arm_func emu_regDispStatLoad16
     ldr r11,= emu_ioRegisters
     ldrh r9, [r8]
     ldrh r10, [r11, #4]
-    tst r8, #1
     and r9, r9, #7
     bic r10, r10, #0xC7
     orr r9, r9, r10
-
-    movne r9, r9, ror #8
-
     bx lr
 
 arm_func emu_regDispStatVCountLoad32

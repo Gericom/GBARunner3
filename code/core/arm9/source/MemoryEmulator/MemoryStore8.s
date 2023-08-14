@@ -2,6 +2,10 @@
 
 #include "AsmMacros.inc"
 
+// r8: address, preserved
+// r9: value, must be 8 bit masked; 0x000000xx
+// r13: preserved
+// lr: return address
 arm_func memu_store8
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]

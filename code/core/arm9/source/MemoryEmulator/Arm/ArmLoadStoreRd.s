@@ -31,16 +31,17 @@ generate memu_armStrRd, 16
     arm_func memu_armStrbR\rd
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
+            and r9, r9, #0xFF
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
-            ldrne r9, [r13, #-4]
+            ldrneb r9, [r13, #-4]
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             add r9, r9, #4 // pc + 12
+            and r9, r9, #0xFF
         .endif
-        and r9, r9, #0xFF
         bl memu_store8
         memu_armReturn
 .endm
@@ -54,9 +55,8 @@ generate memu_armStrbRd, 16
             mov r\rd, r9
             memu_armReturn
         .elseif \rd < 15
-            mov r8, #memu_inst_addr
-            str r9, [r8]
-            ldmia r8, {r\rd}^
+            str r9, [r13, #-4]
+            ldmdb r13, {r\rd}^
             memu_armReturn
         .else
             mov r8, #memu_inst_addr
@@ -76,10 +76,9 @@ generate memu_armLdrRd, 16
         .if \rd < 8
             and r\rd, r9, #0xFF
         .elseif \rd < 15
-            mov r8, #memu_inst_addr
             and r9, r9, #0xFF
-            str r9, [r8]
-            ldmia r8, {r\rd}^
+            str r9, [r13, #-4]
+            ldmdb r13, {r\rd}^
         .else
             // ldrb pc is not allowed
         .endif

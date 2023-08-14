@@ -6,7 +6,6 @@
 
 arm_func emu_regIfLoad16
     ldr r11,= vm_emulatedIfImeIe
-    tst r8, #1
     ldr r12, [r11, #(vm_emulatedIrqMask - vm_emulatedIfImeIe)]
     ldr r10, [r11, #(vm_forcedIrqMask - vm_emulatedIfImeIe)]
     ldr r9, [r11, #(vm_hwIEAddr - vm_emulatedIfImeIe)]
@@ -18,7 +17,6 @@ arm_func emu_regIfLoad16
     bic r9, r9, r12
     orr r9, r9, r10, lsr #18
 
-    movne r9, r9, ror #8
     bx lr
 
 arm_func emu_regIfStore16

@@ -47,18 +47,18 @@ _start:
     mcr	p15, 0, r0, c6, c7, 0
     // data permissions
     ldr r0,= 0x33200121
-	mcr p15, 0, r0, c5, c0, 2
+    mcr p15, 0, r0, c5, c0, 2
     // code permissions
-	ldr r0,= 0x33300221
-	mcr p15, 0, r0, c5, c0, 3
+    ldr r0,= 0x33300221
+    mcr p15, 0, r0, c5, c0, 3
     // dcache
-	ldr r0,= 0b00100010
+    ldr r0,= 0b00100010
     mcr p15, 0, r0, c2, c0, 0
     // icache
-	ldr r0,= 0b00100010
+    ldr r0,= 0b00100010
     mcr p15, 0, r0, c2, c0, 1
     // write buffer
-	ldr r0,= 0b00100010
+    ldr r0,= 0b00100010
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu
@@ -68,28 +68,28 @@ _start:
 
     // copy itcm in place
     ldr r0,= __itcm_lma
-	ldr r2,= __itcm_start
-	ldr r1,= __itcm_end
+    ldr r2,= __itcm_start
+    ldr r1,= __itcm_end
     subs r1, r1, r2
     beq itcm_done
 1:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bgt 1b
+    ldmia r0!, {r3-r10}
+    stmia r2!, {r3-r10}
+    subs r1, #0x20
+    bgt 1b
 itcm_done:
 
     // copy dtcm in place
     ldr r0,= __dtcm_lma
-	ldr r2,= __dtcm_start
-	ldr r1,= __dtcm_end
+    ldr r2,= __dtcm_start
+    ldr r1,= __dtcm_end
     subs r1, r1, r2
     beq dtcm_done
 1:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bgt 1b
+    ldmia r0!, {r3-r10}
+    stmia r2!, {r3-r10}
+    subs r1, #0x20
+    bgt 1b
 dtcm_done:
 
     // clear bss

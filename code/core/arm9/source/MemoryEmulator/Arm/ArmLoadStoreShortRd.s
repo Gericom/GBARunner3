@@ -9,17 +9,21 @@
     arm_func memu_armStrhR\rd
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
+            mov r9, r9, lsl #16
+            mov r9, r9, lsr #16
             bic r8, r8, #1
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
-            ldrne r9, [r13, #-4]
+            ldrneh r9, [r13, #-4]
             bic r8, r8, #1
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             bic r8, r8, #1
             add r9, r9, #4 // pc + 12
+            mov r9, r9, lsl #16
+            mov r9, r9, lsr #16
         .endif
         bl memu_store16
         memu_armReturn
@@ -30,14 +34,11 @@ generate memu_armStrhRd, 16
 .macro memu_armLdrhRd rd
     arm_func memu_armLdrhR\rd
         bl memu_load16
-        tst r8, #1
-        movne r9, r9, ror #8
         .if \rd < 8
             mov r\rd, r9
         .elseif \rd < 15
-            mov r8, #memu_inst_addr
-            str r9, [r8]
-            ldmia r8, {r\rd}^
+            str r9, [r13, #-4]
+            ldmdb r13, {r\rd}^
         .else
             // ldrh pc is not allowed
         .endif
@@ -48,18 +49,16 @@ generate memu_armLdrhRd, 16
 
 .macro memu_armLdrshRd rd
     arm_func memu_armLdrshR\rd
-        bl memu_load16
         tst r8, #1
+            bne memu_armLdrsbR\rd
+        bl memu_load16
         mov r9, r9, lsl #16
         .if \rd < 8
             mov r\rd, r9, asr #16
-            movne r\rd, r\rd, asr #8
         .elseif \rd < 15
             mov r9, r9, asr #16
-            movne r9, r9, asr #8
-            mov r8, #memu_inst_addr
-            str r9, [r8]
-            ldmia r8, {r\rd}^
+            str r9, [r13, #-4]
+            ldmdb r13, {r\rd}^
         .else
             // ldrsh pc is not allowed
         .endif
@@ -76,9 +75,8 @@ generate memu_armLdrshRd, 16
             mov r\rd, r9, asr #24
         .elseif \rd < 15
             mov r9, r9, asr #24
-            mov r8, #memu_inst_addr
-            str r9, [r8]
-            ldmia r8, {r\rd}^
+            str r9, [r13, #-4]
+            ldmdb r13, {r\rd}^
         .else
             // ldrsb pc is not allowed
         .endif

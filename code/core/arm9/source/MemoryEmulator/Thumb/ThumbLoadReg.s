@@ -27,6 +27,8 @@ generate memu_thumbLdrhRegRd, 8
 .macro memu_thumbLdrshRegRd rd
     arm_func memu_thumbLdrshRegR\rd
         add r8, r10, r11
+        tst r8, #1
+            bne memu_thumbLdrsbRegR\rd\()_afterAddressComputed
         bl memu_load16
         mov r9, r9, lsl #16
         mov r\rd, r9, asr #16
@@ -48,6 +50,7 @@ generate memu_thumbLdrbRegRd, 8
 .macro memu_thumbLdrsbRegRd rd
     arm_func memu_thumbLdrsbRegR\rd
         add r8, r10, r11
+    memu_thumbLdrsbRegR\rd\()_afterAddressComputed:
         bl memu_load8
         mov r9, r9, lsl #24
         mov r\rd, r9, asr #24
