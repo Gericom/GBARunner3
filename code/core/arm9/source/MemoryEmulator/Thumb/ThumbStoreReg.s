@@ -6,7 +6,6 @@
 
 .macro memu_thumbStrRegRd rd
     arm_func memu_thumbStrRegR\rd
-        add r8, r10, r11
         bic r8, r8, #3
         mov r9, r\rd
         bl memu_store32
@@ -17,7 +16,6 @@ generate memu_thumbStrRegRd, 8
 
 .macro memu_thumbStrhRegRd rd
     arm_func memu_thumbStrhRegR\rd
-        add r8, r10, r11
         bic r8, r8, #1
         mov r9, r\rd, lsl #16
         mov r9, r9, lsr #16
@@ -29,7 +27,6 @@ generate memu_thumbStrhRegRd, 8
 
 .macro memu_thumbStrbRegRd rd
     arm_func memu_thumbStrbRegR\rd
-        add r8, r10, r11
         and r9, r\rd, #0xFF
         bl memu_store8
         memu_thumbReturn

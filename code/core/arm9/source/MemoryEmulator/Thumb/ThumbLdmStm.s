@@ -6,7 +6,7 @@
 
 .macro memu_thumbLdmiaRn rn
     arm_func memu_thumbLdmiaR\rn
-        and r13, lr, #0xFF
+        and r13, r11, #0xFF
         ldr r12,= gPopCountTable
         ldrb r12, [r12, r13]
 
@@ -36,7 +36,7 @@ arm_func memu_thumbLdmiaCommon
 .macro memu_thumbStmiaRn rn
     arm_func memu_thumbStmiaR\rn
         ldr r12,= gPopCountTable
-        and r13, lr, #0xFF
+        and r13, r11, #0xFF
         ldrb r12, [r12, r13]
 
         bic r8, r\rn, #3 // this is probably wrong

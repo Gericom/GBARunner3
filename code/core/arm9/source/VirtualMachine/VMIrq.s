@@ -6,7 +6,7 @@
 
 vm_irq_base:
 
-#define DTCM(x) (vm_irq_base - 0x280 + (x))
+#define DTCM(x) (vm_irq_base - 0x100 + (x))
 
 arm_func vm_irq
     str r8, DTCM(vm_irqSavedR8)

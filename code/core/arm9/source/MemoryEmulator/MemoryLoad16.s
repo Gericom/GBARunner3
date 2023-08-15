@@ -31,11 +31,13 @@ arm_func memu_load16
 
 arm_func memu_load16Undefined
     ldr r10,= memu_inst_addr
-    ldr r10, [r10]
     msr cpsr_c, #0xD7
+    ldr r13,= memu_inst_addr
+    str lr, [r13]
     mrs r13, spsr
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1
+    ldr r10, [r10]
     ldrcch r9, [r10] // arm
     ldrcsh r9, [r10, #-4] // thumb
     tst r8, #1

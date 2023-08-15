@@ -6,7 +6,7 @@
 
 arm_dispatch_base:
 
-#define DTCM(x) #(arm_dispatch_base - 0x200 + x)
+#define DTCM(x) #(arm_dispatch_base - 0x400 + x)
 
 arm_func memu_armDispatch
     str lr, DTCM(memu_inst_addr)

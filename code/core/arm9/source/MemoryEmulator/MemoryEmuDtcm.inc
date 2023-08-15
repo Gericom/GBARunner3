@@ -7,7 +7,10 @@
 memu_inst_addr:
     .word 0
 
-    .space 12
+memu_thumb_r0:
+    .word 0
+
+.space 8
 
 memu_thumb_table_addr:
     .word 0

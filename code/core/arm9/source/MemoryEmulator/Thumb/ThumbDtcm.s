@@ -3,27 +3,8 @@
 
 #include "AsmMacros.inc"
 
-.macro memu_pointer baseName, reg
-    .short \baseName\reg
-.endm
-.macro memu_pointer_rd baseName, arg
-    memu_pointer \baseName, %((\arg>>0)&7)
-.endm
-
 .global memu_thumbDispatchTable
 memu_thumbDispatchTable:
-
-.global memu_thumbRnRmTable
-memu_thumbRnRmTable:
-
-.macro memu_thumbGetRnRm_pointer2 rn, rm
-    .word memu_thumbGetR\rn\()R\rm
-.endm
-.macro memu_thumbGetRnRm_pointer arg
-    memu_thumbGetRnRm_pointer2 %((\arg>>0)&7), %((\arg>>3)&7)
-.endm
-
-generateBackwards memu_thumbGetRnRm_pointer, 64
 
 .macro memu_instructionPointer2 a, b, rd, rd2
     .if (\a == 0b01010) && (\b == 0b00)
@@ -64,9 +45,9 @@ generateBackwards memu_thumbGetRnRm_pointer, 64
 .endm
 
 .macro memu_instructionPointer index
-    memu_instructionPointer2 %((\index>>3)&31), %((\index>>1)&3), %((\index>>0)&7), %((\index>>8)&7)
+    memu_instructionPointer2 %(((~\index)>>3)&31), %(((~\index)>>1)&3), %(((~\index)>>0)&7), %(((~\index)>>8)&7)
 .endm
 
-generate memu_instructionPointer, 0x800, 2
+generate memu_instructionPointer, 0x800
 
 .end

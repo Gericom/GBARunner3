@@ -1,4 +1,5 @@
 .section ".itcm", "ax"
+.altmacro
 .arm
 
 #include "AsmMacros.inc"
@@ -7,25 +8,35 @@
 
 thumb_dispatch_base:
 
-#define DTCM(x) #(thumb_dispatch_base - 0x600 + x)
+#define DTCM(x) #(thumb_dispatch_base - 0xC00 + x)
 
 arm_func memu_thumbDispatch
-    str lr, DTCM(memu_inst_addr)
+    str r0, DTCM(memu_thumb_r0)
+    ldrh r0, [lr, #-8]
     msr cpsr_c, #0xD1 // switch to fiq mode
-    ldr lr, DTCM(memu_inst_addr)
-    // interlock
-    ldrh lr, [lr, #-8] // lr = instruction
-    mvn r9, #0xFF000 // mask for dtcm mirroring
-    ldr r13, DTCM(memu_thumb_table_addr)
 
-    orr r8, lr, lr, lsl #16
-    and r8, r9, r8, lsr #7 // dtcm must mirror
+    orr r11, r0, r0, lsl #16
+    ldr r0, DTCM(memu_thumb_r0)
+    mvn r9, #0x3000 // mask for dtcm mirroring
+    bic r12, r9, r11, lsr #7 // dtcm must mirror
+    ldrh r12, [r12] // r12 = address of instruction handler
 
-    and r9, lr, #0x1F8 // r9 = (Rm_Rn) << 3
-    ldr r9, [r13, -r9, lsr #1] // r9 = address of Rm and Rn resolving function
+    and r9, r11, #0x1F8 // r9 = (Rm_Rn) << 3
+    add pc, pc, r9, lsl #1
+    .word 0
 
-    ldrh r8, [r13, r8] // r8 = address of instruction handler
+.macro memu_thumbGetRnRm rn, rm
+    arm_func memu_thumbGetR\rn\()R\rm
+        mov r10, r\rn
+        add r8, r\rn, r\rm
+        bx r12
+        .word 0
+.endm
 
-    bx r9
+.macro make_memu_thumbGetRnRm arg
+    memu_thumbGetRnRm %((\arg>>0)&7),%((\arg>>3)&7)
+.endm
+
+generate make_memu_thumbGetRnRm, 64
 
 .end

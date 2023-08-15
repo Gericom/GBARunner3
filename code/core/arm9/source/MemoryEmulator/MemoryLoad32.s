@@ -32,6 +32,8 @@ arm_func memu_load32
 arm_func memu_load32Undefined
     ldr r10,= memu_inst_addr
     msr cpsr_c, #0xD7
+    ldr r13,= memu_inst_addr
+    str lr, [r13]
     mrs r13, spsr
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1

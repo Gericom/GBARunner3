@@ -191,16 +191,16 @@ SECTIONS
 		KEEP (vectors.o(.itcm))
 		. = 0x80;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0x200;
-		KEEP (ArmDispatch.o(.itcm))
-		. = 0x280;
+		. = 0x100;
 		KEEP (VMIrq.o(.itcm))
-		. = 0x600;
-		KEEP (ThumbDispatch.o(.itcm))
-		. = 0x680;
+		. = 0x400;
+		KEEP (ArmDispatch.o(.itcm))
+		. = 0x480;
 		KEEP (VMMode.o(.itcm))
-		. = 0xA00;
+		. = 0x900;
 		KEEP (VMSwi.o(.itcm))
+		. = 0xC00;
+		KEEP (ThumbDispatch.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);
