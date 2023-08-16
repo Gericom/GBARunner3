@@ -80,7 +80,7 @@ arm_func emu_dmaCntHStore16
         bxne lr
     tst r9, #0x3800
         bxne lr
-    tst r9, #0x1E0
+    tst r9, #0x60
         bxne lr
     adr r12, dmaTmp
     stmia r12, {r0-r2,r8,lr}
@@ -89,13 +89,18 @@ arm_func emu_dmaCntHStore16
     ldr r1, [r11, #-6] // dst
     cmp r2, #0
         moveq r2, #0x10000
+    and r13, r9, #0x180
+    cmp r13, #0x80
+        movlo r13, #1
+        moveq r13, #-1
+        movhi r13, #0
     tst r9, #0x400
         bne dmaImm32
     
 dmaImm16:
     bic r8, r0, #1
     bl memu_load16
-    add r0, r0, #2
+    add r0, r0, r13, lsl #1
     bic r8, r1, #1
     bl memu_store16
     add r1, r1, #2
@@ -109,7 +114,7 @@ dmaImm16:
 dmaImm32:
     bic r8, r0, #3
     bl memu_load32
-    add r0, r0, #4
+    add r0, r0, r13, lsl #2
     bic r8, r1, #3
     bl memu_store32
     add r1, r1, #4

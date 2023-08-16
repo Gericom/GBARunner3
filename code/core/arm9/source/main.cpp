@@ -126,22 +126,30 @@ static void applyBiosVmPatches()
 
 static void loadAgbAging()
 {
-    f_open(&sFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
+    // f_open(&sFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
+    // UINT br;
+    // f_read(&sFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // f_close(&sFile);
+    // // agb aging
+    // // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // // mgba suite
+    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
+    // *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
+    // *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
+    // *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
+    // *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
+    // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
+
+    f_open(&sFile, "/Mario Kart - Super Circuit (Europe).gba", FA_OPEN_EXISTING | FA_READ);
     UINT br;
-    f_read(&sFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    f_read(&sFile, (void*)0x02200000, 4 * 1024 * 1024, &br);
     f_close(&sFile);
-    // agb aging
-    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
-    // mgba suite
-    *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
-    *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
-    *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
-    *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
-    *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
-    *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
-    *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
+    // mksc eu
+    *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
 }
 
 extern "C" void gbaRunnerMain(void)
@@ -150,10 +158,18 @@ extern "C" void gbaRunnerMain(void)
     *(vu32*)0x05000000 = 0x1F;
     *(vu32*)0x0400006C = 0;
 
+    *(vu8*)0x04000242 = 0x80; // VRAM C -> LCDC
+    *(vu8*)0x04000243 = 0x80; // VRAM D -> LCDC
     *(vu8*)0x04000244 = 0x81; // VRAM E -> BG
     *(vu8*)0x04000245 = 0x82; // VRAM F -> OBJ
     *(vu8*)0x04000246 = 0x8A; // VRAM G -> OBJ
     *(vu8*)0x04000247 = 0; // iwram to arm9
+    *(vu8*)0x04000248 = 0x80; // VRAM H -> LCDC
+    *(vu8*)0x04000249 = 0x80; // VRAM I -> LCDC
+    memset((void*)0x02000000, 0, 256 * 1024);
+    memset((void*)0x03000000, 0, 32 * 1024);
+    memset((void*)0x06000000, 0, 64 * 1024);
+    memset((void*)0x06400000, 0, 32 * 1024);
     Environment::Initialize();
     if (Environment::SupportsAgbSemihosting())
         mountAgbSemihosting();
@@ -161,7 +177,8 @@ extern "C" void gbaRunnerMain(void)
     relocateGbaBios();
     applyBiosVmPatches();
     loadAgbAging();
-    // while (((*(vu16*)0x04000130) & 1) == 1);
+    *(vu32*)0x05000000 = 0x1F << 5;
+    while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     dc_flushRange((void*)0x02200000, 0x200000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));

@@ -24,8 +24,11 @@ _start:
     // mpu region 0: ITCM, DTCM, uncached mmem, IO, GBA slot (4 GB)
     ldr r0,= ((1 | (31 << 1)) + 0x00000000)
     mcr	p15, 0, r0, c6, c0, 0
-    // mpu region 1: Cached Main Memory (4 MB)
-    ldr r0,= ((1 | (21 << 1)) + 0x02000000)
+    @ // mpu region 1: Cached Main Memory (4 MB)
+    @ ldr r0,= ((1 | (21 << 1)) + 0x02000000)
+    @ mcr	p15, 0, r0, c6, c1, 0
+    // mpu region 1: Cached Main Memory (8 MB)
+    ldr r0,= ((1 | (22 << 1)) + 0x02000000)
     mcr	p15, 0, r0, c6, c1, 0
     // mpu region 2: VRAM (8 MB)
     ldr r0,= ((1 | (22 << 1)) + 0x06000000)

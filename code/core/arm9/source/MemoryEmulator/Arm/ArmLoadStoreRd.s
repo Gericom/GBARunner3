@@ -9,19 +9,39 @@
     arm_func memu_armStrR\rd
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
+            
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0xC4] // memu_store32Table
+            
             bic r8, r8, #3
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
             ldrne r9, [r13, #-4]
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0xC4] // memu_store32Table
+
             bic r8, r8, #3
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             bic r8, r8, #3
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0xC4] // memu_store32Table
+
             add r9, r9, #4 // pc + 12
         .endif
-        bl memu_store32
+
+        blxlo r10
+
         memu_armReturn
 .endm
 
@@ -31,18 +51,36 @@ generate memu_armStrRd, 16
     arm_func memu_armStrbR\rd
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x44] // memu_store8Table
+
             and r9, r9, #0xFF
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
             ldrneb r9, [r13, #-4]
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x44] // memu_store8Table
+            // interlock
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             add r9, r9, #4 // pc + 12
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x44] // memu_store8Table
+
             and r9, r9, #0xFF
         .endif
-        bl memu_store8
+        blxlo r10
         memu_armReturn
 .endm
 
@@ -50,7 +88,13 @@ generate memu_armStrbRd, 16
 
 .macro memu_armLdrRd rd
     arm_func memu_armLdrR\rd
-        bl memu_load32
+        and r10, r8, #0x0F000000
+        cmp r8, #0x10000000
+        addlo r10, r13, r10, lsr #22
+        ldrlo r10, [r10, #-0x184] // memu_load32Table
+        ldrhs r10,= memu_load32Undefined
+        blx r10
+
         .if \rd < 8
             mov r\rd, r9
             memu_armReturn
@@ -72,7 +116,13 @@ generate memu_armLdrRd, 16
 
 .macro memu_armLdrbRd rd
     arm_func memu_armLdrbR\rd
-        bl memu_load8
+        and r10, r8, #0x0F000000
+        cmp r8, #0x10000000
+        addlo r10, r13, r10, lsr #22
+        ldrlo r10, [r10, #-0x104] // memu_load8Table
+        ldrhs r10,= memu_load8Undefined
+        blx r10
+
         .if \rd < 8
             and r\rd, r9, #0xFF
         .elseif \rd < 15

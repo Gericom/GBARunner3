@@ -53,6 +53,7 @@ memu_stubLoadValue8:
     .word 0
 
 arm_func memu_load8
+arm_func memu_load8Undefined
     str r8, memu_stubLoadedAddress8
     ldr r9, memu_stubLoadValue8
     bx lr
@@ -65,6 +66,7 @@ memu_stubLoadValue16:
     .word 0
 
 arm_func memu_load16
+arm_func memu_load16Undefined
     str r8, memu_stubLoadedAddress16
     ldr r9, memu_stubLoadValue16
     bx lr
@@ -80,6 +82,7 @@ memu_stubLoad32Count:
     .word 0
 
 arm_func memu_load32
+arm_func memu_load32Undefined
     adr r10, memu_stubLoadedAddresses32
     ldr r11, memu_stubLoad32Count
     str r8, [r10, r11, lsl #2]

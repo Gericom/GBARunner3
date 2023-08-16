@@ -157,6 +157,10 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
+		. = 0x1000;
+		KEEP (MemoryLoadStoreTables.o(.dtcm))
+		. = 0x1180;
+		KEEP (ArmDtcm.o(.dtcm))
 		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o VMUndefined.o) .dtcm)
 		*(.dtcm.*)
 		. = 0x3640;

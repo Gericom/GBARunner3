@@ -5,7 +5,7 @@
 
 .macro memu_ioRegStore32Pointer index
     .if (\index << 2) == 0x00
-        .short emu_ioFallbackStore32
+        .short emu_regDispCntStore16
     .elseif (\index << 2) == 0x04
         .short emu_regDispStatStore16 // REG_DISPSTAT
     // these are sound on the gba

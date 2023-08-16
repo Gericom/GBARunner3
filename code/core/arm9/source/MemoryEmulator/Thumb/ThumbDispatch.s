@@ -17,12 +17,12 @@ arm_func memu_thumbDispatch
 
     orr r11, r0, r0, lsl #16
     ldr r0, DTCM(memu_thumb_r0)
-    mvn r9, #0x3000 // mask for dtcm mirroring
+    mvn r9, #0x3000 // mask for dtcm mirroring; 0xFFFFCFFF
     bic r12, r9, r11, lsr #7 // dtcm must mirror
     ldrh r12, [r12] // r12 = address of instruction handler
 
-    and r9, r11, #0x1F8 // r9 = (Rm_Rn) << 3
-    add pc, pc, r9, lsl #1
+    and r8, r11, #0x1F8 // r8 = (Rm_Rn) << 3
+    add pc, pc, r8, lsl #1
     .word 0
 
 .macro memu_thumbGetRnRm rn, rm

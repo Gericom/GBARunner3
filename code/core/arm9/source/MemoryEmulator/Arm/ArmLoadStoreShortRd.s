@@ -11,11 +11,23 @@
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
             mov r9, r9, lsl #16
             mov r9, r9, lsr #16
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x84] // memu_store16Table
+
             bic r8, r8, #1
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
             ldrneh r9, [r13, #-4]
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x84] // memu_store16Table
+
             bic r8, r8, #1
         .else
             mov r9, #memu_inst_addr
@@ -23,9 +35,15 @@
             bic r8, r8, #1
             add r9, r9, #4 // pc + 12
             mov r9, r9, lsl #16
+
+            and r10, r8, #0x0F000000
+            cmp r8, #0x10000000
+            addlo r10, r13, r10, lsr #22
+            ldrlo r10, [r10, #-0x84] // memu_store16Table
+
             mov r9, r9, lsr #16
         .endif
-        bl memu_store16
+        blxlo r10
         memu_armReturn
 .endm
 
@@ -33,7 +51,13 @@ generate memu_armStrhRd, 16
 
 .macro memu_armLdrhRd rd
     arm_func memu_armLdrhR\rd
-        bl memu_load16
+        and r10, r8, #0x0F000000
+        cmp r8, #0x10000000
+        addlo r9, r13, r10, lsr #22
+        ldrlo r10, [r9, #-0x144] // memu_load16Table
+        ldrhs r10,= memu_load16Undefined
+        blx r10
+
         .if \rd < 8
             mov r\rd, r9
         .elseif \rd < 15
@@ -51,7 +75,14 @@ generate memu_armLdrhRd, 16
     arm_func memu_armLdrshR\rd
         tst r8, #1
             bne memu_armLdrsbR\rd
-        bl memu_load16
+        
+        and r10, r8, #0x0F000000
+        cmp r8, #0x10000000
+        addlo r9, r13, r10, lsr #22
+        ldrlo r10, [r9, #-0x144] // memu_load16Table
+        ldrhs r10,= memu_load16Undefined
+        blx r10
+
         mov r9, r9, lsl #16
         .if \rd < 8
             mov r\rd, r9, asr #16
@@ -69,7 +100,13 @@ generate memu_armLdrshRd, 16
 
 .macro memu_armLdrsbRd rd
     arm_func memu_armLdrsbR\rd
-        bl memu_load8
+        and r10, r8, #0x0F000000
+        cmp r8, #0x10000000
+        addlo r9, r13, r10, lsr #22
+        ldrlo r10, [r9, #-0x104] // memu_load8Table
+        ldrhs r10,= memu_load8Undefined
+        blx r10
+
         mov r9, r9, lsl #24
         .if \rd < 8
             mov r\rd, r9, asr #24
