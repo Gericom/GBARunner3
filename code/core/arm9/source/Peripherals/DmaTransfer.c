@@ -1,6 +1,7 @@
 #include "common.h"
 #include <string.h>
 #include "Emulator/IoRegisters.h"
+#include "MemCopy.h"
 
 extern void dma_immTransferSafe16(u32 src, u32 dst, u32 count, int srcStep);
 extern void dma_immTransferSafe32(u32 src, u32 dst, u32 count, int srcStep);
@@ -59,8 +60,12 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
     u32 srcEndRegion = srcEnd >> 24;
     u32 dstRegion = dst >> 24;
     u32 dstEndRegion = dstEnd >> 24;
+    int difference = dst - src;
+    if (difference < 0)
+        difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
-        srcRegion != srcEndRegion || dstRegion != dstEndRegion || srcStep <= 0)
+        srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
+        srcStep <= 0 || dstRegion >= 8 || difference < 32)
     {
         dma_immTransferSafe16(src, dst, count, srcStep);
         return;
@@ -68,8 +73,7 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
     // todo: check for bg vram -> obj vram transition
     src = translateAddress(src);
     dst = translateAddress(dst);
-    // todo: use something safer and faster here
-    memcpy((void*)dst, (void*)src, count << 1);
+    mem_copy16((void*)src, (void*)dst, count << 1);
 }
 
 ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
@@ -82,8 +86,12 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
     u32 srcEndRegion = srcEnd >> 24;
     u32 dstRegion = dst >> 24;
     u32 dstEndRegion = dstEnd >> 24;
+    int difference = dst - src;
+    if (difference < 0)
+        difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
-        srcRegion != srcEndRegion || dstRegion != dstEndRegion || srcStep <= 0)
+        srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
+        srcStep <= 0 || dstRegion >= 8 || difference < 32)
     {
         dma_immTransferSafe32(src, dst, count, srcStep);
         return;
@@ -91,8 +99,7 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
     // todo: check for bg vram -> obj vram transition
     src = translateAddress(src);
     dst = translateAddress(dst);
-    // todo: use something safer and faster here
-    memcpy((void*)dst, (void*)src, count << 2);
+    mem_copy32((void*)src, (void*)dst, count << 2);
 }
 
 ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
@@ -122,4 +129,5 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
         dma_immTransfer32(src, dst, count, srcStep);
     else
         dma_immTransfer16(src, dst, count, srcStep);
+    // todo: irq
 }
