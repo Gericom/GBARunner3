@@ -45,6 +45,11 @@ vm_cpsrFinish:
     msr cpsr_c, #0xDB
     movs pc, lr
 
+vm_finishCpsrControlAndFlags:
+    eor r11, r10, r8
+    tst r11, #0x80
+    blne emu_updateIrqs
+
 vm_finishCpsrWithFlags:
     ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     and r8, r8, #0xF0000000
@@ -54,34 +59,11 @@ vm_finishCpsrWithFlags:
     movs pc, lr
     
 vm_finishCpsrOnlyControl:
-    bic r11, r10, r8
+    eor r11, r10, r8
     tst r11, #0x80
-    beq vm_cpsrFinish
-    // irqs were enabled
-    ldr r11, [r9, #(vm_emulatedIfImeIe - vm_undefinedRegTmp)]
-    tst r11, r11, lsl #17 // IF & IE
-    bls vm_cpsrFinish // no irqs to handle
-    ldr r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
-    msr spsr, r10
-    add lr, lr, #4 // because irq return is subs pc, lr, #4
-    b vm_irq
-
-vm_finishCpsrControlAndFlags:
-    bic r11, r10, r8
-    tst r11, #0x80
-    beq vm_finishCpsrWithFlags
-    // irqs were enabled
-    ldr r11, [r9, #(vm_emulatedIfImeIe - vm_undefinedRegTmp)]
-    tst r11, r11, lsl #17 // IF & IE
-    bls vm_finishCpsrWithFlags // no irqs to handle
-    ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    and r8, r8, #0xF0000000
-    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
-    orr r10, r10, r8
-    msr spsr, r10
-    add lr, lr, #4 // because irq return is subs pc, lr, #4
-    b vm_irq
+    adrne lr, vm_cpsrFinish
+    bne emu_updateIrqs
+    b vm_cpsrFinish
 
 generate vm_armUndefinedMsrRegCpsrRm, 16
 

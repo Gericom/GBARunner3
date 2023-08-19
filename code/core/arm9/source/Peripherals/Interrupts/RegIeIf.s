@@ -69,7 +69,4 @@ arm_func emu_regIeIfStore32
     bic r9, r9, r12
     strh r9, [r11, #4] // ack in DS REG_IF
 1:
-
-    // todo: if irqs are available now, we may need to trigger an irq in the vm
-
-    bx lr
+    b emu_updateIrqs

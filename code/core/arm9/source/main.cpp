@@ -166,6 +166,7 @@ extern "C" void gbaRunnerMain(void)
     *(vu8*)0x04000247 = 0; // iwram to arm9
     *(vu8*)0x04000248 = 0x80; // VRAM H -> LCDC
     *(vu8*)0x04000249 = 0x80; // VRAM I -> LCDC
+    *(vu16*)0x04000304 |= 1 << 3; // enable geometry engine to generate gx fifo irq
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);
     memset((void*)0x06000000, 0, 64 * 1024);

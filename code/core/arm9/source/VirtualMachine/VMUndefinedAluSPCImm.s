@@ -49,29 +49,16 @@ vm_armUndefinedAluSPCImm:
     adr r13, 2f
     bx lr // call mode switch function
 2:
-    bic r11, r11, r12
+    mov r13, r12
+    eor r11, r11, r12
     tst r11, #0x80
-    beq vm_finishAlusImmNoIrq
-
-    // irqs were enabled
-    ldr r11, [r9, #(vm_emulatedIfImeIe - vm_undefinedRegTmp)]
-    tst r11, r11, lsl #17 // IF & IE
-    bls vm_finishAlusImmNoIrq // no irqs to handle
-
-    ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    and r11, r12, #0xF0000000
-    add lr, r8, #4 // because irq return is subs pc, lr, #4
-    orr r10, r10, r11
-    and r11, r12, #0x20
-    orr r10, r10, r11
-    msr spsr, r10
-    b vm_irq
+    blne emu_updateIrqs
 
 vm_finishAlusImmNoIrq:
     ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    and r11, r12, #0xF0000000
+    and r11, r13, #0xF0000000
     orr r10, r10, r11
-    and r11, r12, #0x20
+    and r11, r13, #0x20
     orr r10, r10, r11
     msr spsr, r10
     movs pc, r8

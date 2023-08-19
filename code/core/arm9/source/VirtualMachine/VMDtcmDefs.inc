@@ -46,7 +46,7 @@ vm_emulatedIrqMask:
 
 .global vm_emulatedIfImeIe
 vm_emulatedIfImeIe:
-    .word 0 // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IF, M = IME, F = IE)
+    .word 0 // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IE, M = IME, F = IF)
 
 vm_undefinedInstructionAddr:
     .word 0
