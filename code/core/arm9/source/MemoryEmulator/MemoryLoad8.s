@@ -56,6 +56,8 @@ arm_func memu_load8Ewram
     bx lr
 
 arm_func memu_load8Iwram
+    bic r9, r8, #0x00FF0000
+    bic r9, r9, #0x00008000
     ldrb r9, [r9]
     bx lr
 
@@ -123,7 +125,7 @@ arm_func memu_load8Rom
 
 arm_func memu_load8RomHi
     bic r9, r8, #0x06000000
-    add r9, r8, #(0x02200000 - 0x08000000)
+    add r9, r9, #(0x02200000 - 0x08000000)
     ldrb r9, [r9]
     bx lr
 

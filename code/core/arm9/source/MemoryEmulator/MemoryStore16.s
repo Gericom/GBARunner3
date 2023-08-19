@@ -42,7 +42,9 @@ arm_func memu_store16Ewram
     bx lr
 
 arm_func memu_store16Iwram
-    strh r9, [r8]
+    bic r10, r8, #0x00FF0000
+    bic r10, r10, #0x00008000
+    strh r9, [r10]
     bx lr
 
 arm_func memu_store16Io

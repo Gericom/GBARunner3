@@ -59,7 +59,9 @@ arm_func memu_load16Ewram
     bx lr
 
 arm_func memu_load16Iwram
-    ldrh r9, [r8]
+    bic r9, r8, #0x00FF0000
+    bic r9, r9, #0x00008000
+    ldrh r9, [r9]
     tst r8, #1
         bxeq lr
     mov r9, r9, ror #8

@@ -64,7 +64,9 @@ arm_func memu_load32Ewram
     bx lr
 
 arm_func memu_load32Iwram
-    ldr r9, [r8]
+    bic r9, r8, #0x00FF0000
+    bic r9, r9, #0x00008000
+    ldr r9, [r9]
     bx lr
 
 arm_func memu_load32Io

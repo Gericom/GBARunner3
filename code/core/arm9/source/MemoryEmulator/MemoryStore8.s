@@ -42,7 +42,9 @@ arm_func memu_store8Ewram
     bx lr
 
 arm_func memu_store8Iwram
-    strb r9, [r8]
+    bic r10, r8, #0x00FF0000
+    bic r10, r10, #0x00008000
+    strb r9, [r10]
     bx lr
 
 arm_func memu_store8Io

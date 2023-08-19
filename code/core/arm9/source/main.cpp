@@ -11,7 +11,7 @@ FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 static FIL sFile;
 
-u32 gGbaBios[16 * 1024 / 4] alignas(32);
+u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
 static bool mountAgbSemihosting()
 {
@@ -24,6 +24,7 @@ static bool mountAgbSemihosting()
 
 static void loadGbaBios()
 {
+    memset(&sFile, 0, sizeof(sFile));
     f_open(&sFile, "/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
     UINT br;
     f_read(&sFile, gGbaBios, 16 * 1024, &br);
@@ -126,9 +127,10 @@ static void applyBiosVmPatches()
 
 static void loadAgbAging()
 {
+    memset(&sFile, 0, sizeof(sFile));
     // f_open(&sFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // UINT br;
-    // f_read(&sFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
     // f_close(&sFile);
     // // agb aging
     // // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
@@ -181,7 +183,7 @@ extern "C" void gbaRunnerMain(void)
     *(vu32*)0x05000000 = 0x1F << 5;
     while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
-    dc_flushRange((void*)0x02200000, 0x200000);
+    dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
     *(vu32*)0x04000210 = 1; // REG_IE = 1

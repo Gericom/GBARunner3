@@ -68,70 +68,50 @@ arm_func emu_dma3CntStore32
     mov r9, r9, lsr #16
 
 arm_func emu_dmaCntHStore16
-    ldr r11,= (emu_ioRegisters + 2)
-    bic r12, r8, #3
-    sub r12, r12, #0x04000000
-    ldrh r10, [r11, r12]
-    tst r9, #0x8000
-    beq dmaStop
-    bic r9, r9, #0x8000
-    strh r9, [r11, r12]!
-    tst r10, #0x8000
-        bxne lr
-    tst r9, #0x3800
-        bxne lr
-    tst r9, #0x60
-        bxne lr
-    adr r12, dmaTmp
-    stmia r12, {r0-r2,r8,lr}
-    ldrh r2, [r11, #-2] // count
-    ldr r0, [r11, #-10] // src
-    ldr r1, [r11, #-6] // dst
-    cmp r2, #0
-        moveq r2, #0x10000
-    and r13, r9, #0x180
-    cmp r13, #0x80
-        movlo r13, #1
-        moveq r13, #-1
-        movhi r13, #0
-    tst r9, #0x400
-        bne dmaImm32
-    
-dmaImm16:
+    mov r10, r13
+    ldr sp,= dtcmStackEnd
+    ldr r11,= (emu_ioRegisters - 8)
+    push {r0-r3,lr}
+    and r0, r8, #0xFC
+    add r0, r0, r11
+    mov r1, r9
+    bl dma_CntHStore16
+    pop {r0-r3,lr}
+    mov r13, r10
+    bx lr
+
+// called from C code
+// r0 = src
+// r1 = dst
+// r2 = count (number of halfwords)
+// r3 = src step (in halfwords)
+arm_func dma_immTransferSafe16
+    push {r8-r12,lr}
+1:
     bic r8, r0, #1
     bl memu_load16
-    add r0, r0, r13, lsl #1
+    add r0, r0, r3, lsl #1
     bic r8, r1, #1
     bl memu_store16
     add r1, r1, #2
     subs r2, r2, #1
-    bne dmaImm16
+    bne 1b
+    pop {r8-r12,pc}
 
-    adr r12, dmaTmp
-    ldmia r12, {r0-r2,r8,lr}
-    bx lr
-
-dmaImm32:
+// called from C code
+// r0 = src
+// r1 = dst
+// r2 = count (number of words)
+// r3 = src step (in words)
+arm_func dma_immTransferSafe32
+    push {r8-r12,lr}
+1:
     bic r8, r0, #3
     bl memu_load32
-    add r0, r0, r13, lsl #2
+    add r0, r0, r3, lsl #2
     bic r8, r1, #3
     bl memu_store32
     add r1, r1, #4
     subs r2, r2, #1
-    bne dmaImm32
-
-    adr r12, dmaTmp
-    ldmia r12, {r0-r2,r8,lr}
-    bx lr
-
-dmaStop:
-    strh r9, [r11, r12]
-    bx lr
-
-dmaTmp:
-    .word 0 // r0
-    .word 0 // r1
-    .word 0 // r2
-    .word 0 // r8
-    .word 0 // lr
+    bne 1b
+    pop {r8-r12,pc}

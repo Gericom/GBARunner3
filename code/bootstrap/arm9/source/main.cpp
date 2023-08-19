@@ -12,9 +12,10 @@ int main(int argc, char* argv[])
     *(vu8*)0x04000240 = 0x80; // VRAM A
     *(vu8*)0x04000241 = 0x80; // VRAM B
 
-    memcpy((void*)0x06800000, gbarunner9_bin, gbarunner9_bin_size);
     DC_FlushAll();
+    DC_InvalidateAll();
     IC_InvalidateAll();
+    dmaCopyHalfWords(3, gbarunner9_bin, (void*)0x06800000, gbarunner9_bin_size);
 
     ((gbarunner9_func_t)0x06800000)();
 
