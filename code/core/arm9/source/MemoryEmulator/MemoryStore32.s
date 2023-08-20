@@ -2,10 +2,14 @@
 
 #include "AsmMacros.inc"
 
-// r8: address, must be 4-aligned, preserved
-// r9: value
-// r13: preserved
-// lr: return address
+/// @brief Stores a 32-bit value to the given 32-bit aligned GBA memory address.
+/// @param r0-r7 Preserved.
+/// @param r8 The address to store to. The address must be 32-bit aligned.
+///           This register is preserved.
+/// @param r9 The value to store. Trashed.
+/// @param r10-r12 Trashed.
+/// @param r13 Preserved.
+/// @param lr Return address.
 arm_func memu_store32
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]

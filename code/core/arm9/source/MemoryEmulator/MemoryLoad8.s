@@ -3,10 +3,13 @@
 #include "AsmMacros.inc"
 #include "MemoryEmuDtcm.inc"
 
-// r8: address, preserved
-// r9: returns loaded value; value needs masking of bottom 8 bits
-// r13: preserved
-// lr: return address
+/// @brief Loads an 8-bit value from the given GBA memory address.
+/// @param r0-r7 Preserved.
+/// @param r8 The address to load from. This register is preserved.
+/// @param r9 Returns the loaded value. The value requires masking of the bottom 8 bits.
+/// @param r10-r12 Trashed.
+/// @param r13 Preserved.
+/// @param lr Return address.
 arm_func memu_load8
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]

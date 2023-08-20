@@ -3,10 +3,14 @@
 #include "AsmMacros.inc"
 #include "MemoryEmuDtcm.inc"
 
-// r8: address, preserved; unaligned correction is applied
-// r9: returns loaded value
-// r13: preserved
-// lr: return address
+/// @brief Loads a 32-bit value from the given GBA memory address.
+///        When unaligned rotation is applied.
+/// @param r0-r7 Preserved.
+/// @param r8 The address to load from. This register is preserved.
+/// @param r9 Returns the loaded value.
+/// @param r10-r12 Trashed.
+/// @param r13 Preserved.
+/// @param lr Return address.
 arm_func memu_load32
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]

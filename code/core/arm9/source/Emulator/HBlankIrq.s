@@ -5,6 +5,11 @@
 
 .extern dma_state
 
+/// @brief Performs hblank irq tasks for the emulator.
+///        - Emulates HDMA
+/// @param r0-r12 Preserved
+/// @param r13 Trashed.
+/// @param lr Return address.
 arm_func emu_hblankIrq
     mov r13, #0x04000000
     ldrh r13, [r13, #6]

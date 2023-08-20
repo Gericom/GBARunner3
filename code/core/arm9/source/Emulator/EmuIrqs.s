@@ -4,6 +4,13 @@
 #include "AsmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
 
+/// @brief Updates DS REG_IE and triggers a GX fifo irq when there are
+///        any pending emulated irqs, such that the irq handler will
+///        automatically be called again as soon as irqs are turned back on.
+/// @param r0-r9 Preserved
+/// @param r10-r12 Trashed
+/// @param r13 Preserved
+/// @param lr Return address.
 arm_func emu_updateIrqs
     ldr r12,= vm_forcedIrqMask
     ldr r11, [r12, #(vm_cpsr - vm_forcedIrqMask)]

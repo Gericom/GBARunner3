@@ -8,6 +8,44 @@ vm_irq_base:
 
 #define DTCM(x) (vm_irq_base - 0x100 + (x))
 
+/// @brief Irq handler to be used when only emulation irqs should be handled,
+///        and no irqs should be passed through to the VM. Should be branched
+///        to directly from the hardware irq vector.
+/// @param lr The return address + 4.
+arm_func vm_nestedIrqHandler
+    str r0, DTCM(vm_irqSavedR0)
+    // todo: Don't tigger hblank irq on scanlines beyond the gba screen
+
+    mov r13, #0x04000000
+    ldr r0, [r13, #0x214]
+    str lr, DTCM(vm_irqSavedLR)
+    str r0, [r13, #0x214]
+    ldr r13, DTCM(vm_hwIrqMask)
+    ldr lr, DTCM(vm_emulatedIfImeIe)
+    and r13, r13, r0 // bits to add to the emulated IF
+    orr r13, lr, r13
+    ldr lr, DTCM(vm_forcedIrqMask)
+    str r13, DTCM(vm_emulatedIfImeIe)
+    
+    ands r0, r0, lr
+    beq 1f
+
+    tst r0, #(1 << 16) // ARM7 IRQ
+        blne emu_arm7Irq
+    tst r0, #2 // HBLANK IRQ
+        blne emu_hblankIrq
+    tst r0, #1 // VBLANK IRQ
+        blne emu_vblankIrq
+
+1:
+    ldr lr, DTCM(vm_irqSavedLR)
+    ldr r0, DTCM(vm_irqSavedR0)
+    subs pc, lr, #4
+
+/// @brief Main irq handler that handles both emulation irqs and passed
+///        through irqs to the VM. Should be branched to directly from
+///        the hardware irq vector.
+/// @param lr The return address + 4.
 arm_func vm_irq
     str r0, DTCM(vm_irqSavedR0)
     // here emulator irq tasks can be performed
@@ -202,9 +240,9 @@ old_mode_sys:
 
 vm_emuIrq:
     tst r0, #(1 << 16) // ARM7 IRQ
-    blne emu_arm7Irq
+        blne emu_arm7Irq
     tst r0, #2 // HBLANK IRQ
-    blne emu_hblankIrq
+        blne emu_hblankIrq
     tst r0, #1 // VBLANK IRQ
-    blne emu_vblankIrq
+        blne emu_vblankIrq
     b vm_emu_irq_continue
