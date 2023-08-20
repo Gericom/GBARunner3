@@ -21,7 +21,7 @@
         .else
             .short memu_armLdrbRdTable
         .endif
-    .elseif (\type == 0b10) && (\i == 0)
+    .elseif (\type == 0b00) && (\i == 0)
         // ldm/stm
         .word memu_armLdmStmRmTable_\p\u
         .short memu_armLdmStmRnTable_\w
@@ -29,6 +29,15 @@
             .short memu_armLdmRdTable
         .else
             .short memu_armStmRdTable
+        .endif
+    .elseif (\type == 0b10) && (\i == 0)
+        // swp/swpb
+        .word memu_armLoadStoreShortRmTable_1
+        .short memu_armSwpRnTable
+        .if (\b == 0)
+            .short memu_armSwpRdTable
+        .else
+            .short memu_armSwpbRdTable
         .endif
     .elseif (\type == 0b10) && (\i == 1)
         // ldrh/strh

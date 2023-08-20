@@ -5,6 +5,7 @@
 #include "VirtualMachine/VirtualMachine.h"
 #include "Emulator/IoRegisters.h"
 #include "Core/Environment.h"
+#include "Peripherals/DmaTransfer.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -139,9 +140,9 @@ static void loadAgbAging()
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x02250010 = 0xE1E00090; // mrs r0, spsr
     // *(vu32*)0x02250068 = 0xE1A00091; // mrs r1, cpsr
-    // *(vu32*)0x02250074 = 0xE1C90091; // msr cpsr_cf, r1
+    // *(vu32*)0x02250074 = 0xE1890091; // msr cpsr_cf, r1
     // *(vu32*)0x02250094 = 0xE1A00090; // mrs r0, cpsr
-    // *(vu32*)0x022500A0 = 0xE1C90093; // msr cpsr_cf, r3
+    // *(vu32*)0x022500A0 = 0xE1890093; // msr cpsr_cf, r3
     // *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
     // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
 
@@ -152,6 +153,39 @@ static void loadAgbAging()
     // mksc eu
     *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
     *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+
+    // f_open(&sFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
+    // UINT br;
+    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
+    // f_close(&sFile);
+    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x027A426C = 0xE1E00092; // mrs r2, spsr
+    // *(vu32*)0x027A4274 = 0xE1A00092; // mrs r2, cpsr
+    // *(vu32*)0x027A4280 = 0xE1890092; // msr cpsr_cf, r2
+    // *(vu32*)0x027A429C = 0xE1A00092; // mrs r2, cpsr
+    // *(vu32*)0x027A42A8 = 0xE1890092; // msr cpsr_cf, r2
+    // *(vu32*)0x027A42B0 = 0xE1C90092; // msr spsr_cf, r2
+
+    // f_open(&sFile, "/varooom-3d_bad_audio.gba", FA_OPEN_EXISTING | FA_READ);
+    // UINT br;
+    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
+    // f_close(&sFile);
+    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02467968 = 0xE1E00092; // mrs r2, spsr
+    // *(vu32*)0x02467970 = 0xE1A00092; // mrs r2, cpsr
+    // *(vu32*)0x0246797C = 0xE1890092; // msr cpsr_cf, r2
+    // *(vu32*)0x02467998 = 0xE1A00092; // mrs r2, cpsr
+    // *(vu32*)0x024679A4 = 0xE1890092; // msr cpsr_cf, r2
+    // *(vu32*)0x024679AC = 0xE1C90092; // msr spsr_cf, r2
+
+    // f_open(&sFile, "/dma_demo.gba", FA_OPEN_EXISTING | FA_READ);
+    // UINT br;
+    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
+    // f_close(&sFile);
+    // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
 }
 
 extern "C" void gbaRunnerMain(void)
@@ -183,6 +217,7 @@ extern "C" void gbaRunnerMain(void)
     *(vu32*)0x05000000 = 0x1F << 5;
     while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+    dma_init();
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();

@@ -27,6 +27,9 @@ SOURCES		:=	source \
 				../../core/arm9/source/Emulator \
 				../../core/arm9/source/MemoryEmulator/Arm \
 				../../core/arm9/source/MemoryEmulator/Thumb \
+				../../core/arm9/source/Peripherals \
+				../../core/arm9/source/Peripherals/Graphics \
+				../../core/arm9/source/Peripherals/Interrupts \
 				../../core/arm9/source/VirtualMachine \
 				../../libs/googlemock/src \
 				../../libs/googletest/src

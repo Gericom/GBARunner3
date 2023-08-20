@@ -6,4 +6,10 @@ dtcmStack:
 .global dtcmStackEnd
 dtcmStackEnd:
 
+.global dtcmIrqStack
+dtcmIrqStack:
+    .space 128
+.global dtcmIrqStackEnd
+dtcmIrqStackEnd:
+
 .end

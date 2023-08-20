@@ -6,6 +6,8 @@
 .macro memu_ioRegStore16Pointer index
     .if (\index << 1) == 0x00
         .short emu_regDispCntStore16
+    .elseif (\index << 1) == 0x002
+        .short memu_store16Undefined // green swap
     .elseif (\index << 1) == 0x004
         .short emu_regDispStatStore16 // REG_DISPSTAT
     .elseif (\index << 1) == 0x006

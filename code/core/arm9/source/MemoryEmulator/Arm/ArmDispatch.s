@@ -15,7 +15,7 @@ arm_func memu_armDispatch
     ldr r12, DTCM(memu_arm_table_addr)
     ldr lr, [r11, #-8] // lr = instruction
     mov r13, r12
-    and r8, lr, #0x0FF00000
+    and r8, lr, #0x07F00000
     tst lr, #0x0E000000
 
     and r9, lr, #0xE0

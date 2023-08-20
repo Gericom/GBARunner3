@@ -3,6 +3,7 @@
 extern void* vm_irqVector;
 extern void* vm_swiVector;
 extern u32 vm_hwIrqMask;
+extern u32 vm_forcedIrqMask;
 extern u32 vm_emulatedIfImeIe;
 extern u32 vm_cpsr;
 extern u32 vm_spsr_fiq;

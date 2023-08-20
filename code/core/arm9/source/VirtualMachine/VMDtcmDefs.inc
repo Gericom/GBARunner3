@@ -6,9 +6,7 @@
 #define VM_DTCM_BASE 0xFFFFFE80
 
 .struct VM_DTCM_BASE
-vm_irqSavedR8:
-    .word 0
-vm_irqSavedR9:
+vm_irqSavedR0:
     .word 0
 vm_irqSavedLR:
     .word 0

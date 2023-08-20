@@ -73,12 +73,14 @@ arm_func emu_dmaCntHStore16
     ldr r11,= (emu_ioRegisters - 8)
     push {r0-r3,lr}
     and r0, r8, #0xFC
+    cmp r0, #0xDC
+        bicne r9, r9, #(1 << 11) // clear rom dreq bit for channels 0-2
     add r0, r0, r11
     mov r1, r9
     bl dma_CntHStore16
     pop {r0-r3,lr}
     mov r13, r10
-    bx lr
+    b emu_updateIrqs
 
 // called from C code
 // r0 = src
