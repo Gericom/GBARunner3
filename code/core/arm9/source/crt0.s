@@ -126,7 +126,9 @@ ewram_bss_done:
     msr cpsr_c, r0
 
     ldr sp,= dtcmStackEnd
-    b gbaRunnerMain
+
+    ldr lr,= gbaRunnerMain
+    b __libc_init_array
 
 .pool
 .end

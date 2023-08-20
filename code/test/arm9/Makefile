@@ -32,8 +32,17 @@ SOURCES		:=	source \
 				../../core/arm9/source/Peripherals/Interrupts \
 				../../core/arm9/source/VirtualMachine \
 				../../libs/googlemock/src \
-				../../libs/googletest/src
-INCLUDES	:=	include source ../../libs/googlemock ../../libs/googletest ../../core/arm9/source ../../libs/googlemock/include ../../libs/googletest/include ../../core/common
+				../../libs/googletest/src \
+				../../libs/mini-printf
+INCLUDES	:=	include \
+				source \
+				../../libs/googlemock \
+				../../libs/googletest \
+				../../core/arm9/source \
+				../../libs/googlemock/include \
+				../../libs/googletest/include \
+				../../libs/mini-printf \
+				../../core/common
 DATA		:=  
 
 

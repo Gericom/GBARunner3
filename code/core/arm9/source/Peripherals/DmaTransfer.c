@@ -7,6 +7,9 @@
 
 DTCM_DATA dma_state_t dma_state;
 
+void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep);
+void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep);
+
 extern void dma_immTransferSafe16(u32 src, u32 dst, u32 count, int srcStep);
 extern void dma_immTransferSafe32(u32 src, u32 dst, u32 count, int srcStep);
 

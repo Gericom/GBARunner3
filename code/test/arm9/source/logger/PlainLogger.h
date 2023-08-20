@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "core/mini-printf.h"
+#include "mini-printf.h"
 #include "ILogger.h"
 #include "IOutputStream.h"
 

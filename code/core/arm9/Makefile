@@ -27,15 +27,17 @@ SOURCES		:=	source \
 				source/Core \
 				source/Emulator \
 				source/Fat \
+				source/Logger \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \
 				source/MemoryEmulator/Thumb \
 				source/Peripherals \
 				source/Peripherals/Graphics \
 				source/Peripherals/Interrupts \
-				source/VirtualMachine
+				source/VirtualMachine \
+				../../libs/mini-printf
 DATA		:=	data
-INCLUDES	:=	include source ../common
+INCLUDES	:=	include source ../common ../../libs/mini-printf
 
 
 #---------------------------------------------------------------------------------

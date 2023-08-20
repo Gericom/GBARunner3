@@ -13,6 +13,16 @@ thumb_dispatch_base:
 arm_func memu_thumbDispatch
     str r0, DTCM(memu_thumb_r0)
     ldrh r0, [lr, #-8]
+
+@ #ifndef GBAR3_TEST
+@     ldr sp,= dtcmStackEnd
+@     push {r0-r3,r12,lr}
+@     .extern logOpcode
+@     ldr r12,= logOpcode
+@     blx r12
+@     pop {r0-r3,r12,lr}
+@ #endif
+
     msr cpsr_c, #0xD1 // switch to fiq mode
 
     orr r11, r0, r0, lsl #16

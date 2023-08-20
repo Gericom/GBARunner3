@@ -14,6 +14,17 @@ arm_func memu_armDispatch
     ldr r11, DTCM(memu_inst_addr)
     ldr r12, DTCM(memu_arm_table_addr)
     ldr lr, [r11, #-8] // lr = instruction
+
+@ #ifndef GBAR3_TEST
+@     ldr sp,= dtcmStackEnd
+@     push {r0-r3,r12,lr}
+@     mov r0, lr
+@     .extern logOpcode
+@     ldr r12,= logOpcode
+@     blx r12
+@     pop {r0-r3,r12,lr}
+@ #endif
+
     mov r13, r12
     and r8, lr, #0x07F00000
     tst lr, #0x0E000000

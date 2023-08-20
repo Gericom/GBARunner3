@@ -1,4 +1,5 @@
 #include "common.h"
+#include <array>
 #include <string.h>
 #include "cp15.h"
 #include "Fat/ff.h"
@@ -6,6 +7,8 @@
 #include "Emulator/IoRegisters.h"
 #include "Core/Environment.h"
 #include "Peripherals/DmaTransfer.h"
+#include "Logger/NitroEmulatorOutputStream.h"
+#include "Logger/PlainLogger.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -13,6 +16,10 @@ FATFS gFatFs;
 static FIL sFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
+
+static NitroEmulatorOutputStream sIsNitroOutput;
+static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
+ILogger* gLogger = &sPlainLogger;
 
 static bool mountAgbSemihosting()
 {
@@ -32,74 +39,31 @@ static void loadGbaBios()
     f_close(&sFile);
 }
 
+static constexpr auto sBiosRelocations = std::to_array<u16>
+({
+    0x027C, 0x0AB8, 0x0ABC, 0x0AC4, 0x0ACC, 0x0ADC,
+    0x0AE0, 0x0AE4, 0x0AEC, 0x0AF0, 0x0B0C, 0x0B2C,
+    0x1430, 0x16F8, 0x16FC, 0x1700, 0x1788, 0x1924,
+    0x1D64, 0x1D6C, 0x1D80, 0x1D84, 0x1D90, 0x1D9C,
+    0x23A4, 0x2624, 0x26C0, 0x2C14, 0x30AC, 0x37D4,
+    0x37D8, 0x37E0, 0x37E4, 0x381C, 0x3820, 0x3824,
+    0x3828, 0x38A0, 0x38A4, 0x38A8, 0x38AC, 0x38B0,
+    0x390C, 0x3910, 0x3914, 0x3918, 0x391C, 0x3920,
+    0x3924, 0x3984, 0x3988, 0x398C, 0x3990, 0x3994,
+    0x3998, 0x399C, 0x39C4, 0x39C8, 0x39CC
+});
+
 static void relocateGbaBios()
 {
     const u32 base = (u32)gGbaBios;
     //swi table
     for (int i = 0; i < 43; i++)
         gGbaBios[(0x01C8 >> 2) + i] += base;
-    gGbaBios[0x027C >> 2] += base;
-    gGbaBios[0x0AB8 >> 2] += base;
-    gGbaBios[0x0ABC >> 2] += base;
-    gGbaBios[0x0AC4 >> 2] += base;
-    gGbaBios[0x0ACC >> 2] += base;
-    gGbaBios[0x0ADC >> 2] += base;
-    gGbaBios[0x0AE0 >> 2] += base;
-    gGbaBios[0x0AE4 >> 2] += base;
-    gGbaBios[0x0AEC >> 2] += base;
-    gGbaBios[0x0AF0 >> 2] += base;
-    gGbaBios[0x0B0C >> 2] += base;
-    gGbaBios[0x0B2C >> 2] += base;
-    gGbaBios[0x1430 >> 2] += base;
-    gGbaBios[0x16F8 >> 2] += base;
-    gGbaBios[0x16FC >> 2] += base;
-    gGbaBios[0x1700 >> 2] += base;
-    gGbaBios[0x1788 >> 2] += base;
-    gGbaBios[0x1924 >> 2] += base;
-    gGbaBios[0x1D64 >> 2] += base;
-    gGbaBios[0x1D6C >> 2] += base;
-    gGbaBios[0x1D80 >> 2] += base;
-    gGbaBios[0x1D84 >> 2] += base;
-    gGbaBios[0x1D90 >> 2] += base;
-    gGbaBios[0x1D9C >> 2] += base;
-    gGbaBios[0x23A4 >> 2] += base;
-    gGbaBios[0x2624 >> 2] += base;
-    gGbaBios[0x26C0 >> 2] += base;
-    gGbaBios[0x2C14 >> 2] += base;
-    gGbaBios[0x30AC >> 2] += base;
     *(vu16*)(((u8*)gGbaBios) + 0x868) = 0; // prevent address check fail
     for (int i = 0; i < 38; i++)
         gGbaBios[(0x3738 >> 2) + i] += base;
-    gGbaBios[0x37D4 >> 2] += base;
-    gGbaBios[0x37D8 >> 2] += base;
-    gGbaBios[0x37E0 >> 2] += base;
-    gGbaBios[0x37E4 >> 2] += base;
-    gGbaBios[0x381C >> 2] += base;
-    gGbaBios[0x3820 >> 2] += base;
-    gGbaBios[0x3824 >> 2] += base;
-    gGbaBios[0x3828 >> 2] += base;
-    gGbaBios[0x38A0 >> 2] += base;
-    gGbaBios[0x38A4 >> 2] += base;
-    gGbaBios[0x38A8 >> 2] += base;
-    gGbaBios[0x38AC >> 2] += base;
-    gGbaBios[0x38B0 >> 2] += base;
-    gGbaBios[0x390C >> 2] += base;
-    gGbaBios[0x3910 >> 2] += base;
-    gGbaBios[0x3914 >> 2] += base;
-    gGbaBios[0x3918 >> 2] += base;
-    gGbaBios[0x391C >> 2] += base;
-    gGbaBios[0x3920 >> 2] += base;
-    gGbaBios[0x3924 >> 2] += base;
-    gGbaBios[0x3984 >> 2] += base;
-    gGbaBios[0x3988 >> 2] += base;
-    gGbaBios[0x398C >> 2] += base;
-    gGbaBios[0x3990 >> 2] += base;
-    gGbaBios[0x3994 >> 2] += base;
-    gGbaBios[0x3998 >> 2] += base;
-    gGbaBios[0x399C >> 2] += base;
-    gGbaBios[0x39C4 >> 2] += base;
-    gGbaBios[0x39C8 >> 2] += base;
-    gGbaBios[0x39CC >> 2] += base;
+    for (u16 address : sBiosRelocations)
+        gGbaBios[address >> 2] += base;
 }
 
 static void applyBiosVmPatches()
@@ -187,6 +151,11 @@ static void loadAgbAging()
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
 }
+
+// extern "C" void logOpcode(u32 opcode)
+// {
+//     gLogger->Log(LogLevel::Trace, "0x%X\n", opcode);
+// }
 
 extern "C" void gbaRunnerMain(void)
 {
