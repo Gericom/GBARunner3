@@ -10,12 +10,16 @@ export TOPDIR	:=	$(CURDIR)
 
 include $(DEVKITARM)/ds_rules
 
-.PHONY: checkbootstrap checktest clean
+.PHONY: checklibtwl checkbootstrap checktest clean
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checkbootstrap checktest
+all: checklibtwl checkbootstrap checktest
+
+#---------------------------------------------------------------------------------
+checklibtwl:
+	$(MAKE) -C libs/libtwl
 
 #---------------------------------------------------------------------------------
 checkbootstrap:
@@ -27,5 +31,6 @@ checktest:
 
 #---------------------------------------------------------------------------------
 clean:
+	$(MAKE) -C libs/libtwl clean
 	$(MAKE) -C bootstrap clean
 	$(MAKE) -C test clean
