@@ -1,5 +1,5 @@
 #pragma once
-#include <nds.h>
+#include <nds/ndstypes.h>
 
 #ifdef __cplusplus
 

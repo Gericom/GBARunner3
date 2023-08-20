@@ -1,4 +1,11 @@
 #include "common.h"
+#include <libtwl/mem/memVram.h>
+#include <libtwl/mem/memNtrWram.h>
+#include <libtwl/sys/sysPower.h>
+#include <libtwl/gfx/gfxPalette.h>
+#include <libtwl/gfx/gfx2d.h>
+#include <libtwl/gfx/gfxStatus.h>
+#include <libtwl/rtos/rtosIrq.h>
 #include <array>
 #include <string.h>
 #include "cp15.h"
@@ -160,22 +167,22 @@ static void loadAgbAging()
 extern "C" void gbaRunnerMain(void)
 {
     *(vu32*)0x04000000 = 0x10000;
-    *(vu32*)0x05000000 = 0x1F;
+    GFX_PLTT_BG_MAIN[0] = 0x1F;
     *(vu32*)0x0400006C = 0;
 
-    *(vu8*)0x04000242 = 0x80; // VRAM C -> LCDC
-    *(vu8*)0x04000243 = 0x80; // VRAM D -> LCDC
-    *(vu8*)0x04000244 = 0x81; // VRAM E -> BG
-    *(vu8*)0x04000245 = 0x82; // VRAM F -> OBJ
-    *(vu8*)0x04000246 = 0x8A; // VRAM G -> OBJ
-    *(vu8*)0x04000247 = 0; // iwram to arm9
-    *(vu8*)0x04000248 = 0x80; // VRAM H -> LCDC
-    *(vu8*)0x04000249 = 0x80; // VRAM I -> LCDC
-    *(vu16*)0x04000304 |= 1 << 3; // enable geometry engine to generate gx fifo irq
+    mem_setVramCMapping(MEM_VRAM_C_LCDC);
+    mem_setVramDMapping(MEM_VRAM_D_LCDC);
+    mem_setVramEMapping(MEM_VRAM_E_MAIN_BG_00000);
+    mem_setVramFMapping(MEM_VRAM_FG_MAIN_OBJ_00000);
+    mem_setVramGMapping(MEM_VRAM_FG_MAIN_OBJ_04000);
+    mem_setNtrWramMapping(MEM_NTR_WRAM_ARM9, MEM_NTR_WRAM_ARM9);
+    mem_setVramHMapping(MEM_VRAM_H_LCDC);
+    mem_setVramIMapping(MEM_VRAM_I_LCDC);
+    sys_set3DGeometryEnginePower(true); // enable geometry engine to generate gx fifo irq
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);
-    memset((void*)0x06000000, 0, 64 * 1024);
-    memset((void*)0x06400000, 0, 32 * 1024);
+    memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
+    memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     Environment::Initialize();
     if (Environment::SupportsAgbSemihosting())
         mountAgbSemihosting();
@@ -183,17 +190,18 @@ extern "C" void gbaRunnerMain(void)
     relocateGbaBios();
     applyBiosVmPatches();
     loadAgbAging();
-    *(vu32*)0x05000000 = 0x1F << 5;
+    GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     dma_init();
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
-    *(vu32*)0x04000210 = 1; // REG_IE = 1
-    *(vu32*)0x04000214 = ~0u; // ack REG_IF
-    *(vu32*)0x04000208 = 1; // REG_IME = 1
-    *(vu16*)0x04000004 = 1 << 3; // enable vblank interrupt requests
+
+    rtos_setIrqMask(RTOS_IRQ_VBLANK);
+    rtos_ackIrqMask(~0u);
+    REG_IME = 1;
+    gfx_setVBlankIrqEnabled(true);
     VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[8 >> 2], &gGbaBios[0x18 >> 2] };
     context_t runContext { };
     virtualMachine.Run(&runContext);

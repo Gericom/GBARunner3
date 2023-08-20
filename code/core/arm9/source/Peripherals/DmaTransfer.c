@@ -1,5 +1,6 @@
 #include "common.h"
 #include <string.h>
+#include <libtwl/gfx/gfxStatus.h>
 #include "Emulator/IoRegisters.h"
 #include "VirtualMachine/VMDtcm.h"
 #include "MemCopy.h"
@@ -217,18 +218,18 @@ ITCM_CODE static void dmaStop(void* dmaIoBase, u32 value)
         u32 gbaDispStat = *(u16*)&emu_ioRegisters[4];
         if (!(gbaDispStat & (1 << 4)))
         {
-            *(vu16*)0x04000004 &= ~(1 << 4);
+            gfx_setHBlankIrqEnabled(false);
         }
     }
 }
 
-ITCM_CODE static void __attribute__ ((noinline)) dmaStartHBlank(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
 {
     *(u16*)(dmaIoBase + 0xA) = value;
     int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
     vm_forcedIrqMask |= 1 << 1; // hblank irq
-    *(vu16*)0x04000004 |= 1 << 4; // hblank irq
+    gfx_setHBlankIrqEnabled(true);
     dma_state.channels[channel].curSrc = *(u32*)dmaIoBase;
     dma_state.channels[channel].curDst = *(u32*)(dmaIoBase + 4);
     if (value & (1 << 10))
