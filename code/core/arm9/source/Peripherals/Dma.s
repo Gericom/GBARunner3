@@ -2,6 +2,7 @@
 .altmacro
 
 #include "AsmMacros.inc"
+#include "GbaIoRegOffsets.h"
 
 arm_func emu_dma012CntLStore16
     ldr r11,= emu_ioRegisters
@@ -9,18 +10,6 @@ arm_func emu_dma012CntLStore16
     bics r9, r9, #0xC000
         orreq r9, r9, #0x4000
     strh r9, [r11, r10]
-    bx lr
-
-arm_func emu_dmaStore16
-    ldr r11,= emu_ioRegisters
-    sub r10, r8, #0x04000000
-    strh r9, [r11, r10]
-    bx lr
-
-arm_func emu_dmaStore32
-    ldr r11,= emu_ioRegisters
-    sub r10, r8, #0x04000000
-    str r9, [r11, r10]
     bx lr
 
 arm_func emu_dmaInternalMemoryAddressHiStore16
@@ -68,12 +57,13 @@ arm_func emu_dma3CntStore32
     mov r9, r9, lsr #16
 
 arm_func emu_dmaCntHStore16
+    bic r9, r9, #0x1F
     mov r10, r13
     ldr sp,= dtcmStackEnd
     ldr r11,= (emu_ioRegisters - 8)
     push {r0-r3,lr}
     and r0, r8, #0xFC
-    cmp r0, #0xDC
+    cmp r0, #GBA_REG_OFFS_DMA3CNT
         bicne r9, r9, #(1 << 11) // clear rom dreq bit for channels 0-2
     add r0, r0, r11
     mov r1, r9

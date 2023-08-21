@@ -4,6 +4,7 @@
 #include "Emulator/IoRegisters.h"
 #include "VirtualMachine/VMDtcm.h"
 #include "MemCopy.h"
+#include "GbaIoRegOffsets.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -112,7 +113,7 @@ ITCM_CODE static u32 translateAddress(u32 address)
             if (address >= 0x06018000)
                 address &= ~0x8000;
             
-            u32 dispCnt = emu_ioRegisters[0]; // GBA REG_DISPCNT
+            u32 dispCnt = emu_ioRegisters[GBA_REG_OFFS_DISPCNT];
             u32 objVramStart;
             if ((dispCnt & 7) < 3)
                 objVramStart = 0x06010000;
@@ -141,13 +142,13 @@ ITCM_CODE static u32 dmaIoBaseToChannel(const void* dmaIoBase)
     u32 regOffset = (u32)dmaIoBase - (u32)emu_ioRegisters;
     switch (regOffset)
     {
-        case 0xB0:
+        case GBA_REG_OFFS_DMA0SAD:
             return 0;
-        case 0xBC:
+        case GBA_REG_OFFS_DMA1SAD:
             return 1;
-        case 0xC8:
+        case GBA_REG_OFFS_DMA2SAD:
             return 2;
-        case 0xD4:
+        case GBA_REG_OFFS_DMA3SAD:
             return 3;
     }
     // not possible

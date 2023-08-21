@@ -191,7 +191,7 @@ extern "C" void gbaRunnerMain(void)
     applyBiosVmPatches();
     loadAgbAging();
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
-    while (((*(vu16*)0x04000130) & 1) == 1);
+    // while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     dma_init();
     dc_flushRange((void*)0x02200000, 0x400000);

@@ -2,89 +2,176 @@
 .altmacro
 
 #include "AsmMacros.inc"
+#include "GbaIoRegOffsets.h"
 
 .macro memu_ioRegStore16Pointer index
-    .if (\index << 1) == 0x00
+    .if (\index << 1) == GBA_REG_OFFS_DISPCNT
         .short emu_regDispCntStore16
-    .elseif (\index << 1) == 0x002
-        .short memu_store16Undefined // green swap
-    .elseif (\index << 1) == 0x004
-        .short emu_regDispStatStore16 // REG_DISPSTAT
-    .elseif (\index << 1) == 0x006
+    .elseif (\index << 1) == GBA_REG_OFFS_GREEN_SWAP
+        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_DISPSTAT
+        .short emu_regDispStatStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_VCOUNT
         .short memu_store16Undefined // REG_VCOUNT is read-only
+    .elseif (\index << 1) == GBA_REG_OFFS_BG0CNT
+        .short emu_regBgCnt01Store16
+    .elseif (\index << 1) == GBA_REG_OFFS_BG1CNT
+        .short emu_regBgCnt01Store16
+    .elseif (\index << 1) == GBA_REG_OFFS_BG2CNT
+        .short emu_regBgCnt23Store16
+    .elseif (\index << 1) == GBA_REG_OFFS_BG3CNT
+        .short emu_regBgCnt23Store16
+    .elseif (\index << 1) == GBA_REG_OFFS_WININ
+        .short emu_regWinInOutStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WINOUT
+        .short emu_regWinInOutStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_BLDCNT
+        .short emu_regBldCntStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_BLDALPHA
+        .short emu_regBldAlphaStore16
     // these are sound on the gba
-    .elseif (\index << 1) == 0x60
-        .short memu_store16Undefined
-    .elseif (\index << 1) == 0x62
-        .short memu_store16Undefined
-    .elseif (\index << 1) == 0x64
-        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_X
+        .short emu_ioStore16
     .elseif (\index << 1) == 0x66
         .short memu_store16Undefined
-    .elseif (\index << 1) == 0x68
-        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND2CNT_L
+        .short emu_ioStore16
     .elseif (\index << 1) == 0x6A
         .short memu_store16Undefined
-    .elseif (\index << 1) == 0x6C
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND2CNT_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_X
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND4CNT_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUND4CNT_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_X
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUNDBIAS
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM0_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM0_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM1_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM1_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM2_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM2_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM3_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM3_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_FIFO_A_L
         .short memu_store16Undefined
-    .elseif (\index << 1) == 0xB0
-        .short emu_dmaStore16 // REG_DMA0SAD_L
-    .elseif (\index << 1) == 0xB2
-        .short emu_dmaInternalMemoryAddressHiStore16 // REG_DMA0SAD_H
-    .elseif (\index << 1) == 0xB4
-        .short emu_dmaStore16 // REG_DMA0DAD_L
-    .elseif (\index << 1) == 0xB6
-        .short emu_dmaInternalMemoryAddressHiStore16 // REG_DMA0DAD_H
-    .elseif (\index << 1) == 0xB8
-        .short emu_dma012CntLStore16 // REG_DMA0CNT_L
-    .elseif (\index << 1) == 0xBA
-        .short emu_dmaCntHStore16 // REG_DMA0CNT_H
-    .elseif (\index << 1) == 0xBC
-        .short emu_dmaStore16 // REG_DMA1SAD_L
-    .elseif (\index << 1) == 0xBE
-        .short emu_dmaAnyMemoryAddressHiStore16 // REG_DMA1SAD_H
-    .elseif (\index << 1) == 0xC0
-        .short emu_dmaStore16 // REG_DMA1DAD_L
-    .elseif (\index << 1) == 0xC2
-        .short emu_dmaInternalMemoryAddressHiStore16 // REG_DMA1DAD_H
-    .elseif (\index << 1) == 0xC4
-        .short emu_dma012CntLStore16 // REG_DMA1CNT_L
-    .elseif (\index << 1) == 0xC6
-        .short emu_dmaCntHStore16 // REG_DMA1CNT_H
-    .elseif (\index << 1) == 0xC8
-        .short emu_dmaStore16 // REG_DMA2SAD_L
-    .elseif (\index << 1) == 0xCA
-        .short emu_dmaAnyMemoryAddressHiStore16 // REG_DMA2SAD_H
-    .elseif (\index << 1) == 0xCC
-        .short emu_dmaStore16 // REG_DMA2DAD_L
-    .elseif (\index << 1) == 0xCE
-        .short emu_dmaInternalMemoryAddressHiStore16 // REG_DMA2DAD_H
-    .elseif (\index << 1) == 0xD0
-        .short emu_dma012CntLStore16 // REG_DMA2CNT_L
-    .elseif (\index << 1) == 0xD2
-        .short emu_dmaCntHStore16 // REG_DMA2CNT_H
-    .elseif (\index << 1) == 0xD4
-        .short emu_dmaStore16 // REG_DMA3SAD_L
-    .elseif (\index << 1) == 0xD6
-        .short emu_dmaAnyMemoryAddressHiStore16 // REG_DMA3SAD_H
-    .elseif (\index << 1) == 0xD8
-        .short emu_dmaStore16 // REG_DMA3DAD_L
-    .elseif (\index << 1) == 0xDA
-        .short emu_dmaAnyMemoryAddressHiStore16 // REG_DMA3DAD_H
-    .elseif (\index << 1) == 0xDC
-        .short emu_dmaStore16 // REG_DMA3CNT_L
-    .elseif (\index << 1) == 0xDE
-        .short emu_dmaCntHStore16 // REG_DMA3CNT_H
-    .elseif ((\index << 2) >= 0x180) && ((\index << 2) < 0x200)
+    .elseif (\index << 1) == GBA_REG_OFFS_FIFO_A_H
         .short memu_store16Undefined
-    .elseif (\index << 1) == 0x200
-        .short emu_regIeIfStore32 // REG_IE
-    .elseif (\index << 1) == 0x202
-        .short emu_regIfStore16 // REG_IF
-    .elseif (\index << 1) == 0x204
-        .short memu_store16Undefined // REG_WAITCNT
-    .elseif (\index << 1) == 0x208
-        .short emu_regImeStore16 // REG_IME
+    .elseif (\index << 1) == GBA_REG_OFFS_FIFO_B_L
+        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_FIFO_B_H
+        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0SAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0SAD_H
+        .short emu_dmaInternalMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0DAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0DAD_H
+        .short emu_dmaInternalMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0CNT_L
+        .short emu_dma012CntLStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA0CNT_H
+        .short emu_dmaCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1SAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1SAD_H
+        .short emu_dmaAnyMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1DAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1DAD_H
+        .short emu_dmaInternalMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1CNT_L
+        .short emu_dma012CntLStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA1CNT_H
+        .short emu_dmaCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2SAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2SAD_H
+        .short emu_dmaAnyMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2DAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2DAD_H
+        .short emu_dmaInternalMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2CNT_L
+        .short emu_dma012CntLStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA2CNT_H
+        .short emu_dmaCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3SAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3SAD_H
+        .short emu_dmaAnyMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3DAD_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3DAD_H
+        .short emu_dmaAnyMemoryAddressHiStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3CNT_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_DMA3CNT_H
+        .short emu_dmaCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIODATA32_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIODATA32_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI2
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI3
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIOCNT
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI_SEND
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_KEYCNT
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_RCNT
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOYCNT
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOY_RECV_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOY_RECV_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOY_TRANS_L
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOY_TRANS_H
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_JOYSTAT
+        .short emu_ioStore16
+    .elseif ((\index << 1) > GBA_REG_OFFS_JOYSTAT) && ((\index << 1) < GBA_REG_OFFS_IE)
+        .short memu_store16Undefined
+    .elseif (\index << 1) == GBA_REG_OFFS_IE
+        .short emu_regIeIfStore32
+    .elseif (\index << 1) == GBA_REG_OFFS_IF
+        .short emu_regIfStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_WAITCNT
+        .short emu_ioStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_IME
+        .short emu_regImeStore16
     .else
         .short emu_ioFallbackStore16
     .endif

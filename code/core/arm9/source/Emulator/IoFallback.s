@@ -28,4 +28,15 @@ arm_func emu_ioFallbackStore16
     sub r10, r8, #0x04000000
     strh r9, [r11, r10]
     bx lr
-    
+
+arm_func emu_ioStore16
+    ldr r11,= emu_ioRegisters
+    sub r10, r8, #0x04000000
+    strh r9, [r11, r10]
+    bx lr
+
+arm_func emu_ioStore32
+    ldr r11,= emu_ioRegisters
+    sub r10, r8, #0x04000000
+    str r9, [r11, r10]
+    bx lr

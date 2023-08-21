@@ -2,6 +2,7 @@
 
 #include "AsmMacros.inc"
 #include "MemoryEmuDtcm.inc"
+#include "GbaIoRegOffsets.h"
 
 /// @brief Loads a 16-bit value from the given GBA memory address.
 ///        When unaligned rotation is applied.
@@ -32,6 +33,10 @@ arm_func memu_load16
     .word memu_load16RomHi // 0D
     .word memu_load16Sram // 0E
     .word memu_load16Sram // 0F
+
+arm_func memu_load16UndefinedZero
+    mov r9, #0
+    bx lr
 
 arm_func memu_load16Undefined
     ldr r10,= memu_inst_addr
@@ -105,7 +110,7 @@ arm_func memu_load16Pltt
 arm_func memu_load16Vram
     ldr r11,= emu_ioRegisters
     bic r10, r8, #0x00FE0000
-    ldrh r11, [r11] // GBA REG_DISPCNT
+    ldrh r11, [r11, #GBA_REG_OFFS_DISPCNT]
     ldr r12,= 0x06018000
     cmp r10, r12
         bicge r10, #0x8000

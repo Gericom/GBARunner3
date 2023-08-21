@@ -1,6 +1,7 @@
 .section ".itcm", "ax"
 
 #include "AsmMacros.inc"
+#include "GbaIoRegOffsets.h"
 
 /// @brief Stores a 16-bit value to the given 16-bit aligned GBA memory address.
 /// @param r0-r7 Preserved.
@@ -68,7 +69,7 @@ arm_func memu_store16Pltt
 arm_func memu_store16Vram
     ldr r11,= emu_ioRegisters
     bic r10, r8, #0x00FE0000
-    ldrh r11, [r11]
+    ldrh r11, [r11, #GBA_REG_OFFS_DISPCNT]
     ldr r12,= 0x06018000
     cmp r10, r12
         bicge r10, #0x8000
