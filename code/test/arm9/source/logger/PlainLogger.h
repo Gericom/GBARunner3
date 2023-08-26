@@ -9,7 +9,7 @@ class PlainLogger : public ILogger
     LogLevel _maxLogLevel;
     std::unique_ptr<IOutputStream> _outputStream;
 
-    char _logBuffer[512];
+    char _logBuffer[4096];
 
 public:
     PlainLogger(LogLevel maxLogLevel, std::unique_ptr<IOutputStream> outputStream)

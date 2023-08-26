@@ -16,11 +16,12 @@
 #include "Peripherals/DmaTransfer.h"
 #include "Logger/NitroEmulatorOutputStream.h"
 #include "Logger/PlainLogger.h"
+#include "SdCache/SdCache.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
-static FIL sFile;
+FIL gFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -28,22 +29,37 @@ static NitroEmulatorOutputStream sIsNitroOutput;
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
 ILogger* gLogger = &sPlainLogger;
 
+static bool mountDldi()
+{
+    FRESULT res = f_mount(&gFatFs, "fat:", 1);
+    if (res != FR_OK)
+    {
+        gLogger->Log(LogLevel::Error, "Mounting dldi failed\n");
+        return false;
+    }
+    f_chdrive("fat:");
+    return true;
+}
+
 static bool mountAgbSemihosting()
 {
     FRESULT res = f_mount(&gFatFs, "pc:", 1);
     if (res != FR_OK)
+    {
+        gLogger->Log(LogLevel::Error, "Mounting agb semihosting failed\n");
         return false;
+    }
     f_chdrive("pc:");
     return true;
 }
 
 static void loadGbaBios()
 {
-    memset(&sFile, 0, sizeof(sFile));
-    f_open(&sFile, "/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+    memset(&gFile, 0, sizeof(gFile));
+    f_open(&gFile, "/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
     UINT br;
-    f_read(&sFile, gGbaBios, 16 * 1024, &br);
-    f_close(&sFile);
+    f_read(&gFile, gGbaBios, 16 * 1024, &br);
+    f_close(&gFile);
 }
 
 static constexpr auto sBiosRelocations = std::to_array<u16>
@@ -97,13 +113,13 @@ static void applyBiosVmPatches()
     gGbaBios[0x0388 >> 2] = 0xE189009C; // msr cpsr_cf, r12
 }
 
-static void loadAgbAging()
+static void loadGbaRom()
 {
-    memset(&sFile, 0, sizeof(sFile));
-    // f_open(&sFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
+    memset(&gFile, 0, sizeof(gFile));
+    // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // UINT br;
-    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
-    // f_close(&sFile);
+    // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
+    // f_close(&gFile);
     // // agb aging
     // // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
     // // mgba suite
@@ -117,18 +133,54 @@ static void loadAgbAging()
     // *(vu32*)0x022500AC = 0xE1C90090; // msr spsr_cf, r0
     // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
 
-    f_open(&sFile, "/Mario Kart - Super Circuit (Europe).gba", FA_OPEN_EXISTING | FA_READ);
-    UINT br;
-    f_read(&sFile, (void*)0x02200000, 4 * 1024 * 1024, &br);
-    f_close(&sFile);
-    // mksc eu
-    *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
-
-    // f_open(&sFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
+    // f_open(&gFile, "/Mario Kart - Super Circuit (Europe).gba", FA_OPEN_EXISTING | FA_READ);
     // UINT br;
-    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
-    // f_close(&sFile);
+    // f_read(&gFile, (void*)0x02200000, 4 * 1024 * 1024, &br);
+    // // f_close(&gFile);
+    // // mksc eu
+    // *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+
+    // f_open(&gFile, "/Donkey Kong Country 3 (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // UINT br;
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // // f_close(&gFile);
+    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02200100 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x02200108 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02200118 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x02200120 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x0220013C = 0xE1E00090; // mrs r0, spsr
+    // *(vu32*)0x0220020C = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x02200218 = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x0220022C = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x02200238 = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x02200248 = 0xE1C90090; // msr spsr_cf, r0
+
+    f_open(&gFile, "/Sims, The - Bustin' Out (USA, Europe) (En,Fr,De,Es,It,Nl).gba", FA_OPEN_EXISTING | FA_READ);
+    sdc_init();
+    UINT br;
+    f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // f_close(&gFile);
+    *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x02200134 = 0xE1A00090; // mrs r0, cpsr
+    *(vu32*)0x0220013C = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x0220014C = 0xE1A00090; // mrs r0, cpsr
+    *(vu32*)0x02200154 = 0xE1890090; // msr cpsr_cf, r0
+    *(vu32*)0x02200170 = 0xE1E00090; // mrs r0, spsr
+    *(vu32*)0x02200238 = 0xE1A00093; // mrs r3, cpsr
+    *(vu32*)0x02200244 = 0xE1890093; // msr cpsr_cf, r3
+    *(vu32*)0x02200264 = 0xE1A00093; // mrs r3, cpsr
+    *(vu32*)0x02200270 = 0xE1890093; // msr cpsr_cf, r3
+    *(vu32*)0x02200280 = 0xE1C90090; // msr spsr_cf, r0
+
+    // f_open(&gFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
+    // UINT br;
+    // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
+    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x027A426C = 0xE1E00092; // mrs r2, spsr
@@ -138,10 +190,10 @@ static void loadAgbAging()
     // *(vu32*)0x027A42A8 = 0xE1890092; // msr cpsr_cf, r2
     // *(vu32*)0x027A42B0 = 0xE1C90092; // msr spsr_cf, r2
 
-    // f_open(&sFile, "/varooom-3d_bad_audio.gba", FA_OPEN_EXISTING | FA_READ);
+    // f_open(&gFile, "/varooom-3d_bad_audio.gba", FA_OPEN_EXISTING | FA_READ);
     // UINT br;
-    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
-    // f_close(&sFile);
+    // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
+    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x02467968 = 0xE1E00092; // mrs r2, spsr
@@ -151,10 +203,10 @@ static void loadAgbAging()
     // *(vu32*)0x024679A4 = 0xE1890092; // msr cpsr_cf, r2
     // *(vu32*)0x024679AC = 0xE1C90092; // msr spsr_cf, r2
 
-    // f_open(&sFile, "/dma_demo.gba", FA_OPEN_EXISTING | FA_READ);
+    // f_open(&gFile, "/dma_demo.gba", FA_OPEN_EXISTING | FA_READ);
     // UINT br;
-    // f_read(&sFile, (void*)0x02200000, f_size(&sFile), &br);
-    // f_close(&sFile);
+    // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
+    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
 }
@@ -164,8 +216,14 @@ static void loadAgbAging()
 //     gLogger->Log(LogLevel::Trace, "0x%X\n", opcode);
 // }
 
+extern "C" void logAddress(u32 address)
+{
+    gLogger->Log(LogLevel::Trace, "0x%X\n", address);
+}
+
 extern "C" void gbaRunnerMain(void)
 {
+    *(vu16*)0x04000204 &= ~0x800;
     *(vu32*)0x04000000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
     *(vu32*)0x0400006C = 0;
@@ -184,12 +242,13 @@ extern "C" void gbaRunnerMain(void)
     memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     Environment::Initialize();
-    if (Environment::SupportsAgbSemihosting())
-        mountAgbSemihosting();
+    mountDldi();
+    // if (Environment::SupportsAgbSemihosting())
+        // mountAgbSemihosting();
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
-    loadAgbAging();
+    loadGbaRom();
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));

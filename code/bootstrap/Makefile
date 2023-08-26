@@ -10,12 +10,16 @@ export TOPDIR	:=	$(CURDIR)
 
 # specify a directory which contains the nitro filesystem
 # this is relative to the Makefile
-NITRO_FILES	:=
+ifdef GBAR3_ISNITRO
+NITRO_FILES	:= nitrofiles
+else
+NITRO_FILES	:= 
+endif
 
 # These set the information text in the nds file
 GAME_TITLE     := GBARunner 3
 GAME_SUBTITLE1 := By Gericom
-#GAME_SUBTITLE2 := http://devitpro.org
+GAME_SUBTITLE2 :=
 
 include $(DEVKITARM)/ds_rules
 
@@ -44,6 +48,9 @@ $(TARGET).nds	: $(NITRO_FILES) arm7/$(TARGET).elf arm9/$(TARGET).elf
 	ndstool	-c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
 	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
 	$(_ADDFILES)
+ifdef GBAR3_ISNITRO
+	dlditool FatInNitroFS.dldi $(TARGET).nds
+endif
 
 #---------------------------------------------------------------------------------
 arm7/$(TARGET).elf:

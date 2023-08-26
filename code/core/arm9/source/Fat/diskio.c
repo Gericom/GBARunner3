@@ -18,6 +18,12 @@
 
 static u32 sAgbMem;
 
+extern uint8_t _io_dldi[];
+typedef bool (*FN_MEDIUM_STARTUP)(void);
+typedef bool (*FN_MEDIUM_READSECTORS)(sec_t sector, sec_t numSectors, void* buffer);
+#define _DLDI_startup_ptr ((FN_MEDIUM_STARTUP)(*((u32*)(_io_dldi + 0x08))))
+#define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((u32*)(_io_dldi + 0x10))))
+
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
@@ -37,7 +43,12 @@ static u32 sAgbMem;
     BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-    if (pdrv == DEV_PC)
+    if (pdrv == DEV_FAT)
+    {
+        _DLDI_startup_ptr();
+        return 0;
+    }
+    else if (pdrv == DEV_PC)
     {
         sAgbMem = *(u32*)0x027FFF7C;
         return 0;
@@ -45,8 +56,6 @@ static u32 sAgbMem;
 
     return STA_NOINIT;
 }
-
-
 
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
@@ -59,7 +68,12 @@ static u32 sAgbMem;
     UINT count		/* Number of sectors to read */
 )
 {
-    if (pdrv == DEV_PC)
+    if (pdrv == DEV_FAT)
+    {
+        _DLDI_readSectors_ptr(sector, count, buff);
+        return RES_OK;
+    }
+    else if (pdrv == DEV_PC)
     {
         u32 agbMem = sAgbMem;
         *(vu16*)(agbMem + 0x10002) = 1;

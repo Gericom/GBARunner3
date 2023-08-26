@@ -3,6 +3,7 @@
 #include "AsmMacros.inc"
 #include "MemoryEmuDtcm.inc"
 #include "GbaIoRegOffsets.h"
+#include "SdCache/SdCacheDefs.h"
 
 /// @brief Loads an 8-bit value from the given GBA memory address.
 /// @param r0-r7 Preserved.
@@ -123,15 +124,41 @@ arm_func memu_load8Oam
     bx lr
 
 arm_func memu_load8Rom
-    add r9, r8, #(0x02200000 - 0x08000000)
-    ldrb r9, [r9]
+    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
+    bic r12, r8, #(3 << (SDC_BLOCK_SHIFT - 2))
+    ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
+    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
+    cmp r11, #0
+    ldrneb r9, [r11, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
+    bxne lr
+
+load8RomCacheMiss:
+    mov r10, r13
+    ldr r11,= dtcmStackEnd
+    // check if we already had a stack
+    sub r9, r11, r13
+    cmp r9, #512
+    // if not begin at the end of the stack
+    movhs sp, r11
+    push {r0-r3,lr}
+    mov r0, r8
+    bl sdc_loadRomBlockDirect
+    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
+    ldrb r9, [r0, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
+    pop {r0-r3,lr}
+    mov r13, r10
     bx lr
 
 arm_func memu_load8RomHi
-    bic r9, r8, #0x06000000
-    add r9, r9, #(0x02200000 - 0x08000000)
-    ldrb r9, [r9]
-    bx lr
+    ldr r11,= sdc_romBlockToCacheBlock
+    bic r9, r8, #0x0E000000
+    bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))
+    ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
+    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
+    cmp r11, #0
+    ldrneb r9, [r11, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
+    bxne lr
+    b load8RomCacheMiss
 
 arm_func memu_load8Sram
     bx lr

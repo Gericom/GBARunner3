@@ -5,6 +5,7 @@
 #include "VirtualMachine/VMDtcm.h"
 #include "MemCopy.h"
 #include "GbaIoRegOffsets.h"
+#include "SdCache/SdCache.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -155,6 +156,42 @@ ITCM_CODE static u32 dmaIoBaseToChannel(const void* dmaIoBase)
     return 0;
 }
 
+ITCM_CODE void dma_immTransfer16RomSrc(u32 src, u32 dst, u32 count)
+{
+    count <<= 1;
+    u8* dstPtr = (u8*)translateAddress(dst);
+    do
+    {
+        const void* cacheBlock = sdc_getRomBlock(src);
+        u32 offset = src & SDC_BLOCK_MASK;
+        u32 remainingInBlock = SDC_BLOCK_SIZE - offset;
+        if (remainingInBlock > count)
+            remainingInBlock = count;
+        mem_copy16((const u8*)cacheBlock + offset, dstPtr, remainingInBlock);
+        src += remainingInBlock;
+        dstPtr += remainingInBlock;
+        count -= remainingInBlock;
+    } while (count > 0);
+}
+
+ITCM_CODE void dma_immTransfer32RomSrc(u32 src, u32 dst, u32 count)
+{
+    count <<= 2;
+    u8* dstPtr = (u8*)translateAddress(dst);
+    do
+    {
+        const void* cacheBlock = sdc_getRomBlock(src);
+        u32 offset = src & SDC_BLOCK_MASK;
+        u32 remainingInBlock = SDC_BLOCK_SIZE - offset;
+        if (remainingInBlock > count)
+            remainingInBlock = count;
+        mem_copy32((const u8*)cacheBlock + offset, dstPtr, remainingInBlock);
+        src += remainingInBlock;
+        dstPtr += remainingInBlock;
+        count -= remainingInBlock;
+    } while (count > 0);
+}
+
 ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
 {
     src &= ~1;
@@ -173,6 +210,11 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
         srcStep <= 0 || dstRegion >= 8 || difference < 32)
     {
         dma_immTransferSafe16(src, dst, count, srcStep);
+        return;
+    }
+    if (src >= 0x08200000 || srcEnd >= 0x08200000)
+    {
+        dma_immTransfer16RomSrc(src, dst, count);
         return;
     }
     // todo: check for bg vram -> obj vram transition
@@ -199,6 +241,11 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
         srcStep <= 0 || dstRegion >= 8 || difference < 32)
     {
         dma_immTransferSafe32(src, dst, count, srcStep);
+        return;
+    }
+    if (src >= 0x08200000 || srcEnd >= 0x08200000)
+    {
+        dma_immTransfer32RomSrc(src, dst, count);
         return;
     }
     // todo: check for bg vram -> obj vram transition
@@ -312,6 +359,7 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
 
 ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
 {
+    ic_invalidateAll();
     u32 oldCnt = *(u16*)(dmaIoBase + 0xA);
     if (!((oldCnt ^ value) & 0x8000))
     {

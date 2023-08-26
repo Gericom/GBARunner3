@@ -34,6 +34,7 @@ SOURCES		:=	source \
 				source/Peripherals \
 				source/Peripherals/Graphics \
 				source/Peripherals/Interrupts \
+				source/SdCache \
 				source/VirtualMachine \
 				../../libs/mini-printf
 DATA		:=	data

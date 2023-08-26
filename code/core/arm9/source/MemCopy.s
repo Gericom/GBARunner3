@@ -36,8 +36,8 @@ arm_func mem_copy16
     ldr pc, [pc, r12, lsl #2]
     nop
     .word copy16_src32_dst32
-    .word copy16_src32_dst16
     .word copy16_src16_dst32
+    .word copy16_src32_dst16
     .word copy16_src16_dst16
 
 copy16_src16_dst16:

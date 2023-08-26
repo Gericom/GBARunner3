@@ -55,13 +55,13 @@ _start:
     ldr r0,= 0x33300221
     mcr p15, 0, r0, c5, c0, 3
     // dcache
-    ldr r0,= 0b00100010
+    ldr r0,= 0b11100010
     mcr p15, 0, r0, c2, c0, 0
     // icache
-    ldr r0,= 0b00100010
+    ldr r0,= 0b11100010
     mcr p15, 0, r0, c2, c0, 1
     // write buffer
-    ldr r0,= 0b00100010
+    ldr r0,= 0b10100010
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu
