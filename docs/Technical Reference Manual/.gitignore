@@ -5,4 +5,7 @@
 *.out
 *.synctex.gz
 *.toc
+main-blx.bib
+*.bcf
+main.run.xml
 main.pdf

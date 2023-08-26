@@ -12,12 +12,16 @@
 \usepackage{hhline}
 \usepackage{bytefield}
 \usepackage{adjustbox}
-%\usepackage[table,xcdraw]{xcolor}
+\usepackage{makecell}
+\usepackage{todonotes}
 \usepackage{fontspec}
+\usepackage[backend=bibtex]{biblatex}
+\addbibresource{refs.bib}
 \setmainfont{Arial}
 \setmonofont{Consolas}
 \title{GBARunner 3\\Technical Reference Manual}
 \author{Gericom}
+\date{26 August 2023}
 
 % facilitates the creation of memory maps. Start address at the bottom, end address at the top.
 % syntax: \memsection{end address}{start address}{height in lines}{text in box}
@@ -61,10 +65,229 @@
 
 	In this document various new ideas for GBARunner 3 will be documented, together with lessons learned from GBARunner 2 and the things that already worked well.
 
-\chapter{System Overview}
+\chapter{Implementation challenges}
+\section{CPU compatibility issues}
+	CPU compatibility issues exist because ARM7TDMI code is executed on an ARM946E-S core. While the ARM946E-S is backwards compatible in the defined behavior of instructions, its (in ARM terminology) unpredictable behavior (which means it depends on the CPU implementation) does differ to some extent. The following differences have been identified:
+	\subsection{\texttt{LDR pc}, \texttt{LDM \{\dots,pc\}} \--- ARM/Thumb switching}
+	In \texttt{LDR pc} and \texttt{LDM \{\dots,pc\}} instructions the ARM7TDMI ignores the thumb bit of the loaded address. By default the ARM946E-S switches between ARM and Thumb based on the lsb of the loaded value.
+	
+	\subsubsection{Impact}
+	Only a small number of games depend on this behavior, including \textit{Final Fantasy IV} and \textit{Maya the Bee Sweet Gold}. It is likely that such games were compiled without interworking.
+	
+	\subsubsection{Solution}
+	The behavior can be disabled in the CP15 control register for backwards compatibility purposes.
+	
+	\subsubsection{Impact of solution}
+	Fixes the issue completely without any performance impact. Care should be taken to not depend on the ARM/Thumb switching behavior when the backwards compatibility mode is enabled. The compiler can for example generate a \texttt{POP pc} because it assumes it is safe to do on an armv5te processor.
+	
+	\subsection{\texttt{LDRH} \--- Unaligned behavior}
+	When an \texttt{LDRH} is performed with an odd address the ARM7TDMI force-aligns, reads the 16-bit value at the aligned address and then rotates right by 8 bits similar to an unaligned \texttt{LDR}. For example if the bytes in memory look like \texttt{55 AA} and assume the unaligned address points to \texttt{AA}, the resulting value will be \texttt{0x550000AA}. The ARM946E-S still force-aligns, but the rotation no longer happens, resulting in \texttt{0x0000AA55}.
+	
+	\subsubsection{Impact}
+	Unknown. Could effect a very small number of games, but can be game breaking. Aborted reads are not effected, because the memory emulation emulates the ARM7TDMI behavior.
+	
+	\subsubsection{Solution}
+	Replace by an exception generating instruction and emulate.
+	
+	\subsubsection{Impact of solution}
+	Impacts performance.
+	
+	\subsection{\texttt{LDRSH} \--- Unaligned behavior}
+	On ARM7TDMI an unaligned \texttt{LDRSH} force-aligns, reads the 16-bit value at the aligned address, sign extends and then performs an additional arithmetic right shift of 8 bits. As such the resulting value is as if \texttt{LDRSB} was used (but I assume for the memory system it will still be a 16-bit access). For example if the bytes in memory look like \texttt{55 AA} and assume the unaligned address points to \texttt{AA}, the resulting value will be \texttt{0xFFFFFFAA}. The ARM946E-S still force-aligns but does not apply the extra shift, resulting in \texttt{0xFFFFAA55}.
+	
+	\subsubsection{Impact}
+	Unknown. Could effect a very small number of games, but can be game breaking. Aborted reads are not effected, because the memory emulation emulates the ARM7TDMI behavior.
+	
+	\subsubsection{Solution}
+	Replace by an exception generating instruction and emulate.
+	
+	\subsubsection{Impact of solution}
+	Impacts performance.
+	
+	\subsection{\texttt{LDM Rn!, \{\dots,Rn,\dots\}} (ARM only)}
+	When writeback is enabled and \texttt{Rn} is included in the rlist, the resulting value of \texttt{Rn} will always be the value loaded from memory on the ARM7TDMI. As such it behaves as if writeback was never enabled in the first place. On the ARM946E-S the resulting value of \texttt{Rn} will be the updated address if \texttt{Rn} is the only register or not the last register in the rlist. Note that for Thumb \texttt{LDM} the issue does not exist, because writeback is implicit and is defined to be enabled unless \texttt{Rn} is in the rlist.
+	
+	\subsubsection{Impact}
+	This bug breaks some games completely. Some examples of games with this issue are \textit{Bibi und Tina - Ferien auf dem Martinshof}, \textit{Cars - Mater-National Championship}, \textit{Maya the Bee - Sweet Gold} and \textit{V-Rally 3}. In particular there is a certain sound mixer being used by various games that contains the issue.
+	
+	\subsubsection{Solution}
+	Disable writeback on effected instructions. This can be done using the JIT or by game specific patches that are applied before booting the game.
+	
+	\subsubsection{Impact of solution}
+	Fixes the issue completely without any performance impact.
+	
+	\subsection{\texttt{STM Rn!, \{\dots,Rn,\dots\}}}
+	When writeback is enabled and \texttt{Rn} is included in the rlist, the ARM7TDMI writes either the original value of \texttt{Rn} (when \texttt{Rn} is the first register in the rlist), or the updated value of \texttt{Rn}. The ARM946E-S always writes the original value of \texttt{Rn}.
+	
+	\subsubsection{Impact}
+	Unknown, but could be game breaking.
+	
+	\subsubsection{Solution}
+	Replace by an exception generating instruction and emulate.
+	
+	\subsubsection{Impact of solution}
+	Impacts performance.
+	
+	\subsection{\texttt{MULS}, \texttt{MLAS} \--- C flag}
+	On ARM7TDMI the C flag is destroyed (unpredictable), while on ARM946E-S it is left unchanged.
+	
+	\subsubsection{Impact}
+	Unknown, but likely very small. It is unknown how the destroyed C flag value comes to be, so any dependence on it is a bug.
+	
+	\subsection{\texttt{SMULLS}, \texttt{SMLALS} \--- C and V flag}
+	On ARM7TDMI both the C and V flag are destroyed (unpredictable), while on ARM946E-S they are left unchanged.
+	
+	\subsubsection{Impact}
+	Unknown, but likely very small. It is unknown how the destroyed C and V flag values comes to be, so any dependence on it is a bug.
+	
+\section{Relocation issues}\label{sec:relocation}
+	Relocation issues originate from the difference in \texttt{PC} value when code is executed at a different memory address than originally intended. Most often the \texttt{PC} is only used for pool reads, switch table reads and switch jumps. The short range of those operations minimize the impact, especially when most of the code is linearly loaded into memory, including the pools in the expected relative locations. Occasionally code might use the value of \texttt{PC} to construct a much larger address (outside the linearly loaded range of code), or a value for which the actual number is important. The latter case could for example be when the value is not used as address or is compared with some stored value.
+	
+	\subsection{Example}
+	\textit{Game Boy Advance Video - SpongeBob SquarePants - Volume 1} (MSSE) is a good example of a problematic game. In various places it constructs values by adding the \texttt{PC} to a value loaded from the pool (for whatever reason). The worst (breaking) example is the following:	
+	\begin{verbatim}
+		080000F4    add r8, pc, #0x90 // r8 = 0x0800018C
+		080000F8    ldmia r8, {r0-r3}
+		080000FC    add r0, r0, r8 // r0 = 0x0800018C + 0x1FD4784 = 0x09FD4910
+		08000100    add r1, r1, r8 // r1 = 0x0800018C + 0x1FD479C = 0x09FD4928
+		08000104    add r2, r2, r8 // r2 = 0x0800018C + 0x1FD479C = 0x09FD4928
+		08000108    add r3, r3, r8 // r3 = 0x0800018C + 0x1FD47AC = 0x09FD4938
+		...
+		0800018C    .word 0x1FD4784
+		08000190    .word 0x1FD479C
+		08000194    .word 0x1FD479C
+		08000198    .word 0x1FD47AC
+	\end{verbatim}
+	The first two instructions are fine. A \texttt{PC}-relative pool address is constructed and 4 words are loaded from it. Then it adds the pool address to the loaded values to construct high rom addresses (which seem to contain some information related to relocating code to IWRAM). If we now consider that we would have had a DS main memory address in the \texttt{PC}, for example \texttt{0x020400F4}. The pool address would become \texttt{0x0204018C}, which is fine, because it's in the linearly loaded range. Now the high rom addresses are constructed and result in values such as \texttt{0x04014910}. This is way outside the loaded range and leads to a crash. It is difficult, if not impossible, to catch all such out-of-range addresses and compute what the intended address was. Especially when they overlap with other existing areas of memory such as IWRAM or IO registers, or other GBARunner data in main memory.
+	
+	\subsection{Impact}
+	For code that is sufficiently linearly loaded into memory the impact is small and only a small number of games use the \texttt{PC} in a way that causes issues. When code is loade in small chunks, for example into the sd cache or into a dynamic JIT cache, the issue is almost always present. An additional risk is that depending on the situation it may be difficult or impossible to translate return addresses back to the intended location, for example when a cache block has been replaced.
+	
+	\subsection{Solution}
+	A solution for this problem is to replace any instruction that uses the \texttt{PC} in an unpredictable\footnote{Unpredictable in this case means that once the instruction is executed a register will contain a value that is different from the one that would originally have been there, and that could be used in any way by further instructions. Instructions such as \texttt{ldr Rd, [pc, \#imm]} are self-contained and we can know whether they are safe or not.} way or that results in the wrong value being loaded, by an exception generating instruction. The emulator will then execute the instruction with the original \texttt{PC} value and return to the code which will continue with the correct value. This results in the correct values and addresses being computed which can later unambiguously be aborted and emulated.
+	
+	\subsection{Impact of the solution}
+	The performance of the patched code will be effected by the exception generating instructions and subsequent emulation.
+	
+\section{Hicode}
+	Hicode is a term used to refer to code at an address above the part of the rom that is linearly loaded into memory by GBARunner. In most games the rom is linked to have a code segment (.text) at the beginning, followed by data segments. As long as the code segment is smaller than the linearly loaded part of the rom there are no issues. When more memory is available (DSi 16 MB, or 3DS 32 MB), hicode is as such much less likely to be an issue, but can still occur. Hicode might exist for the following reasons:
+	\begin{itemize}
+		\item It can happen that a game simply has a lot of code and as such exceeds the linearly loaded part of the rom;
+		\item When games have veneers (linker inserted jumps, mainly from rom to iwram) some linker scripts might place them at the end of the rom;
+		\item Rom hacks usually add custom code to the end of roms;
+		\item If a rom has a scene intro, it is usually appended to the end of the rom;
+		\item Some multiple-in-one games are almost a glued together combination of the individual games, which means there is a pattern like code1, data1, code2, data2, etc.;
+		\item Some games just have a weird linker script.
+	\end{itemize}
+
+	Hicode is an issue, because it is difficult in practice to execute small chunks of code at an arbitrary memory location. These issues are partly explained in Section \ref{sec:relocation}. In practice the issues come down to ambiguous relative memory accesses, relative jumps and return addresses that are hard to translate back to the correct address. Furthermore, relative jumps from the linearly loaded rom region 
+	must also be correctly translated to the dynamically loaded code chunks. This can also be a challenge because of overlapping ambiguous memory addresses. On the DSi and 3DS this is less of an issue, as the \texttt{0x0C000000} mirror of main memory makes it possible to disambiguate rom addresses to some extent.
+	
+	\subsection{Impact}
+	The size of the impact is related to the amount of available memory. Many games are not effected at all. Rom hacks are often effected because they append custom code to the end of the rom.
+	
+	\subsection{Solution: Cache mapping}
+	Cache mapping is a solution for hicode that has been experimentally tried in GBARunner 2 (but only for DSi and 3DS). By abusing the instruction cache it is possible to map one 4 kB chunk of code at an arbitrary 4 kB aligned memory location.
+	
+	The instruction cache of the DS ARM 9 is a 4-way set associative cache with a total size of 8 kB (see Figure \ref{fig:icache}). Each of the four sets contains 64 cache lines of 32 bytes (8 words). Which cache line inside a set (index) is used depends on the memory address (bits 10-5, see Figure \ref{fig:icacheAddress}). Which of the four sets will be used is decided by the replacement algorithm when a cache line is loaded into the cache. Depending on the CP15 control register configuration either round-robin (0, 1, 2, 3, 0, 1, \dots) or pseudo-random replacement is used. Normally there are thus four possible locations in the cache for each memory address. It is additionally possible to lock up to three of the four sets, such that the cache lines in the locked sets will never be candidate for replacement. The intended use of this feature is to temporarily lock some important code (or data, as the data cache supports this as well) in the cache and prevent it from being replaced.
+	
+	\begin{figure}[h]
+		\centering
+		\begin{tabular}{|llllllllllllllllllllr|lllllr|llr|lr|}
+			\footnotesize 31 &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  &  & \footnotesize 11 & \footnotesize 10 &  &  &  &  & \footnotesize 5 & \footnotesize 4 &  & \footnotesize 2 & \footnotesize 1 & \footnotesize 0 \\ \hline
+			\multicolumn{21}{|c|}{\Gape[0.3cm][0.3cm]{TAG}} & \multicolumn{6}{c|}{Index} & \multicolumn{3}{c|}{Word} & \multicolumn{2}{c|}{Byte} \\
+			\hline
+		\end{tabular}
+		\caption{Overview of how an address is interpreted by the DS ARM 9 instruction cache \cite{arm946es_trm}.}
+		\label{fig:icacheAddress}
+	\end{figure}
+	
+	\begin{figure}[p]
+		\centering
+		\includegraphics[clip,trim=4.5cm 5cm 1cm 2cm,width=\linewidth]{figures/icache.pdf}
+		\caption{Instruction cache architecture of the DS ARM 9 \cite{arm946es_trm}.}
+		\label{fig:icache}
+	\end{figure}
+
+	The instruction cache is controlled by the following CP15 instructions:
+	\begin{description}
+		\item[\texttt{mcr p15, 0, Rd, c7 , c5 , 0}] Invalidate (ARM: flush) entire instruction cache. \texttt{Rd} should be \texttt{0}.
+		\item[\texttt{mcr p15, 0, Rd, c7 , c5 , 1}] Invalidate instruction cache line at address specified by \texttt{Rd}.
+		\item[\texttt{mcr p15, 0, Rd, c7 , c13, 1}] Prefetch instruction cache line at address specified by \texttt{Rd}.
+		\item[\texttt{mcr p15, 0, Rd, c9 , c0 , 1}] Write \textit{Instruction Lockdown Register}.
+		\item[\texttt{mrc p15, 0, Rd, c9 , c0 , 1}] Read \textit{Instruction Lockdown Register}.
+		\item[\texttt{mcr p15, 3, Rd, c15, c0 , 0}] Write \textit{Cache Debug Index Register}.
+		\item[\texttt{mrc p15, 3, Rd, c15, c0 , 0}] Read \textit{Cache Debug Index Register}.
+		\item[\texttt{mcr p15, 3, Rd, c15, c1 , 0}] Instruction TAG write.
+		\item[\texttt{mrc p15, 3, Rd, c15, c1 , 0}] Instruction TAG read.
+		\item[\texttt{mcr p15, 3, Rd, c15, c3 , 0}] Instruction cache write.
+		\item[\texttt{mrc p15, 3, Rd, c15, c3 , 0}] Instruction cache read.
+	\end{description}
+
+	For cache mapping especially the debug instructions are important. They allow us to alter the contents of the cache; in particular the TAG that specifies the upper part of the memory address a cache line belongs to. This makes it possible to have the cache contain instructions at a memory location where those instructions do not actually exist. To prevent these mapped instructions from being evicted from the cache, this must be combined with locking down the part of the cache the mapped instructions are in.
+	
+	\subsubsection{How it works}
+	The steps to map code are as follows:
+	\begin{enumerate}
+		\item First a 4 kB MPU region is setup at the target address. It should only allow instruction fetches, and have instruction cache enabled.
+		
+		\item Next the instruction cache is switched in lockdown mode by writing to the CP15 \textit{Instruction Lockdown Register}.
+		
+		\item The instructions are now loaded into the cache. When the source instructions are 2 kB aligned they can be quickly loaded into the cache using the instruction cache prefetch CP15 instruction (combined with the load flag in the \textit{Instruction Lockdown Register}). Otherwise, they must be written into the cache manually using the instruction cache write debug CP15 instruction. The reason for this is that part of the address determines the line index in the cache set (see Figure \ref{fig:icacheAddress}). When the source alignment is not right, the instructions will not end up at the right target address.
+		
+		\item Finally the TAG of the loaded cache lines must be adjusted to contain the intended target address. This is done using the Instruction TAG write CP15 instruction. Note that this can be interleaved with loading the instructions into the cache.
+	\end{enumerate}
+	It is important to note that when the CP15 instruction is used to invalidate the entire instruction cache, this also invalidates the locked parts of the cache. When this happens, either the TAGs must be fixed up manually, or the cache mapping must be disabled by disabling cache lockdown and the protection region.
+	
+	To map larger areas of memory the steps outlined above should be combined with a prefetch abort handler that will map the right chunk every time a jump outside the chunk is made. Note that additionally a data abort handler should be used, because data fetches cannot come from the instruction cache. The abort handler should take care to not read the aborted instruction with a regular load instruction as it will not fetch the right data. Instead the instruction can be read from the instruction cache with a debug CP15 instruction, or loaded from a different place in memory.
+	
+	\subsubsection{Impact of the solution}
+	Pros:
+	\begin{itemize}
+		\item Makes it possible to run code in dynamically loaded chunks.
+		\item You can run code at the originally intended address (for example the 0x08000000 region for GBA roms), which prevents relocation issues.
+		\item No patches or modifications of the code are required.
+		\item It was shown to fix games and rom hacks in practice on DSi and 3DS.
+	\end{itemize}
+	Cons:
+	\begin{itemize}
+		\item Only one 4 kB chunk can be loaded at a time.
+		\item Cannot map a chunk smaller than 4 kB, because 4 kB is the minimum size of a protection region.
+		\item While cache mapping is active half of the instruction cache is unusable for other memory regions.
+		\item Loading of a 4 kB chunk is slow. When a lot of code is executed with this method, there is a significant performance degradation. Worst case is a loop at a 4 kB boundary. Best performance is achieved if the source instructions are 2 kB aligned such that instruction prefetch can be used. The performance issue is slightly mitigated by the fact that the code runs directly from the cache and can run at maximum CPU speed.
+		\item All pool reads must be aborted.
+		\item Special case required in the data abort handler to fetch the aborted instruction from the instruction cache.
+		\item When a mix of linearly loaded instructions and cache mapping is used, it is still necessary to be able to disambiguate relative jumps from the linear to the dynamic part.
+	\end{itemize}
+	
+	\subsection{Solution: JIT}
+	When branches and pc-relative instructions are controlled by a JIT it becomes possible to run smaller chunks of code in a dynamic JIT cache.
+	
+	\subsubsection{Impact of the solution}
+	Pros:
+	\begin{itemize}
+		\item 
+	\end{itemize}
+	Cons:
+	\begin{itemize}
+		\item 
+	\end{itemize}
+
+\section{Graphics compatibility issues}
+	\subsection{GBA bitmap modes 3, 4 and 5 stride}
+	\subsubsection{Solution: Special affine matrix}
+	
+	\subsection{GBA bitmap modes 3 and 5 alpha bit}
+	\subsection{Sprite priorities}
+
+\section{Sound issues}
+	\subsection{ARM 7 cannot access sample data in IWRAM}
+	
+
+\chapter{System overview}
 	In this chapter an overview will be given of the GBARunner 3 system, including block diagrams and memory maps.
 	\newpage
-	\section{Memory Map}
+	\section{Memory map}
 	\subsection{ARM 9}
 	\begin{figure}[htb]
 		\centering
@@ -115,7 +338,7 @@
 		\caption{Physical ARM 9 memory map for GBARunner 3 running on regular DS hardware.}
 	\end{figure}
 
-	\section{Memory Protection Regions}
+	\section{Memory protection regions}
 		Regions with a higher index take priority over regions with a lower index. When the ARM 9 is running in non-privileged user mode the rights from the ``user" column apply, when running in a privileged mode the rights from the ``system" column apply.
 		\begin{table}[htb]
 			\centering
@@ -131,7 +354,7 @@
 			\caption{Overview of the memory protection regions for GBARunner 3.}			
 		\end{table}
 	
-\chapter{Virtual Machine}\label{chap_vm}
+\chapter{Virtual machine}\label{chap_vm}
 	To have more control over the running game GBARunner 3 will use a Virtual Machine (hereafter VM) in which the GBA code runs. All code inside the VM will run in user mode (non-privileged). The actual mode of the virtualized ARM core will be held in the state of the VM. An additional advantage of this is that emulating aborted memory access instructions is easier when all code runs in user mode. By using the VM the GBA code will not be able to fully turn off interrupts by using the CPSR I bit. In such a case the VM will not receive any interrupts, but interrupts that are essential for the functioning of GBARunner 3 can still be handled.
 	
 	\section{Sensitive Instructions}
@@ -148,7 +371,7 @@
 	\end{description}
 	Because none of these instructions will cause an exception when executed in user mode they need to be replaced by exception generating instructions. This will be the task of the JIT (see Chapter \ref{chap_jit}).
 	
-	\section{Undefined Instructions}
+	\section{Undefined instructions}
 	To emulate sensitive instructions the VM will support undefined instructions that are drop-in replacements for the instructions. Additionally, the VM will support undefined instructions for unresolved branches.
 	
 	\begin{table}[htb]
@@ -193,117 +416,16 @@
 					& \multicolumn{4}{c|}{\multirow{-34}{*}{\begin{tabular}[c]{@{}c@{}}c\\ o\\ n\\ d\end{tabular}}} & \cellcolor[HTML]{C0C0C0}0 & \cellcolor[HTML]{C0C0C0}0 & \cellcolor[HTML]{C0C0C0}0                      & \cellcolor[HTML]{C0C0C0}1                      & \multicolumn{1}{c|}{\cellcolor[HTML]{C0C0C0}1} & 0                                              & 1                         & 1                                              & 0                      & 0                      & 0                      & 0                      & 0                      & 0                      & 0                      & 0                      & 0                                              & 0                      & 0                                              & \multicolumn{1}{c|}{0} & \cellcolor[HTML]{C0C0C0}1 & \cellcolor[HTML]{C0C0C0}0 & \cellcolor[HTML]{C0C0C0}0 & \multicolumn{1}{c|}{\cellcolor[HTML]{C0C0C0}1} & \multicolumn{4}{c|}{Rm}                                                      \\ \hline
 			\end{NiceTabular}}
 		\end{adjustbox}
-		\caption{Overview of ARM instructions and their undefined substitutions emulated by the VM.}
+		\caption{Overview of ARM instructions and their undefined substitutions emulated by the VM.
+			\todo[inline]{TODO: Update this table. It is outdated.}}
 	\end{table}
 	
-\chapter{JIT Patcher}\label{chap_jit}
+\chapter{JIT patcher}\label{chap_jit}
 	The purpose of the JIT patcher (hereafter JIT) is primarily to support the VM by replacing sensitive instructions by exception generating substitutes. Additionally, the JIT can fix CPU compatibility issues, fix relocation related issues and make it possible to execute code in higher areas of the ROM (also referred to as hicode). To minimize the overhead of the JIT, a couple of megabytes of the ROM (depending on the amount of available memory) will still be linearly loaded into memory, as was the case in GBARunner 2. To allow code outside this linearly loaded region to run there will also be a dynamic JIT cache. About 80~90\% of the games can run entirely from about 2MB of linearly loaded rom data. In such games it may be possible to run Thumb code without any JIT patches. The only critical patches are the ARM sensitive instruction patches, to make the VM work correctly.
-	\section{CPU compatibility issues}
-	CPU compatibility issues exist because ARM7TDMI code is executed on an ARM946E-S core. While the ARM946E-S is backwards compatible in the defined behavior of instructions, its (in ARM terminology) unpredictable behavior (which means it depends on the CPU implementation) does differ to some extent. The following differences have been identified:
-	\subsection{\texttt{LDR pc}, \texttt{LDM \{\dots,pc\}} \--- ARM/Thumb switching}
-		In \texttt{LDR pc} and \texttt{LDM \{\dots,pc\}} instructions the ARM7TDMI ignores the thumb bit of the loaded address. By default the ARM946E-S switches between ARM and Thumb based on the lsb of the loaded value.
-		
-		\subsubsection{Impact}
-		Only a small number of games depend on this behavior, including \textit{Final Fantasy IV} and \textit{Maya the Bee Sweet Gold}. It is likely that such games were compiled without interworking.
-		
-		\subsubsection{Solution}
-		The behavior can be disabled in the CP15 control register for backwards compatibility purposes.
-		
-		\subsubsection{Impact of solution}
-		Fixes the issue completely without any performance impact. Care should be taken to not depend on the ARM/Thumb switching behavior when the backwards compatibility mode is enabled. The compiler can for example generate a \texttt{POP pc} because it assumes it is safe to do on an armv5te processor.
-		
-	\subsection{\texttt{LDRH} \--- Unaligned behavior}
-		When an \texttt{LDRH} is performed with an odd address the ARM7TDMI force-aligns, reads the 16-bit value at the aligned address and then rotates right by 8 bits similar to an unaligned \texttt{LDR}. For example if the bytes in memory look like \texttt{55 AA} and assume the unaligned address points to \texttt{AA}, the resulting value will be \texttt{0x550000AA}. The ARM946E-S still force-aligns, but the rotation no longer happens, resulting in \texttt{0x0000AA55}.
-		
-		\subsubsection{Impact}
-		Unknown. Could effect a very small number of games, but can be game breaking. Aborted reads are not effected, because the memory emulation emulates the ARM7TDMI behavior.
-		
-		\subsubsection{Solution}
-		Replace by an exception generating instruction and emulate.
-		
-		\subsubsection{Impact of solution}
-		Impacts performance.
-		
-	\subsection{\texttt{LDRSH} \--- Unaligned behavior}
-		On ARM7TDMI an unaligned \texttt{LDRSH} force-aligns, reads the 16-bit value at the aligned address, sign extends and then performs an additional arithmetic right shift of 8 bits. As such the resulting value is as if \texttt{LDRSB} was used (but I assume for the memory system it will still be a 16-bit access). For example if the bytes in memory look like \texttt{55 AA} and assume the unaligned address points to \texttt{AA}, the resulting value will be \texttt{0xFFFFFFAA}. The ARM946E-S still force-aligns but does not apply the extra shift, resulting in \texttt{0xFFFFAA55}.
-		
-		\subsubsection{Impact}
-		Unknown. Could effect a very small number of games, but can be game breaking. Aborted reads are not effected, because the memory emulation emulates the ARM7TDMI behavior.
-		
-		\subsubsection{Solution}
-		Replace by an exception generating instruction and emulate.
-		
-		\subsubsection{Impact of solution}
-		Impacts performance.
-		
-	\subsection{\texttt{LDM Rn!, \{\dots,Rn,\dots\}} (ARM only)}
-		When writeback is enabled and \texttt{Rn} is included in the rlist, the resulting value of \texttt{Rn} will always be the value loaded from memory on the ARM7TDMI. As such it behaves as if writeback was never enabled in the first place. On the ARM946E-S the resulting value of \texttt{Rn} will be the updated address if \texttt{Rn} is the only register or not the last register in the rlist. Note that for Thumb \texttt{LDM} the issue does not exist, because writeback is implicit and is defined to be enabled unless \texttt{Rn} is in the rlist.
-		
-		\subsubsection{Impact}
-		This bug breaks some games completely. Some examples of games with this issue are \textit{Bibi und Tina - Ferien auf dem Martinshof}, \textit{Cars - Mater-National Championship}, \textit{Maya the Bee - Sweet Gold} and \textit{V-Rally 3}. In particular there is a certain sound mixer being used by various games that contains the issue.
-		
-		\subsubsection{Solution}
-		Disable writeback on effected instructions. This can be done using the JIT or by game specific patches that are applied before booting the game.
-		
-		\subsubsection{Impact of solution}
-		Fixes the issue completely without any performance impact.
-		
-	\subsection{\texttt{STM Rn!, \{\dots,Rn,\dots\}}}
-		When writeback is enabled and \texttt{Rn} is included in the rlist, the ARM7TDMI writes either the original value of \texttt{Rn} (when \texttt{Rn} is the first register in the rlist), or the updated value of \texttt{Rn}. The ARM946E-S always writes the original value of \texttt{Rn}.
-		
-		\subsubsection{Impact}
-		Unknown, but could be game breaking.
-		
-		\subsubsection{Solution}
-		Replace by an exception generating instruction and emulate.
-		
-		\subsubsection{Impact of solution}
-		Impacts performance.
-		
-	\subsection{\texttt{MULS}, \texttt{MLAS} \--- C flag}
-		On ARM7TDMI the C flag is destroyed (unpredictable), while on ARM946E-S it is left unchanged.
-		
-		\subsubsection{Impact}
-		Unknown, but likely very small. It is unknown how the destroyed C flag value comes to be, so any dependence on it is a bug.
-	
-	\subsection{\texttt{SMULLS}, \texttt{SMLALS} \--- C and V flag}
-		On ARM7TDMI both the C and V flag are destroyed (unpredictable), while on ARM946E-S they are left unchanged.
-		
-		\subsubsection{Impact}
-		Unknown, but likely very small. It is unknown how the destroyed C and V flag values comes to be, so any dependence on it is a bug.
-	
-	\section{Relocation issues}
-	Relocation issues originate from the difference in \texttt{PC} value. Most often the \texttt{PC} is only used for pool reads, switch table reads and switch jumps. The short range of those operations minimize the impact, especially when most of the code is linearly loaded into memory, including the pools in the expected relative locations. Occasionally code might use the value of \texttt{PC} to construct a much larger address (outside the linearly loaded range of code), or a value for which the actual number is important. The latter case could for example be when the value is not used as address or is compared with some stored value.
-	
-	\subsection{Example}
-	\textit{Game Boy Advance Video - SpongeBob SquarePants - Volume 1} (MSSE) is a good example of a problematic game. In various places it constructs values by adding the \texttt{PC} to a value loaded from the pool (for whatever reason). The worst (breaking) example is the following:	
-	\begin{verbatim}
-		080000F4    add r8, pc, #0x90 // r8 = 0x0800018C
-		080000F8    ldm r8, {r0, r1, r2, r3}
-		080000FC    add r0, r0, r8 // r0 = 0x0800018C + 0x1FD4784 = 0x09FD4910
-		08000100    add r1, r1, r8 // r1 = 0x0800018C + 0x1FD479C = 0x09FD4928
-		08000104    add r2, r2, r8 // r2 = 0x0800018C + 0x1FD479C = 0x09FD4928
-		08000108    add r3, r3, r8 // r3 = 0x0800018C + 0x1FD47AC = 0x09FD4938
-		...
-		0800018C    .word 0x1FD4784
-		08000190    .word 0x1FD479C
-		08000194    .word 0x1FD479C
-		08000198    .word 0x1FD47AC
-	\end{verbatim}
-	The first two instructions are fine. A \texttt{PC}-relative pool address is constructed and 4 words are loaded from it. Then it adds the pool address to the loaded values to construct high rom addresses (which seem to contain some information related to relocating code to IWRAM). If we now consider that we would have had a DS main memory address in the \texttt{PC}, for example \texttt{0x020400F4}. The pool address would become \texttt{0x0204018C}, which is fine, because it's in the linearly loaded range. Now the high rom addresses are constructed and result in values such as \texttt{0x04014910}. This is way outside the loaded range and leads to a crash. It is difficult, if not impossible, to catch all such out-of-range addresses and compute what the intended address was. Especially when they overlap with other existing areas of memory such as IWRAM or IO registers, or other GBARunner data in main memory.
-	
-	\subsection{Impact}
-	For code that is sufficiently linearly loaded into memory the impact is small and only a small number of games use the \texttt{PC} in a way that causes issues. For hicode that is loaded in small chunks into the dynamic JIT cache the issue is almost always present.
-	
-	\subsection{Solution}
-	A solution for this problem is to replace any instruction that uses the \texttt{PC} in an unpredictable\footnote{Unpredictable in this case means that once the instruction is executed a register will contain a value that is different from the one that would originally have been there, and that could be used in any way by further instructions. Instructions such as \texttt{ldr Rd, [pc, \#imm]} are self-contained and we can know whether they are safe or not.} way or that results in the wrong value being loaded, by an exception generating instruction. The emulator will then execute the instruction with the original \texttt{PC} value and return to the code which will continue with the correct value. This results in the correct values and addresses being computed which can later unambiguously be aborted and emulated.
-	
-	\subsection{Impact of the solution}
-	The performance of the patched code will be effected by the exception generating instructions and subsequent emulation.
 	
 	\section{Dynamic JIT cache}
 	
-\chapter{Memory Emulator}\label{chap_mememu}
+\chapter{Memory emulator}\label{chap_mememu}
 	Various memory accesses need to be emulated to allow the GBA code to access the right data and registers. The ARM946E-S has no MMU (memory mapping unit), but it does have a MPU (memory protection unit) that can be used to protect up to 8 regions of memory. When a data abort happens the abort handler code emulates the memory instruction. The performance of the abort handler plays an important role in the performance of the entire system.
 	\section{Memory Instructions}
 	In this section an overview will be given of the instructions that need to be emulated.
@@ -403,12 +525,18 @@
 		\end{tabular}}
 		\caption{Overview of Thumb memory instructions that could cause an abort.}
 	\end{table}
-\chapter{SD Cache}
+\chapter{SD cache}
 	GBARunner 2 used a least-recently-used (LRU) cache. Using a simpler replacement algorithm such as pseudo-random might be more efficient in practice, because LRU requires an update to the cache block list for every access.
-\chapter{GBA Peripherals Emulation}
+\chapter{GBA peripherals emulation}
 	\section{Graphics}
 	\section{Timers}
 	\section{Sound}
 	\section{DMA}
 	\section{SIO}
+	
+\clearpage
+{
+	\raggedright
+	\printbibliography
+}
 \end{document}
