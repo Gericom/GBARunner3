@@ -115,11 +115,12 @@ static void applyBiosVmPatches()
 
 static void loadGbaRom()
 {
+    UINT br;
     memset(&gFile, 0, sizeof(gFile));
+
     // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
-    // UINT br;
+    // sdc_init();
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
-    // f_close(&gFile);
     // // agb aging
     // // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
     // // mgba suite
@@ -134,18 +135,14 @@ static void loadGbaRom()
     // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
 
     // f_open(&gFile, "/Mario Kart - Super Circuit (Europe).gba", FA_OPEN_EXISTING | FA_READ);
-    // UINT br;
     // f_read(&gFile, (void*)0x02200000, 4 * 1024 * 1024, &br);
-    // // f_close(&gFile);
     // // mksc eu
     // *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
 
     // f_open(&gFile, "/Donkey Kong Country 3 (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();
-    // UINT br;
     // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
-    // // f_close(&gFile);
     // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x02200100 = 0xE1A00090; // mrs r0, cpsr
@@ -159,28 +156,46 @@ static void loadGbaRom()
     // *(vu32*)0x02200238 = 0xE1890093; // msr cpsr_cf, r3
     // *(vu32*)0x02200248 = 0xE1C90090; // msr spsr_cf, r0
 
-    f_open(&gFile, "/Sims, The - Bustin' Out (USA, Europe) (En,Fr,De,Es,It,Nl).gba", FA_OPEN_EXISTING | FA_READ);
+    // f_open(&gFile, "/Sims, The - Bustin' Out (USA, Europe) (En,Fr,De,Es,It,Nl).gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02200134 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x0220013C = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x0220014C = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x02200154 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02200170 = 0xE1E00090; // mrs r0, spsr
+    // *(vu32*)0x02200238 = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x02200244 = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x02200264 = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x02200270 = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x02200280 = 0xE1C90090; // msr spsr_cf, r0
+
+    // f_open(&gFile, "/Asterix & Obelix XXL (Europe) (En,Fr,De,Es,It,Nl).gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // *(vu32*)0x02250000 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x0225000C = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02250014 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x02250020 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02250028 = 0xE1A00090; // mrs r0, cpsr
+    // *(vu32*)0x02250034 = 0xE1890090; // msr cpsr_cf, r0
+
+    f_open(&gFile, "/DK - King of Swing (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
     sdc_init();
-    UINT br;
     f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
-    // f_close(&gFile);
     *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
     *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x02200134 = 0xE1A00090; // mrs r0, cpsr
-    *(vu32*)0x0220013C = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x0220014C = 0xE1A00090; // mrs r0, cpsr
-    *(vu32*)0x02200154 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x02200170 = 0xE1E00090; // mrs r0, spsr
-    *(vu32*)0x02200238 = 0xE1A00093; // mrs r3, cpsr
-    *(vu32*)0x02200244 = 0xE1890093; // msr cpsr_cf, r3
-    *(vu32*)0x02200264 = 0xE1A00093; // mrs r3, cpsr
-    *(vu32*)0x02200270 = 0xE1890093; // msr cpsr_cf, r3
-    *(vu32*)0x02200280 = 0xE1C90090; // msr spsr_cf, r0
+    *(vu32*)0x02200414 = 0xE1E00090; // mrs r0, spsr
+    *(vu32*)0x02200460 = 0xE1A00093; // mrs r3, cpsr
+    *(vu32*)0x0220046C = 0xE1890093; // msr cpsr_cf, r3
+    *(vu32*)0x02200488 = 0xE1A00093; // mrs r3, cpsr
+    *(vu32*)0x02200494 = 0xE1890093; // msr cpsr_cf, r3
+    *(vu32*)0x022004A4 = 0xE1C90090; // msr spsr_cf, r0
 
     // f_open(&gFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
-    // UINT br;
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
-    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x027A426C = 0xE1E00092; // mrs r2, spsr
@@ -191,9 +206,7 @@ static void loadGbaRom()
     // *(vu32*)0x027A42B0 = 0xE1C90092; // msr spsr_cf, r2
 
     // f_open(&gFile, "/varooom-3d_bad_audio.gba", FA_OPEN_EXISTING | FA_READ);
-    // UINT br;
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
-    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x02467968 = 0xE1E00092; // mrs r2, spsr
@@ -204,9 +217,7 @@ static void loadGbaRom()
     // *(vu32*)0x024679AC = 0xE1C90092; // msr spsr_cf, r2
 
     // f_open(&gFile, "/dma_demo.gba", FA_OPEN_EXISTING | FA_READ);
-    // UINT br;
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
-    // f_close(&gFile);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
 }

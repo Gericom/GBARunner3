@@ -47,21 +47,57 @@ arm_func memu_load32Undefined
     bcs thumbUndefined32
 
 armUndefined32:
+    cmp r10, #0x08000000
+        bhs undefinedFromRom32Arm
+
     ldr r10, [r10]
+armUndefined32Continue:
     mov r11, r8, lsl #3
     mov r9, r10, ror r11
     bx lr
 
 thumbUndefined32:
-    ldrh r11, [r10, #-4]
+    sub r10, r10, #4
+    cmp r10, #0x08000000
+        bhs undefinedFromRom32Thumb
+    ldrh r11, [r10]
+thumbUndefined32Continue:
     orr r10, r11, r11, lsl #16
     mov r11, r8, lsl #3
     mov r9, r10, ror r11
     bx lr
 
+undefinedTmpR8:
+    .word 0
+undefinedTmpLr:
+    .word 0
+
+undefinedFromRom32Arm:
+    str r8, undefinedTmpR8
+    str lr, undefinedTmpLr
+    mov r8, r10
+    bl memu_load32Rom
+    mov r10, r9
+    ldr r8, undefinedTmpR8
+    ldr lr, undefinedTmpLr
+    b armUndefined32Continue
+
+undefinedFromRom32Thumb:
+    str r8, undefinedTmpR8
+    str lr, undefinedTmpLr
+    mov r8, r10
+    bl memu_load16Rom
+    mov r11, r9
+    ldr r8, undefinedTmpR8
+    ldr lr, undefinedTmpLr
+    b thumbUndefined32Continue
+
 arm_func memu_load32Bios
     cmp r8, #0x4000
         bhs memu_load32Undefined
+    ldr r9,= 0xE3A02004
+    mov r11, r8, lsl #3
+    mov r9, r9, ror r11
     bx lr
 
 arm_func memu_load32Ewram
@@ -148,6 +184,12 @@ load32RomCacheMiss:
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    bl hic_unmapRomBlock
+#endif
+
+    bl ic_invalidateAll
     mov r0, r8
     bl sdc_loadRomBlockDirect
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)

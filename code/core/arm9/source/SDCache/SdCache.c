@@ -2,6 +2,7 @@
 #include "Fat/ff.h"
 #include "Fat/diskio.h"
 #include "VirtualMachine/VMNestedIrq.h"
+#include "cp15.h"
 #include "SdCache.h"
 
 void* sdc_romBlockToCacheBlock[SDC_ROM_BLOCK_COUNT];
@@ -54,6 +55,7 @@ static void loadRomBlock(u32 romBlock, void* dst)
     u32 sector = fs->database + fs->csize * cluster;
     sector += csect;
     disk_read(fs->pdrv, dst, sector, SDC_BLOCK_SIZE / 512); 
+    dc_flushRange(dst, SDC_BLOCK_SIZE);
 }
 
 extern void logAddress(u32 address);
@@ -61,7 +63,6 @@ extern void logAddress(u32 address);
 const void* sdc_loadRomBlockDirect(u32 romAddress)
 {
     vm_enableNestedIrqs();
-    ic_invalidateAll();
     // logAddress(romAddress);
     u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
     u32 blockIdx = getBlockToReplace();

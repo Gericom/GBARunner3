@@ -1,5 +1,7 @@
 #pragma once
 #include "SdCacheDefs.h"
+#include "MemoryEmulator/HiCodeCacheMapping.h"
+#include "cp15.h"
 
 /// @brief The sd cache blocks.
 extern u8 sdc_cache[SDC_BLOCK_COUNT][SDC_BLOCK_SIZE];
@@ -25,6 +27,10 @@ static inline const void* sdc_getRomBlock(u32 romAddress)
     void* data = sdc_romBlockToCacheBlock[romBlock];
     if (data)
         return data;
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    hic_unmapRomBlock();
+#endif
+    ic_invalidateAll();
     return sdc_loadRomBlockDirect(romAddress);
 }
 

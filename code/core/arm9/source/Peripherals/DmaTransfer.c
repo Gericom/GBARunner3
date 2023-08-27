@@ -6,6 +6,7 @@
 #include "MemCopy.h"
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCache.h"
+#include "MemoryEmulator/HiCodeCacheMapping.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -359,6 +360,9 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
 
 ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
 {
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    hic_unmapRomBlock();
+#endif
     ic_invalidateAll();
     u32 oldCnt = *(u16*)(dmaIoBase + 0xA);
     if (!((oldCnt ^ value) & 0x8000))

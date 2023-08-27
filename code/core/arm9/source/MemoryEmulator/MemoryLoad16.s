@@ -48,16 +48,41 @@ arm_func memu_load16Undefined
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1
     ldr r10, [r10]
-    ldrcch r9, [r10] // arm
-    ldrcsh r9, [r10, #-4] // thumb
+    subcs r10, r10, #4
+    cmp r10, #0x08000000
+        bhs undefinedFromRom16
+
+    ldrh r9, [r10]
+undefined16Continue:
     tst r8, #1
         bxeq lr
     mov r9, r9, ror #8
     bx lr
 
+undefinedTmpR8:
+    .word 0
+undefinedTmpLr:
+    .word 0
+
+undefinedFromRom16:
+    str r8, undefinedTmpR8
+    str lr, undefinedTmpLr
+    mov r8, r10
+    bl memu_load16Rom
+    ldr r8, undefinedTmpR8
+    ldr lr, undefinedTmpLr
+    b undefined16Continue
+
 arm_func memu_load16Bios
     cmp r8, #0x4000
         bhs memu_load16Undefined
+    ldr r9,= 0xE3A02004
+    tst r8, #2
+        moveq r9, r9, lsl #16
+    mov r9, r9, lsr #16
+    tst r8, #1
+        bxeq lr
+    mov r9, r9, ror #8
     bx lr
 
 arm_func memu_load16Ewram
@@ -160,6 +185,12 @@ load16RomCacheMiss:
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    bl hic_unmapRomBlock
+#endif
+
+    bl ic_invalidateAll
     mov r0, r8
     bl sdc_loadRomBlockDirect
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)

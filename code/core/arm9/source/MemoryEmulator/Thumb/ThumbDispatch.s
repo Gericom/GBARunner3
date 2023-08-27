@@ -12,7 +12,15 @@ thumb_dispatch_base:
 
 arm_func memu_thumbDispatch
     str r0, DTCM(memu_thumb_r0)
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    cmp lr, #0x08000000
+        bhs readInstructionFromCache
+#endif
+
     ldrh r0, [lr, #-8]
+
+thumbDispatchContinue:
 
 @ #ifndef GBAR3_TEST
 @     ldr sp,= dtcmStackEnd
@@ -48,5 +56,23 @@ arm_func memu_thumbDispatch
 .endm
 
 generate make_memu_thumbGetRnRm, 64
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+
+readInstructionFromCache:
+    ldr r0,= memu_inst_addr
+    str lr, [r0]
+    sub r0, lr, #8
+    bic r0, r0, #0xFE000000
+    tst r0, #0x800
+    orrne r0, r0, #0x40000000 // set
+    mcr p15, 3, r0, c15, c0, 0 // set index
+    mrc p15, 3, r0, c15, c3, 0 // read data
+    tst lr, #2
+    moveq r0, r0, lsl #16
+    mov r0, r0, lsr #16
+    b thumbDispatchContinue
+
+#endif
 
 .end

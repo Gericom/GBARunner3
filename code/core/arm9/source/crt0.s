@@ -24,11 +24,8 @@ _start:
     // mpu region 0: ITCM, DTCM, uncached mmem, IO, GBA slot (4 GB)
     ldr r0,= ((1 | (31 << 1)) + 0x00000000)
     mcr	p15, 0, r0, c6, c0, 0
-    @ // mpu region 1: Cached Main Memory (4 MB)
-    @ ldr r0,= ((1 | (21 << 1)) + 0x02000000)
-    @ mcr	p15, 0, r0, c6, c1, 0
-    // mpu region 1: Cached Main Memory (8 MB)
-    ldr r0,= ((1 | (22 << 1)) + 0x02000000)
+    // mpu region 1: Cached Main Memory (4 MB)
+    ldr r0,= ((1 | (21 << 1)) + 0x02000000)
     mcr	p15, 0, r0, c6, c1, 0
     // mpu region 2: VRAM (8 MB)
     ldr r0,= ((1 | (22 << 1)) + 0x06000000)
@@ -52,13 +49,13 @@ _start:
     ldr r0,= 0x33200121
     mcr p15, 0, r0, c5, c0, 2
     // code permissions
-    ldr r0,= 0x33300221
+    ldr r0,= 0x33330221
     mcr p15, 0, r0, c5, c0, 3
     // dcache
     ldr r0,= 0b11100010
     mcr p15, 0, r0, c2, c0, 0
     // icache
-    ldr r0,= 0b11100010
+    ldr r0,= 0b11110010
     mcr p15, 0, r0, c2, c0, 1
     // write buffer
     ldr r0,= 0b10100010

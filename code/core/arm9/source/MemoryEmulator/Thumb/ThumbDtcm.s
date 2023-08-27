@@ -7,7 +7,13 @@
 memu_thumbDispatchTable:
 
 .macro memu_instructionPointer2 a, b, rd, rd2
-    .if (\a == 0b01010) && (\b == 0b00)
+    .if \a == 0b01001
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+        .short memu_thumbLdrPcR\rd
+#else
+        .short 0
+#endif
+    .elseif (\a == 0b01010) && (\b == 0b00)
         .short memu_thumbStrRegR\rd2
     .elseif (\a == 0b01010) && (\b == 0b01)
         .short memu_thumbStrhRegR\rd2

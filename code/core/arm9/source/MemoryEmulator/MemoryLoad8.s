@@ -35,24 +35,14 @@ arm_func memu_load8
     .word memu_load8Sram // 0F
 
 arm_func memu_load8Undefined
-    ldr r10,= memu_inst_addr
-    msr cpsr_c, #0xD7
-    ldr r13,= memu_inst_addr
-    str lr, [r13]
-    mrs r13, spsr
-    movs r13, r13, lsl #27
-    msr cpsr_c, #0xD1
-    ldr r10, [r10]
-    ldrcch r9, [r10] // arm
-    ldrcsh r9, [r10, #-4] // thumb
-    tst r8, #1
-        bxeq lr
-    mov r9, r9, ror #8
-    bx lr
+    b memu_load16Undefined
 
 arm_func memu_load8Bios
     cmp r8, #0x4000
         bhs memu_load8Undefined
+    ldr r9,= 0xE3A02004
+    mov r10, r8, lsl #3
+    mov r9, r9, ror r10
     bx lr
 
 arm_func memu_load8Ewram
@@ -141,6 +131,12 @@ load8RomCacheMiss:
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    bl hic_unmapRomBlock
+#endif
+
+    bl ic_invalidateAll
     mov r0, r8
     bl sdc_loadRomBlockDirect
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
