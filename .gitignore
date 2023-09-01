@@ -8,3 +8,4 @@ build
 *.elf
 *.map
 *.bin
+code/bootstrap/nitrofiles
