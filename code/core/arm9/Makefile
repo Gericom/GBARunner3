@@ -27,6 +27,7 @@ SOURCES		:=	source \
 				source/Core \
 				source/Emulator \
 				source/Fat \
+				source/JitPatcher \
 				source/Logger \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \

@@ -17,6 +17,7 @@
 #include "Logger/NitroEmulatorOutputStream.h"
 #include "Logger/PlainLogger.h"
 #include "SdCache/SdCache.h"
+#include "JitPatcher/JitCommon.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -263,6 +264,7 @@ extern "C" void gbaRunnerMain(void)
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+    jit_init();
     dma_init();
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
