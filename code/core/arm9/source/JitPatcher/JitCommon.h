@@ -7,17 +7,20 @@ extern "C" {
 /// @brief Gets a pointer to the word containing the JIT bits for the given address.
 /// @param ptr The address.
 /// @return A pointer to the word containing the JIT bits for the given address.
-u32* jit_getJitBits(const u32* ptr);
+u32* jit_getJitBits(const void* ptr);
 
 /// @brief Finds the start of the block (continous region) containing the given address.
 /// @param ptr The address.
 /// @return A pointer to the start of the block that contains the given address.
-u32* jit_findBlockStart(const u32* ptr);
+void* jit_findBlockStart(const void* ptr);
 
 /// @brief Finds the exclusive end of the block (continous region) containing the given address.
 /// @param ptr The address.
 /// @return A pointer to the exclusive end of the block that contains the given address.
-u32* jit_findBlockEnd(const u32* ptr);
+void* jit_findBlockEnd(const void* ptr);
+
+bool jit_isBlockJitted(void* ptr);
+void jit_ensureBlockJitted(void* ptr);
 
 /// @brief Initializes the JIT patcher.
 void jit_init(void);

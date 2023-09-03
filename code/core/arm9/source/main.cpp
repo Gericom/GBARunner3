@@ -23,6 +23,8 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
+[[gnu::section(".ewram.bss")]]
+u32 gSaveData[128 * 1024 / 4];
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -114,10 +116,19 @@ static void applyBiosVmPatches()
     gGbaBios[0x0388 >> 2] = 0xE189009C; // msr cpsr_cf, r12
 }
 
+static void applyBiosJitPatches()
+{
+    gGbaBios[0x00DC >> 2] = 0xE1B0009E; // bx lr (jump to rom)
+    gGbaBios[0x0134 >> 2] = 0xEE800090; // ldr pc, [r0, #-4] (jump to irq handler)
+}
+
 static void loadGbaRom()
 {
     UINT br;
     memset(&gFile, 0, sizeof(gFile));
+    f_open(&gFile, "/rom.gba", FA_OPEN_EXISTING | FA_READ);
+    sdc_init();
+    f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
 
     // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();
@@ -136,8 +147,9 @@ static void loadGbaRom()
     // *(vu32*)0x022500B0 = 0xEE64000E; // movs pc, lr
 
     // f_open(&gFile, "/Mario Kart - Super Circuit (Europe).gba", FA_OPEN_EXISTING | FA_READ);
-    // f_read(&gFile, (void*)0x02200000, 4 * 1024 * 1024, &br);
-    // // mksc eu
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // mksc eu
     // *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
 
@@ -183,17 +195,17 @@ static void loadGbaRom()
     // *(vu32*)0x02250028 = 0xE1A00090; // mrs r0, cpsr
     // *(vu32*)0x02250034 = 0xE1890090; // msr cpsr_cf, r0
 
-    f_open(&gFile, "/DK - King of Swing (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
-    sdc_init();
-    f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
-    *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
-    *(vu32*)0x02200414 = 0xE1E00090; // mrs r0, spsr
-    *(vu32*)0x02200460 = 0xE1A00093; // mrs r3, cpsr
-    *(vu32*)0x0220046C = 0xE1890093; // msr cpsr_cf, r3
-    *(vu32*)0x02200488 = 0xE1A00093; // mrs r3, cpsr
-    *(vu32*)0x02200494 = 0xE1890093; // msr cpsr_cf, r3
-    *(vu32*)0x022004A4 = 0xE1C90090; // msr spsr_cf, r0
+    // f_open(&gFile, "/DK - King of Swing (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x02200414 = 0xE1E00090; // mrs r0, spsr
+    // *(vu32*)0x02200460 = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x0220046C = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x02200488 = 0xE1A00093; // mrs r3, cpsr
+    // *(vu32*)0x02200494 = 0xE1890093; // msr cpsr_cf, r3
+    // *(vu32*)0x022004A4 = 0xE1C90090; // msr spsr_cf, r0
 
     // f_open(&gFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
@@ -207,6 +219,7 @@ static void loadGbaRom()
     // *(vu32*)0x027A42B0 = 0xE1C90092; // msr spsr_cf, r2
 
     // f_open(&gFile, "/varooom-3d_bad_audio.gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
@@ -260,6 +273,7 @@ extern "C" void gbaRunnerMain(void)
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
+    applyBiosJitPatches();
     loadGbaRom();
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);

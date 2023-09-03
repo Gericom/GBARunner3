@@ -6,7 +6,7 @@
 
 vm_undefined_base:
 
-#define DTCM(x) (vm_undefined_base - 0x80 + (x))
+#define DTCM(x) (vm_undefined_base - 0x20 + (x))
 
 arm_func vm_undefined
     str lr, DTCM(vm_undefinedInstructionAddr)
@@ -30,10 +30,32 @@ arm_func vm_undefined
     // interlock
     bx r8
 
+.extern jit_handleThumbUndefined
+
 arm_func vm_undefinedThumb
-    ldrh r13, [lr, #-2]
-    msr cpsr_c, #0xDB
-    movs pc, lr
+    ldr sp,= (dtcmStackEnd - 0x40)
+    ldr r10, DTCM(vm_undefinedSpsr)
+    stmia sp, {r0-lr}^
+    nop
+    add r1, r11, #2
+    str r1, [sp, #0x3C]
+    sub r1, r11, #2
+
+    bic r0, r1, #0x01000000
+    add r0, r0, #0x00400000
+
+    ldrh r0, [r0]
+    mov r2, sp
+    mov r3, r10
+#ifndef GBAR3_TEST
+    bl jit_handleThumbUndefined
+#endif
+    movs r8, r0, lsr #1
+        biccc r10, r10, #0x20 // thumb bit
+    ldmia sp, {r0-lr}^
+    nop
+    msr spsr, r10
+    movs pc, r8, lsl #1
 
 .section ".dtcm", "aw"
 
@@ -57,9 +79,20 @@ arm_func vm_undefinedThumb
         .else
             .short vm_armUndefinedMrsCpsrRmTable
         .endif
-    @ .elseif (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\f == 0) && (\g == 1) && (\h == 1)
-    @     // BX
-    @     .short vm_armUndefinedBx
+#ifndef GBAR3_TEST
+    .elseif (\prefix == 0b000) && (\d == 1) && (\e == 1) && (\f == 0) && (\g == 1) && (\h == 1)
+        // BX
+        .short jit_armUndefinedBxRmTable
+    .elseif (\prefix == 0b110) && (\d == 0)
+        // B
+        .short jit_armUndefinedBTable
+    .elseif (\prefix == 0b110) && (\d == 1)
+        // BL
+        .short jit_armUndefinedBLTable
+    .elseif (\prefix == 0b111) && (\d == 0) && (\e == 1) && (\f == 0) && (\g == 0) && (\h == 0) && (\x == 0) && (\y == 1)
+        // LDR pc, [Rn, +/-#imm] or LDR pc, [Rn], +/-#imm
+        .short jit_armUndefinedLdrPcImmRnTable
+#endif
     .elseif (\prefix == 0b111) && (\d == 0) && (\e == 0) && (\y == 0)
         // ALU pc
         .if (\f == 1) && (\g == 1)

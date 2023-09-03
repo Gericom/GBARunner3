@@ -1,6 +1,9 @@
 #include "common.h"
 #include <string.h>
 #include "SdCache/SdCache.h"
+#include "cp15.h"
+#include "JitArm.h"
+#include "JitThumb.h"
 #include "JitCommon.h"
 
 /// @brief Stores for each halfword in the statically loaded part of the rom
@@ -25,7 +28,8 @@ u32 gEWramJitBits[(256 * 1024) / 2 / 32];
 [[gnu::section(".ewram.bss")]]
 u32 gVramJitBits[(96 * 1024) / 2 / 32];
 
-u32* jit_getJitBits(const u32* ptr)
+[[gnu::section(".itcm")]]
+u32* jit_getJitBits(const void* ptr)
 {
     if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
     {
@@ -44,7 +48,7 @@ u32* jit_getJitBits(const u32* ptr)
     }
     else if ((u32)ptr >= 0x03000000 && (u32)ptr < 0x03008000)
     {
-        // EWRAM
+        // IWRAM
         return &gIWramJitBits[((u32)ptr - 0x03000000) / 2 / 32];
     }
     else if ((u32)ptr >= 0x06000000 && (u32)ptr < 0x06018000)
@@ -55,36 +59,82 @@ u32* jit_getJitBits(const u32* ptr)
     return NULL;
 }
 
-u32* jit_findBlockStart(const u32* ptr)
+[[gnu::section(".itcm")]]
+void* jit_findBlockStart(const void* ptr)
 {
     if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
     {
         // sd cache
-        return (u32*)((u32)ptr & ~SDC_BLOCK_MASK);
+        return (void*)((u32)ptr & ~SDC_BLOCK_MASK);
     }
     else if ((u32)ptr >= 0x02200000 && (u32)ptr < 0x02400000)
     {
         // static rom region
-        return (u32*)0x02200000;
+        return (void*)0x02200000;
     }
     // no significant block boundary
-    return (u32*)0;
+    return (void*)0;
 }
 
-u32* jit_findBlockEnd(const u32* ptr)
+[[gnu::section(".itcm")]]
+void* jit_findBlockEnd(const void* ptr)
 {
     if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
     {
         // sd cache
-        return (u32*)(((u32)ptr & ~SDC_BLOCK_MASK) + SDC_BLOCK_SIZE);
+        return (void*)(((u32)ptr & ~SDC_BLOCK_MASK) + SDC_BLOCK_SIZE);
     }
     else if ((u32)ptr >= 0x02200000 && (u32)ptr < 0x02400000)
     {
         // static rom region
-        return (u32*)0x02400000;
+        return (void*)0x02400000;
     }
     // no significant block boundary
-    return (u32*)0xFFFFFFFF;
+    return (void*)0xFFFFFFFF;
+}
+
+[[gnu::section(".itcm")]]
+bool jit_isBlockJitted(void* ptr)
+{
+    if ((u32)ptr >= 0x08000000)
+    {
+        ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+    }
+
+    const u32* const jitBits = jit_getJitBits(ptr);
+    if (!jitBits)
+        return true;
+    u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
+    if (*jitBits & (1 << bitIdx))
+        return true;
+
+    return false;
+}
+
+[[gnu::section(".itcm")]]
+void jit_ensureBlockJitted(void* ptr)
+{
+    if ((u32)ptr >= 0x08000000)
+    {
+        ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+    }
+
+    const u32* const jitBits = jit_getJitBits(ptr);
+    if (!jitBits)
+        return;
+    u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
+    if (*jitBits & (1 << bitIdx))
+        return;
+    if ((u32)ptr & 1)
+    {
+        jit_processThumbBlock((u16*)((u32)ptr & ~1));
+    }
+    else
+    {
+        jit_processArmBlock((u32*)ptr);
+    }
+    dc_drainWriteBuffer();
+    ic_invalidateAll();
 }
 
 void jit_init(void)

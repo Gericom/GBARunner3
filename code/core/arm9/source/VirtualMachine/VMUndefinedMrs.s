@@ -12,7 +12,7 @@
             orr r\rm, r9, r10, lsl #24
         .elseif \rm < 15
             orr r9, r9, r10, lsl #24
-            str r9, [r13, #(vm_cpsr - vm_undefinedRegTmp)]!
+            str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
             ldmia r13, {r\rm}^
         .else
             // pc is not allowed
@@ -32,7 +32,7 @@ generate vm_armUndefinedMrsCpsrRm, 16
             ldr r\rm, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
         .elseif \rm < 15
             ldr r9, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
-            str r9, [r13, #(vm_cpsr - vm_undefinedRegTmp)]!
+            str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
             ldmia r13, {r\rm}^
         .else
             // pc is not allowed

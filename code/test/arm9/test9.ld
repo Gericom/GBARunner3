@@ -193,16 +193,17 @@ SECTIONS
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
 		KEEP (vectors.o(.itcm))
-		. = 0x80;
+		. = 0x20;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0x100;
+		. = 0xC0;
 		KEEP (VMIrq.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
-		. = 0x480;
+		. = 0x460;
 		KEEP (VMMode.o(.itcm))
-		. = 0x900;
+		. = 0x800;
 		KEEP (VMSwi.o(.itcm))
+		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		*(.itcm)
