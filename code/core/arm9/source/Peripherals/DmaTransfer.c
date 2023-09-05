@@ -274,12 +274,15 @@ ITCM_CODE static void dmaStop(void* dmaIoBase, u32 value)
 
 ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
 {
+    u32 src = *(u32*)dmaIoBase;
+    if (src >= 0x08000000)
+        return;
     *(u16*)(dmaIoBase + 0xA) = value;
     int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
     vm_forcedIrqMask |= 1 << 1; // hblank irq
     gfx_setHBlankIrqEnabled(true);
-    dma_state.channels[channel].curSrc = *(u32*)dmaIoBase;
+    dma_state.channels[channel].curSrc = src;
     dma_state.channels[channel].curDst = *(u32*)(dmaIoBase + 4);
     if (value & (1 << 10))
     {

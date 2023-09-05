@@ -21,15 +21,48 @@
         ldr sp,= dtcmStackEnd
         tst r8, #1
             orrne r10, r10, #0x20 // thumb bit
-        push {r0-r3}
-        mov r0, r8
-        bl jit_ensureBlockJitted
-        pop {r0-r3}
-        msr spsr, r10
-        movs pc, r8
+        b ensureJittedCommon
 .endm
 
 generate jit_armUndefinedBxRm, 16
+
+ensureJittedCommon:
+    sub r9, r8, #0x02200000
+    cmp r9, #0x00200000
+    blo ensureJittedStaticRom
+    sub r9, r8, #0x03000000
+    cmp r9, #0x8000
+    blo ensureJittedIWram
+1:
+    push {r0-r3}
+    mov r0, r8
+    bl jit_ensureBlockJitted
+    pop {r0-r3}
+2:
+    msr spsr, r10
+    movs pc, r8
+
+ensureJittedStaticRom:
+    ldr r11,= gStaticRomJitBits
+    mov r9, r9, lsr #1
+    ldrb r11, [r11, r9, lsr #3]
+    and r9, r9, #0x7
+    rsb r9, r9, #32
+    movs r11, r11, lsl r9
+    msrcs spsr, r10
+    movcss pc, r8
+    b 1b
+
+ensureJittedIWram:
+    ldr r11,= gIWramJitBits
+    mov r9, r9, lsr #1
+    ldrb r11, [r11, r9, lsr #3]
+    and r9, r9, #0x7
+    rsb r9, r9, #32
+    movs r11, r11, lsl r9
+    msrcs spsr, r10
+    movcss pc, r8
+    b 1b
 
 .section ".dtcm", "aw"
 

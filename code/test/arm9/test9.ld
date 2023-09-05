@@ -195,7 +195,7 @@ SECTIONS
 		KEEP (vectors.o(.itcm))
 		. = 0x20;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0xC0;
+		. = 0xC4;
 		KEEP (VMIrq.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))

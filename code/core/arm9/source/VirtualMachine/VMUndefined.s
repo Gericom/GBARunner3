@@ -35,16 +35,25 @@ arm_func vm_undefined
 arm_func vm_undefinedThumb
     ldr sp,= (dtcmStackEnd - 0x40)
     ldr r10, DTCM(vm_undefinedSpsr)
+
+    add r11, r11, #2
+    str r11, [sp, #0x3C]
     stmia sp, {r0-lr}^
     nop
-    add r1, r11, #2
-    str r1, [sp, #0x3C]
-    sub r1, r11, #2
+    sub r1, r11, #4
 
-    bic r0, r1, #0x01000000
-    add r0, r0, #0x00400000
+    bic r12, r1, #0x01000000
+    add r12, r12, #0x00400000
 
-    ldrh r0, [r0]
+    ldrh r0, [r12]
+
+    bic r12, r0, #0x78
+    cmp r12, #0x4700
+#ifndef GBAR3_TEST
+    beq jit_thumbBx
+#endif
+
+arm_func vm_undefinedThumbContinue
     mov r2, sp
     mov r3, r10
 #ifndef GBAR3_TEST

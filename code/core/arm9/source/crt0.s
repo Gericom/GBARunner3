@@ -62,8 +62,8 @@ _start:
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu
-    // and use low vectors
-    ldr r0,= 0x0005507D
+    // and use low vectors and armv4t backwards compatibility
+    ldr r0,= 0x0005D07D
     mcr p15, 0, r0, c1, c0
 
     // copy itcm in place

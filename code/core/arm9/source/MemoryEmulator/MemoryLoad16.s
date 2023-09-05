@@ -186,11 +186,11 @@ load16RomCacheMiss:
     movhs sp, r11
     push {r0-r3,lr}
 
-#ifdef GBAR3_HICODE_CACHE_MAPPING
-    bl hic_unmapRomBlock
-#endif
+@ #ifdef GBAR3_HICODE_CACHE_MAPPING
+@     bl hic_unmapRomBlock
+@ #endif
 
-    bl ic_invalidateAll
+@     bl ic_invalidateAll
     mov r0, r8
     bl sdc_loadRomBlockDirect
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)

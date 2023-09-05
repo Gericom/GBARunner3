@@ -40,6 +40,10 @@ void jit_processArmBlock(u32* ptr)
             {
                 continue;
             }
+            if (instruction & 0x01000000)
+            {
+                continue;
+            }
             break;
         }
         else if ((instruction & 0x0FBF0FFF) == 0x010F0000)
@@ -102,7 +106,7 @@ void jit_processArmBlock(u32* ptr)
                 if (targetAddress >= (u32)blockStart && targetAddress < (u32)blockEnd)
                 {
                     if (targetAddress > (u32)ptr)
-                        blockEnd = targetAddress;
+                        blockEnd = (void*)targetAddress;
                     // safe pool address needs no patching
                     continue;
                 }

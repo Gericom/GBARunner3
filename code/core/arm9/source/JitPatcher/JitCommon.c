@@ -31,25 +31,25 @@ u32 gVramJitBits[(96 * 1024) / 2 / 32];
 [[gnu::section(".itcm")]]
 u32* jit_getJitBits(const void* ptr)
 {
-    if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
-    {
-        // sd cache
-        return &gDynamicRomJitBits[((u32)ptr - (u32)sdc_cache) / 2 / 32];
-    }
-    else if ((u32)ptr >= 0x02200000 && (u32)ptr < 0x02400000)
+    if ((u32)ptr >= 0x02200000 && (u32)ptr < 0x02400000)
     {
         // static rom region
         return &gStaticRomJitBits[((u32)ptr - 0x02200000) / 2 / 32];
-    }
-    else if ((u32)ptr >= 0x02000000 && (u32)ptr < 0x02040000)
-    {
-        // EWRAM
-        return &gEWramJitBits[((u32)ptr - 0x02000000) / 2 / 32];
     }
     else if ((u32)ptr >= 0x03000000 && (u32)ptr < 0x03008000)
     {
         // IWRAM
         return &gIWramJitBits[((u32)ptr - 0x03000000) / 2 / 32];
+    }
+    else if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
+    {
+        // sd cache
+        return &gDynamicRomJitBits[((u32)ptr - (u32)sdc_cache) / 2 / 32];
+    }
+    else if ((u32)ptr >= 0x02000000 && (u32)ptr < 0x02040000)
+    {
+        // EWRAM
+        return &gEWramJitBits[((u32)ptr - 0x02000000) / 2 / 32];
     }
     else if ((u32)ptr >= 0x06000000 && (u32)ptr < 0x06018000)
     {

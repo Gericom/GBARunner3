@@ -15,7 +15,7 @@ static void __attribute__((noinline)) thumbJitNotImplemented()
 void jit_processThumbBlock(u16* ptr)
 {
     void* const blockStart = jit_findBlockStart(ptr);
-    void* const blockEnd = jit_findBlockEnd(ptr);
+    void* blockEnd = jit_findBlockEnd(ptr);
     u32* jitBits = jit_getJitBits(ptr);
     do
     {
@@ -49,7 +49,7 @@ void jit_processThumbBlock(u16* ptr)
             // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
-            break;
+            // break;
         }
         else if ((instruction & 0xF800) == 0xE000)
         {
@@ -71,7 +71,7 @@ void jit_processThumbBlock(u16* ptr)
             // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
-            break;
+            // break;
         }
         else if ((instruction & 0xFF87) == 0x4700)
         {
@@ -120,6 +120,14 @@ void jit_processThumbBlock(u16* ptr)
         else if ((instruction & 0xF800) == 0x4800)
         {
             // ldr Rd, [pc, #imm]
+            u32 targetAddress = (((u32)ptr + 4) & ~2) + ((instruction & 0xFF) << 2);
+            if (targetAddress >= (u32)blockStart && targetAddress < (u32)blockEnd)
+            {
+                if (targetAddress > (u32)ptr)
+                    blockEnd = (void*)targetAddress;
+                // safe pool address needs no patching
+                continue;
+            }
         }
     } while ((u32)++ptr < (u32)blockEnd);
 }
@@ -225,6 +233,10 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
         logAddress(branchDestination);
 #endif
         jit_ensureBlockJitted((void*)branchDestination);
+        if (((u32)instructionPtr >> 24) == 2 && (branchDestination >> 24) == 3)
+        {
+            ic_invalidateAll();
+        }
         return (u16*)branchDestination;
     }
     else if ((instruction & 0xFF87) == 0x4487)

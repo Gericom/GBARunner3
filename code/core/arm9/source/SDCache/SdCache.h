@@ -27,10 +27,10 @@ static inline const void* sdc_getRomBlock(u32 romAddress)
     void* data = sdc_romBlockToCacheBlock[romBlock];
     if (data)
         return data;
-#ifdef GBAR3_HICODE_CACHE_MAPPING
-    hic_unmapRomBlock();
-#endif
-    ic_invalidateAll();
+// #ifdef GBAR3_HICODE_CACHE_MAPPING
+//     hic_unmapRomBlock();
+// #endif
+//     ic_invalidateAll();
     return sdc_loadRomBlockDirect(romAddress);
 }
 
