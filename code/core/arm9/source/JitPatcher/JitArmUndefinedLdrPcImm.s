@@ -24,26 +24,29 @@
             add r8, r8, #(0x08000000 - 0x02200000)
         1:
         .endif
-        tst lr, #0x200
-        and r9, lr, #0x000001E0
-        and lr, lr, #0x000FF000
-        orr r9, r9, lr, lsr #3
-        addne r8, r8, r9, lsr #5
-        subeq r8, r8, r9, lsr #5
-        bic r8, r8, #3
-        bl memu_load32
-        ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-        ldr sp,= dtcmStackEnd
-        bic r9, r9, #3
-        push {r0-r3}
-        mov r0, r9
-        bl jit_ensureBlockJitted
-        pop {r0-r3}
-        msr spsr, r10
-        movs pc, r9
+        b jit_armUndefinedLdrPcImmCommon
 .endm
 
 generate jit_armUndefinedLdrPcImmRn, 16
+
+jit_armUndefinedLdrPcImmCommon:
+    tst lr, #0x200
+    and r9, lr, #0x000001E0
+    and lr, lr, #0x000FF000
+    orr r9, r9, lr, lsr #3
+    addne r8, r8, r9, lsr #5
+    subeq r8, r8, r9, lsr #5
+    bic r8, r8, #3
+    bl memu_load32
+    ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    ldr sp,= dtcmStackEnd
+    bic r9, r9, #3
+    push {r0-r3}
+    mov r0, r9
+    bl jit_ensureBlockJitted
+    pop {r0-r3}
+    msr spsr, r10
+    movs pc, r9
 
 .section ".dtcm", "aw"
 

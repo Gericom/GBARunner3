@@ -59,7 +59,6 @@ u32* jit_getJitBits(const void* ptr)
     return NULL;
 }
 
-[[gnu::section(".itcm")]]
 void* jit_findBlockStart(const void* ptr)
 {
     if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
@@ -76,7 +75,6 @@ void* jit_findBlockStart(const void* ptr)
     return (void*)0;
 }
 
-[[gnu::section(".itcm")]]
 void* jit_findBlockEnd(const void* ptr)
 {
     if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
@@ -135,6 +133,42 @@ void jit_ensureBlockJitted(void* ptr)
     }
     dc_drainWriteBuffer();
     ic_invalidateAll();
+}
+
+[[gnu::section(".itcm")]]
+bool jit_conditionPass(u32 cpsr, u32 condition)
+{
+    bool conditionPass = false;
+    switch (condition & ~1)
+    {
+        case 0: // EQ
+            conditionPass = cpsr & (1 << 30); // Z == 1
+            break;
+        case 2: // CS
+            conditionPass = cpsr & (1 << 29); // C == 1
+            break;
+        case 4: // MI
+            conditionPass = cpsr & (1 << 31); // N == 1
+            break;
+        case 6: // VS
+            conditionPass = cpsr & (1 << 28); // V == 1
+            break;
+        case 8: // HI
+            conditionPass = (cpsr & (1 << 29)) && !(cpsr & (1 << 30)); // C == 1 && Z == 0
+            break;
+        case 10: // GE
+            conditionPass = (cpsr & (1 << 31)) == ((cpsr & (1 << 28)) << 3);
+            break;
+        case 12: // GT
+            conditionPass = !(cpsr & (1 << 30)) && ((cpsr & (1 << 31)) == ((cpsr & (1 << 28)) << 3));
+            break;
+        case 14: // AL
+            conditionPass = true;
+            break;
+    }
+    if (condition & 1)
+        conditionPass = !conditionPass;
+    return conditionPass;
 }
 
 void jit_init(void)

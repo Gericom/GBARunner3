@@ -30,8 +30,8 @@ _start:
     // mpu region 2: VRAM (8 MB)
     ldr r0,= ((1 | (22 << 1)) + 0x06000000)
     mcr	p15, 0, r0, c6, c2, 0
-    // mpu region 3: Disabled
-    mov r0, #0
+    // mpu region 3: Cached Extended Main Memory (4 MB)
+    ldr r0,= ((1 | (21 << 1)) + 0x02400000)
     mcr	p15, 0, r0, c6, c3, 0
     // mpu region 4: Disabled
     mov r0, #0
@@ -42,23 +42,26 @@ _start:
     // mpu region 6: IWRAM (16 MB)
     ldr r0,= (1 | (23 << 1) + 0x03000000)
     mcr	p15, 0, r0, c6, c6, 0
+    @ // mpu region 6: IWRAM (32 kB)
+    @ ldr r0,= (1 | (14 << 1) + 0x03000000)
+    @ mcr	p15, 0, r0, c6, c6, 0
     // mpu region 7: GBA EWRAM (256 KB)
     ldr r0,= (1 | (17 << 1) | 0x02000000)
     mcr	p15, 0, r0, c6, c7, 0
     // data permissions
-    ldr r0,= 0x33200121
+    ldr r0,= 0x33201121
     mcr p15, 0, r0, c5, c0, 2
     // code permissions
     ldr r0,= 0x33330221
     mcr p15, 0, r0, c5, c0, 3
     // dcache
-    ldr r0,= 0b00100010
+    ldr r0,= 0b00101010
     mcr p15, 0, r0, c2, c0, 0
     // icache
     ldr r0,= 0b11110010
     mcr p15, 0, r0, c2, c0, 1
     // write buffer
-    ldr r0,= 0b00100000
+    ldr r0,= 0b00101100
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu

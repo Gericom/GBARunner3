@@ -26,32 +26,38 @@ arm_func vm_undefined
     ldrsh r8, [r13, r8]
     and r9, lr, #0xF
     // interlock
-    ldr r8, [r8, r9, lsl #2]
-    // interlock
+    cmp r8, #0
+    ldrne r8, [r8, r9, lsl #2]
+    beq vm_armUndefinedNoAsmHandler
     bx r8
 
 .extern jit_handleThumbUndefined
 
 arm_func vm_undefinedThumb
+    ldrh lr, [r11, #-2]!
     ldr sp,= (dtcmStackEnd - 0x40)
+
     ldr r10, DTCM(vm_undefinedSpsr)
 
-    add r11, r11, #2
-    str r11, [sp, #0x3C]
+    mov r12, lr, lsr #4
+    cmp r12, #0xDE0
+#ifndef GBAR3_TEST
+        ldreq r12,= jit_thumbUndefinedBxR0
+#endif
+        andeq lr, lr, #0xF
+        addeq pc, r12, lr, lsl #3
+
+1:
+    add r12, r11, #4
+    str r12, [sp, #0x3C]
     stmia sp, {r0-lr}^
     nop
-    sub r1, r11, #4
+    mov r1, r11
 
     bic r12, r1, #0x01000000
     add r12, r12, #0x00400000
 
     ldrh r0, [r12]
-
-    bic r12, r0, #0x78
-    cmp r12, #0x4700
-#ifndef GBAR3_TEST
-    beq jit_thumbBx
-#endif
 
 arm_func vm_undefinedThumbContinue
     mov r2, sp

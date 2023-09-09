@@ -180,15 +180,16 @@ SECTIONS
 		KEEP (vectors.o(.itcm))
 		. = 0x20;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0xC4;
+		. = 0xDC;
 		KEEP (VMIrq.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0x460;
 		KEEP (VMMode.o(.itcm))
-		. = 0x800;
+		. = 0x7C4;
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
+		KEEP (IoFallback.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		*(.itcm)

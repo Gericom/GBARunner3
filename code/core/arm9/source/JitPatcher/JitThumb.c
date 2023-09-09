@@ -43,21 +43,13 @@ void jit_processThumbBlock(u16* ptr)
         else if ((instruction & 0xF000) == 0xD000)
         {
             // b cond
-            // if (((u32)ptr >> 24) == 2)
-            // {
-            //     *(u16*)((u32)ptr + 0x0400000) = instruction;
-            // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
-            // break;
+            break;
         }
         else if ((instruction & 0xF800) == 0xE000)
         {
             // b
-            // if (((u32)ptr >> 24) == 2)
-            // {
-            //     *(u16*)((u32)ptr + 0x0400000) = instruction;
-            // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
             break;
@@ -65,10 +57,6 @@ void jit_processThumbBlock(u16* ptr)
         else if ((instruction & 0xF800) == 0xF800)
         {
             // bl lr+imm
-            // if (((u32)ptr >> 24) == 2)
-            // {
-            //     *(u16*)((u32)ptr + 0x0400000) = instruction;
-            // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
             // break;
@@ -76,21 +64,12 @@ void jit_processThumbBlock(u16* ptr)
         else if ((instruction & 0xFF87) == 0x4700)
         {
             // bx Rm
-            // if (((u32)ptr >> 24) == 2)
-            // {
-            //     *(u16*)((u32)ptr + 0x0400000) = instruction;
-            // }
-            *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
-            *ptr = 0xB100;
+            *ptr = 0xDE00 | ((instruction >> 3) & 0xF);
             break;
         }
         else if ((instruction & 0xFF87) == 0x4487)
         {
             // add pc, Rm
-            // if (((u32)ptr >> 24) == 2)
-            // {
-            //     *(u16*)((u32)ptr + 0x0400000) = instruction;
-            // }
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
             break;
@@ -139,33 +118,7 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
     {
         // b cond
         u32 condition = (instruction >> 8) & 0xF;
-        bool conditionPass = false;
-        switch (condition & ~1)
-        {
-            case 0: // EQ
-                conditionPass = cpsr & (1 << 30); // Z == 1
-                break;
-            case 2: // CS
-                conditionPass = cpsr & (1 << 29); // C == 1
-                break;
-            case 4: // MI
-                conditionPass = cpsr & (1 << 31); // N == 1
-                break;
-            case 6: // VS
-                conditionPass = cpsr & (1 << 28); // V == 1
-                break;
-            case 8: // HI
-                conditionPass = (cpsr & (1 << 29)) && !(cpsr & (1 << 30)); // C == 1 && Z == 0
-                break;
-            case 10: // GE
-                conditionPass = (cpsr & (1 << 31)) == ((cpsr & (1 << 28)) << 3);
-                break;
-            case 12: // GT
-                conditionPass = !(cpsr & (1 << 30)) && ((cpsr & (1 << 31)) == ((cpsr & (1 << 28)) << 3));
-                break;
-        }
-        if (condition & 1)
-            conditionPass = !conditionPass;
+        bool conditionPass = jit_conditionPass(cpsr, condition);
         u32 branchDestination = ((u32)instructionPtr + 4 + ((int)(instruction << 24) >> 23)) | 1;
         bool putBack;
         u32 address;
@@ -210,6 +163,7 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
     else if ((instruction & 0xF800) == 0xF800)
     {
         // bl lr+imm
+        // todo: check if previous instruction was actually the first bl part
         u32 branchDestination = (registers[14] + ((instruction << 21) >> 20)) | 1;
 #ifdef TRACE_THUMB_UNDEFINED
         logAddress(0xF800);
@@ -222,23 +176,31 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
         registers[14] = (u32)instructionPtr + 3;
         return (u16*)branchDestination;
     }
-    else if ((instruction & 0xFF87) == 0x4700)
-    {
-        // bx Rm
-        u32 branchDestination = registers[(instruction >> 3) & 0xF];
-        if (!(branchDestination & 1))
-            branchDestination &= ~2;
-#ifdef TRACE_THUMB_UNDEFINED
-        logAddress(0x4700);
-        logAddress(branchDestination);
-#endif
-        jit_ensureBlockJitted((void*)branchDestination);
-        if (((u32)instructionPtr >> 24) == 2 && (branchDestination >> 24) == 3)
-        {
-            ic_invalidateAll();
-        }
-        return (u16*)branchDestination;
-    }
+//     else if ((instruction & 0xFF87) == 0x4700)
+//     {
+//         // bx Rm
+//         u32 rm = (instruction >> 3) & 0xF;
+//         u32 branchDestination = registers[rm];
+//         if (!(branchDestination & 1))
+//             branchDestination &= ~2;
+// #ifdef TRACE_THUMB_UNDEFINED
+//         logAddress(0x4700);
+//         logAddress(branchDestination);
+// #endif
+//         jit_ensureBlockJitted((void*)branchDestination);
+//         // if (rm == 14)
+//         // {
+//         //     *instructionPtr = instruction;
+//         //     dc_drainWriteBuffer();
+//         //     ic_invalidateAll();
+//         // }
+
+//         if (((u32)instructionPtr >> 24) == 2 && (branchDestination >> 24) == 3)
+//         {
+//             ic_invalidateAll();
+//         }
+//         return (u16*)branchDestination;
+//     }
     else if ((instruction & 0xFF87) == 0x4487)
     {
         // add pc, Rm

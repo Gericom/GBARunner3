@@ -22,6 +22,8 @@ void* jit_findBlockEnd(const void* ptr);
 bool jit_isBlockJitted(void* ptr);
 void jit_ensureBlockJitted(void* ptr);
 
+bool jit_conditionPass(u32 cpsr, u32 condition);
+
 /// @brief Initializes the JIT patcher.
 void jit_init(void);
 

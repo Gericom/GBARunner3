@@ -54,6 +54,12 @@ ensureJittedStaticRom:
     b 1b
 
 ensureJittedIWram:
+    mov lr, r11, lsr #24
+    cmp lr, #2
+    moveq lr, #0
+    mcreq p15, 0, lr, c7, c10, 4
+    mcreq p15, 0, lr, c7, c5, 0
+
     ldr r11,= gIWramJitBits
     mov r9, r9, lsr #1
     ldrb r11, [r11, r9, lsr #3]

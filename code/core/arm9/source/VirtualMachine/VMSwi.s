@@ -6,7 +6,7 @@
 
 vm_swi_base:
 
-#define DTCM(x) (vm_swi_base - 0x800 + (x))
+#define DTCM(x) (vm_swi_base - 0x7C4 + (x))
 
 arm_func vm_swi
     str lr, DTCM(vm_regs_svc + 4)
