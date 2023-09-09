@@ -9,24 +9,27 @@
         ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rm < 8
             mov r8, r\rm
+            b ensureJittedCommon
         .elseif \rm < 15
             stmia r13, {r\rm}^
-            nop
-            ldr r8, [r13]
+            b ensureJittedCommonHiReg
         .else
             // pc
             add r8, r11, #4
+            b ensureJittedCommon
         .endif
-        ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-        ldr sp,= dtcmStackEnd
-        tst r8, #1
-            orrne r10, r10, #0x20 // thumb bit
-        b ensureJittedCommon
 .endm
 
 generate jit_armUndefinedBxRm, 16
 
+ensureJittedCommonHiReg:
+    ldr r8, [r13]
+
 ensureJittedCommon:
+    ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    ldr sp,= dtcmStackEnd
+    tst r8, #1
+        orrne r10, r10, #0x20 // thumb bit
     sub r9, r8, #0x02200000
     cmp r9, #0x00200000
     blo ensureJittedStaticRom

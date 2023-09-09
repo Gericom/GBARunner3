@@ -59,7 +59,7 @@ void jit_processThumbBlock(u16* ptr)
             // bl lr+imm
             *(u16*)(((u32)ptr & ~0x01000000) + 0x00400000) = instruction;
             *ptr = 0xB100;
-            // break;
+            break;
         }
         else if ((instruction & 0xFF87) == 0x4700)
         {

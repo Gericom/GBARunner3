@@ -39,7 +39,10 @@ void jit_processArmBlock(u32* ptr)
             {
                 // BL imm
                 *ptr = (instruction & ~0x0E000000) | 0x0C000000;
-                continue;
+                if ((instruction >> 28) == 0xE)
+                {
+                    break;
+                }
             }
             else
             {
