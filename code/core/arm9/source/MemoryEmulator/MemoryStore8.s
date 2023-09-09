@@ -15,13 +15,15 @@ arm_func memu_store8
         ldrlo pc, [pc, r8, lsr #22]
     bx lr
 
+.global memu_itcmStore8Table
+memu_itcmStore8Table:
     .word memu_store8Bios // 00
     .word memu_store8Undefined // 01
     .word memu_store8Ewram // 02
     .word memu_store8Iwram // 03
     .word memu_store8Io // 04
     .word memu_store8Pltt // 05
-    .word memu_store8Vram // 06
+    .word memu_store8Vram012 // 06
     .word memu_store8Undefined // 07, byte writes to oam are ignored
     .word memu_store8Rom // 08
     .word memu_store8Rom // 09
@@ -89,22 +91,27 @@ arm_func memu_store8Pltt
     strh r9, [r10]
     bx lr
 
-arm_func memu_store8Vram
-    ldr r11,= emu_ioRegisters
-    bic r10, r8, #0x00FE0000
-    ldrh r11, [r11, #GBA_REG_OFFS_DISPCNT]
-    ldr r12,= 0x06018000
-    cmp r10, r12
-        bicge r10, #0x8000
+arm_func memu_store8Vram012
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bxmi lr
 
-    and r12, r11, #7
-    cmp r12, #3
-        ldrlt r11,= 0x06010000
-        ldrge r11,= 0x06014000
-    cmp r10, r11
-        bxge lr // 8 bit writes ignored in obj vram
     orr r9, r9, r9, lsl #8
-    strh r9, [r10]
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
+    bx lr
+
+arm_func memu_store8Vram345
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        bxge lr
+
+    orr r9, r9, r9, lsl #8
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
     bx lr
 
 arm_func memu_store8Rom

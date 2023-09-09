@@ -17,13 +17,15 @@ arm_func memu_load8
         ldrlo pc, [pc, r8, lsr #22]
     b memu_load8Undefined
 
+.global memu_itcmLoad8Table
+memu_itcmLoad8Table:
     .word memu_load8Bios // 00
     .word memu_load8Undefined // 01
     .word memu_load8Ewram // 02
     .word memu_load8Iwram // 03
     .word memu_load8Io // 04
     .word memu_load8Pltt // 05
-    .word memu_load8Vram // 06
+    .word memu_load8Vram012 // 06
     .word memu_load8Oam // 07
     .word memu_load8Rom // 08
     .word memu_load8Rom // 09
@@ -90,21 +92,23 @@ arm_func memu_load8Pltt
     ldrb r9, [r9]
     bx lr
 
-arm_func memu_load8Vram
-    ldr r11,= emu_ioRegisters
-    bic r10, r8, #0x00FE0000
-    ldrh r11, [r11, #GBA_REG_OFFS_DISPCNT]
-    ldr r12,= 0x06018000
-    cmp r10, r12
-        bicge r10, #0x8000
+arm_func memu_load8Vram012
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        addmi r11, r11, #0x3F0000
+        bicmi r10, r10, #(0x8000 << 15)
 
-    and r12, r11, #7
-    cmp r12, #3
-        ldrlt r11,= 0x06010000
-        ldrge r11,= 0x06014000
-    cmp r10, r11
-        addge r10, #0x3F0000
-    ldrb r9, [r10]
+    ldrb r9, [r11, r10, lsr #15]
+    bx lr
+
+arm_func memu_load8Vram345
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addge r11, r11, #0x3F0000
+    ldrb r9, [r11, r10, lsr #15]
     bx lr
 
 arm_func memu_load8Oam
@@ -131,12 +135,6 @@ load8RomCacheMiss:
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
-
-@ #ifdef GBAR3_HICODE_CACHE_MAPPING
-@     bl hic_unmapRomBlock
-@ #endif
-
-@     bl ic_invalidateAll
     mov r0, r8
     bl sdc_loadRomBlockDirect
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)

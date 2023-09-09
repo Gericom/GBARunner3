@@ -16,13 +16,15 @@ arm_func memu_store32
         ldrlo pc, [pc, r8, lsr #22]
     bx lr
 
+.global memu_itcmStore32Table
+memu_itcmStore32Table:
     .word memu_store32Bios // 00
     .word memu_store32Undefined // 01
     .word memu_store32Ewram // 02
     .word memu_store32Iwram // 03
     .word memu_store32Io // 04
     .word memu_store32Pltt // 05
-    .word memu_store32Vram // 06
+    .word memu_store32Vram012 // 06
     .word memu_store32Oam // 07
     .word memu_store32Rom // 08
     .word memu_store32Rom // 09
@@ -67,21 +69,23 @@ arm_func memu_store32Pltt
     str r9, [r10]
     bx lr
 
-arm_func memu_store32Vram
-    ldr r11,= emu_ioRegisters
-    bic r10, r8, #0x00FE0000
-    ldrh r11, [r11, #GBA_REG_OFFS_DISPCNT]
-    ldr r12,= 0x06018000
-    cmp r10, r12
-        bicge r10, #0x8000
+arm_func memu_store32Vram012
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        addmi r11, r11, #0x3F0000
+        bicmi r10, r10, #(0x8000 << 15)
 
-    and r12, r11, #7
-    cmp r12, #3
-        ldrlt r11,= 0x06010000
-        ldrge r11,= 0x06014000
-    cmp r10, r11
-        addge r10, #0x3F0000
-    str r9, [r10]
+    str r9, [r11, r10, lsr #15]
+    bx lr
+
+arm_func memu_store32Vram345
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addge r11, r11, #0x3F0000
+    str r9, [r11, r10, lsr #15]
     bx lr
 
 arm_func memu_store32Oam

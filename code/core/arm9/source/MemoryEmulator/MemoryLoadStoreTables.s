@@ -11,7 +11,7 @@ memu_load32Table:
     .word memu_load32Iwram // 03
     .word memu_load32Io // 04
     .word memu_load32Pltt // 05
-    .word memu_load32Vram // 06
+    .word memu_load32Vram012 // 06
     .word memu_load32Oam // 07
     .word memu_load32Rom // 08
     .word memu_load32Rom // 09
@@ -30,7 +30,7 @@ memu_load16Table:
     .word memu_load16Iwram // 03
     .word memu_load16Io // 04
     .word memu_load16Pltt // 05
-    .word memu_load16Vram // 06
+    .word memu_load16Vram012 // 06
     .word memu_load16Oam // 07
     .word memu_load16Rom // 08
     .word memu_load16Rom // 09
@@ -49,7 +49,7 @@ memu_load8Table:
     .word memu_load8Iwram // 03
     .word memu_load8Io // 04
     .word memu_load8Pltt // 05
-    .word memu_load8Vram // 06
+    .word memu_load8Vram012 // 06
     .word memu_load8Oam // 07
     .word memu_load8Rom // 08
     .word memu_load8Rom // 09
@@ -68,7 +68,7 @@ memu_store32Table:
     .word memu_store32Iwram // 03
     .word memu_store32Io // 04
     .word memu_store32Pltt // 05
-    .word memu_store32Vram // 06
+    .word memu_store32Vram012 // 06
     .word memu_store32Oam // 07
     .word memu_store32Rom // 08
     .word memu_store32Rom // 09
@@ -87,7 +87,7 @@ memu_store16Table:
     .word memu_store16Iwram // 03
     .word memu_store16Io // 04
     .word memu_store16Pltt // 05
-    .word memu_store16Vram // 06
+    .word memu_store16Vram012 // 06
     .word memu_store16Oam // 07
     .word memu_store16Rom // 08
     .word memu_store16Rom // 09
@@ -106,7 +106,7 @@ memu_store8Table:
     .word memu_store8Iwram // 03
     .word memu_store8Io // 04
     .word memu_store8Pltt // 05
-    .word memu_store8Vram // 06
+    .word memu_store8Vram012 // 06
     .word memu_store8Undefined // 07, byte writes to oam are ignored
     .word memu_store8Rom // 08
     .word memu_store8Rom // 09

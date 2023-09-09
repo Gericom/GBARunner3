@@ -176,31 +176,6 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
         registers[14] = (u32)instructionPtr + 3;
         return (u16*)branchDestination;
     }
-//     else if ((instruction & 0xFF87) == 0x4700)
-//     {
-//         // bx Rm
-//         u32 rm = (instruction >> 3) & 0xF;
-//         u32 branchDestination = registers[rm];
-//         if (!(branchDestination & 1))
-//             branchDestination &= ~2;
-// #ifdef TRACE_THUMB_UNDEFINED
-//         logAddress(0x4700);
-//         logAddress(branchDestination);
-// #endif
-//         jit_ensureBlockJitted((void*)branchDestination);
-//         // if (rm == 14)
-//         // {
-//         //     *instructionPtr = instruction;
-//         //     dc_drainWriteBuffer();
-//         //     ic_invalidateAll();
-//         // }
-
-//         if (((u32)instructionPtr >> 24) == 2 && (branchDestination >> 24) == 3)
-//         {
-//             ic_invalidateAll();
-//         }
-//         return (u16*)branchDestination;
-//     }
     else if ((instruction & 0xFF87) == 0x4487)
     {
         // add pc, Rm
