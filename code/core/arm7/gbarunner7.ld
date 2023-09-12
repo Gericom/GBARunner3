@@ -18,7 +18,7 @@ PHDRS {
 MEMORY {
 	ewram  : ORIGIN = 0x02380000, LENGTH = 12M - 512K
 	rom    : ORIGIN = 0x08000000, LENGTH = 32M
-	iwram  : ORIGIN = 0x038f0000, LENGTH = 64K
+	iwram  : ORIGIN = 0x03800000, LENGTH = 64K
 
 	twl_ewram : ORIGIN = 0x02e80000, LENGTH = 512K - 64K
 	twl_iwram : ORIGIN = 0x03000000, LENGTH = 256K
@@ -76,6 +76,7 @@ SECTIONS
 	{
 		__arm7_lma__ = LOADADDR(.text);
 		__arm7_start__ = .;
+		KEEP (dldi.o(.text))
 		KEEP (*(SORT_NONE(.init)))
 		*(.plt)
 		*(.text .stub .text.* .gnu.linkonce.t.*)

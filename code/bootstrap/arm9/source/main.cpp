@@ -1,16 +1,48 @@
 #include <nds.h>
+#include <libtwl/rtos/rtosIrq.h>
+#include <libtwl/mem/memVram.h>
+#include <libtwl/ipc/ipcFifo.h>
+#include <libtwl/ipc/ipcSync.h>
 #include "gbarunner9_bin.h"
+
+#define HANDSHAKE_PART0     0xA
+#define HANDSHAKE_PART1     0xB
+#define HANDSHAKE_PART2     0xC
 
 typedef void (*gbarunner9_func_t)(void);
 
+static void initIpc()
+{
+    // We cannot use ipc_initFifoSystem here, because it tries to initialize the
+    // arm9 retrieve part as well, and assumes the rtos irq system is used.
+    
+    ipc_clearSendFifo();
+    ipc_ackFifoError();
+    ipc_disableRecvFifoNotEmptyIrq();
+    ipc_disableSendFifoEmptyIrq();
+    ipc_enableFifo();
+
+    while (ipc_getArm7SyncBits() != HANDSHAKE_PART0);
+    ipc_setArm9SyncBits(HANDSHAKE_PART0);
+    while (ipc_getArm7SyncBits() != HANDSHAKE_PART1);
+    ipc_setArm9SyncBits(HANDSHAKE_PART1);
+    while (ipc_getArm7SyncBits() != HANDSHAKE_PART2);
+    ipc_setArm9SyncBits(HANDSHAKE_PART2);
+
+    // wait for the arm7 to finish its initialization
+    while (ipc_getArm7SyncBits() != 7);
+}
+
 int main(int argc, char* argv[])
 {
-    *(vu32*)0x04000208 = 0; // IME = 0
-    *(vu32*)0x04000210 = 0; // IE = 0
-    *(vu32*)0x04000214 = ~0u; // ack IF
+    REG_IME = 0;
+    rtos_disableIrqMask(~0u);
+    rtos_ackIrqMask(~0u);
+    
+    initIpc();
 
-    *(vu8*)0x04000240 = 0x80; // VRAM A
-    *(vu8*)0x04000241 = 0x80; // VRAM B
+    mem_setVramAMapping(MEM_VRAM_AB_LCDC);
+    mem_setVramBMapping(MEM_VRAM_AB_LCDC);
 
     DC_FlushAll();
     DC_InvalidateAll();

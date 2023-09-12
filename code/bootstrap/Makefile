@@ -37,15 +37,15 @@ checkcorearm9:
 
 #---------------------------------------------------------------------------------
 checkarm7:
-	$(MAKE) -C arm7
+	$(MAKE) -C ../core/arm7
 	
 #---------------------------------------------------------------------------------
 checkarm9:
 	$(MAKE) -C arm9
 
 #---------------------------------------------------------------------------------
-$(TARGET).nds	: $(NITRO_FILES) arm7/$(TARGET).elf arm9/$(TARGET).elf
-	ndstool	-c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
+$(TARGET).nds	: $(NITRO_FILES) ../core/arm7/$(TARGET).elf arm9/$(TARGET).elf
+	ndstool	-c $(TARGET).nds -7 ../core/arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
 	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
 	$(_ADDFILES)
 ifdef GBAR3_ISNITRO
@@ -53,8 +53,8 @@ ifdef GBAR3_ISNITRO
 endif
 
 #---------------------------------------------------------------------------------
-arm7/$(TARGET).elf:
-	$(MAKE) -C arm7
+../core/arm7/$(TARGET).elf:
+	$(MAKE) -C ../core/arm7
 	
 #---------------------------------------------------------------------------------
 arm9/$(TARGET).elf:
@@ -64,6 +64,6 @@ arm9/$(TARGET).elf:
 clean:
 	$(MAKE) -C ../core/arm9 clean
 	$(MAKE) -C arm9 clean
-	$(MAKE) -C arm7 clean
+	$(MAKE) -C ../core/arm7 clean
 	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
 	rm -f arm9/data/gbarunner9.bin
