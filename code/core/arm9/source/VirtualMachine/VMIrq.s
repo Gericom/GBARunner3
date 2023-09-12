@@ -64,9 +64,16 @@ arm_func vm_irq
     str r13, DTCM(vm_emulatedIfImeIe)
     
     ands r0, r0, lr
-    bne vm_emuIrq
+    beq 1f
 
-vm_emu_irq_continue:
+    tst r0, #(1 << 16) // ARM7 IRQ
+        blne emu_arm7Irq
+    tst r0, #2 // HBLANK IRQ
+        blne emu_hblankIrq
+    tst r0, #1 // VBLANK IRQ
+        blne emu_vblankIrq
+
+1:
     ldr r13, DTCM(vm_emulatedIfImeIe)
     ldr r0, DTCM(vm_irqSavedR0)
     // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IE, M = IME, F = IF)
@@ -237,12 +244,3 @@ old_mode_sys:
     nop
     ldr lr, DTCM(vm_irqVector)
     movs pc, lr
-
-vm_emuIrq:
-    tst r0, #(1 << 16) // ARM7 IRQ
-        blne emu_arm7Irq
-    tst r0, #2 // HBLANK IRQ
-        blne emu_hblankIrq
-    tst r0, #1 // VBLANK IRQ
-        blne emu_vblankIrq
-    b vm_emu_irq_continue
