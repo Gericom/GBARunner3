@@ -1,4 +1,4 @@
-#include <nds.h>
+#include "common.h"
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include <libtwl/ipc/ipcSync.h>
 #include <libtwl/rtos/rtosIrq.h>
@@ -8,6 +8,9 @@
 #include <libtwl/sound/soundChannel.h>
 #include <libtwl/sio/sio.h>
 #include <libtwl/gfx/gfxStatus.h>
+#include "IpcServices/DldiIpcService.h"
+
+static DldiIpcService sDldiIpcService;
 
 static rtos_event_t sVBlankEvent;
 
@@ -25,6 +28,9 @@ int main()
 {
     rtos_initIrq();
     rtos_startMainThread();
+
+    while (ipc_getArm9SyncBits() != 0);
+
     ipc_initFifoSystem();
 
     // clear sound registers
@@ -38,6 +44,8 @@ int main()
 
     sio_setGpioSiIrq(false);
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
+
+    sDldiIpcService.Start();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);

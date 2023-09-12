@@ -234,7 +234,6 @@ extern "C" void logAddress(u32 address)
 
 extern "C" void gbaRunnerMain(void)
 {
-    *(vu16*)0x04000204 &= ~0x800;
     *(vu32*)0x04000000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
     *(vu32*)0x0400006C = 0;

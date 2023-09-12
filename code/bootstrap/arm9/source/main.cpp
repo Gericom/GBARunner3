@@ -3,13 +3,20 @@
 #include <libtwl/mem/memVram.h>
 #include <libtwl/ipc/ipcFifo.h>
 #include <libtwl/ipc/ipcSync.h>
+#include <libtwl/ipc/ipcFifoSystem.h>
 #include "gbarunner9_bin.h"
+#include "../../../core/common/IpcChannels.h"
+#include "../../../core/common/DldiIpcCommand.h"
 
 #define HANDSHAKE_PART0     0xA
 #define HANDSHAKE_PART1     0xB
 #define HANDSHAKE_PART2     0xC
 
 typedef void (*gbarunner9_func_t)(void);
+
+static dldi_ipc_cmd_t sDldiIpcCommand;
+
+extern u8 _dldi_start[16 * 1024];
 
 static void initIpc()
 {
@@ -33,6 +40,18 @@ static void initIpc()
     while (ipc_getArm7SyncBits() != 7);
 }
 
+static bool tryInitDldi()
+{
+    *(vu16*)0x04000204 |= 0x800; // DS cartridge slot to arm7
+    DC_FlushRange(_dldi_start, sizeof(_dldi_start));
+    sDldiIpcCommand.cmd = DLDI_IPC_CMD_SETUP;
+    sDldiIpcCommand.buffer = _dldi_start;
+    DC_FlushRange(&sDldiIpcCommand, sizeof(sDldiIpcCommand));
+    ipc_sendWordDirect(((((u32)&sDldiIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_DLDI);
+    while (ipc_isRecvFifoEmpty());
+    return ipc_recvWordDirect();
+}
+
 int main(int argc, char* argv[])
 {
     REG_IME = 0;
@@ -40,6 +59,7 @@ int main(int argc, char* argv[])
     rtos_ackIrqMask(~0u);
     
     initIpc();
+    tryInitDldi();
 
     mem_setVramAMapping(MEM_VRAM_AB_LCDC);
     mem_setVramBMapping(MEM_VRAM_AB_LCDC);
