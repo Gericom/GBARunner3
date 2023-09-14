@@ -19,6 +19,13 @@ static void vblankIrq(u32 irqMask)
     rtos_signalEvent(&sVBlankEvent);
 }
 
+static void powerButtonIrq(u32 irq2Mask)
+{
+    i2cWriteRegister(I2C_PM, I2CREGPM_RESETFLAG, 1);
+    i2cWriteRegister(I2C_PM, I2CREGPM_PWRCNT, 1);
+    while (true);
+}
+
 static void notifyArm7Ready()
 {
     ipc_setArm7SyncBits(7);
@@ -54,6 +61,12 @@ int main()
     rtos_setIrqFunc(RTOS_IRQ_VBLANK, vblankIrq);
     rtos_enableIrqMask(RTOS_IRQ_VBLANK);
     gfx_setVBlankIrqEnabled(true);
+
+    if (isDSiMode())
+    {
+        rtos_setIrq2Func(RTOS_IRQ2_MCU, powerButtonIrq);
+        rtos_enableIrq2Mask(RTOS_IRQ2_MCU);
+    }
 
     notifyArm7Ready();
 
