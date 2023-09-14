@@ -4,9 +4,8 @@
 #include <string.h>
 #include "ff.h"
 #include "IpcChannels.h"
-#include "DldiIpcCommand.h"
 #include "cp15.h"
-#include "DldiIpc.h"
+#include "FsIpc.h"
 #include "diskio.h"
 
 #define DEV_FAT     0 //dldi
@@ -27,6 +26,11 @@ extern "C" DSTATUS disk_initialize(BYTE pdrv)
         // already initialized by the bootstrapper
         return 0;
     }
+    else if (pdrv == DEV_SD)
+    {
+        // already initialized on the arm7
+        return 0;
+    }
     else if (pdrv == DEV_PC)
     {
         sAgbMem = *(u32*)0x027FFF7C;
@@ -40,7 +44,12 @@ extern "C" DRESULT disk_read(BYTE pdrv, BYTE *buff, DWORD sector, UINT count)
 {
     if (pdrv == DEV_FAT)
     {
-        dldi_readSectors(buff, sector, count);
+        fs_readSectors(FS_DEVICE_DLDI, buff, sector, count);
+        return RES_OK;
+    }
+    else if (pdrv == DEV_SD)
+    {
+        fs_readSectors(FS_DEVICE_DSI_SD, buff, sector, count);
         return RES_OK;
     }
     else if (pdrv == DEV_PC)
@@ -68,7 +77,12 @@ extern "C" DRESULT disk_write(BYTE pdrv, const BYTE *buff, DWORD sector, UINT co
 {
     if (pdrv == DEV_FAT)
     {
-        dldi_writeSectors((void*)buff, sector, count);
+        fs_writeSectors(FS_DEVICE_DLDI, buff, sector, count);
+        return RES_OK;
+    }
+    else if (pdrv == DEV_SD)
+    {
+        fs_writeSectors(FS_DEVICE_DSI_SD, buff, sector, count);
         return RES_OK;
     }
     else if (pdrv == DEV_PC)

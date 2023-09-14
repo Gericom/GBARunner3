@@ -1,3 +1,3 @@
 #pragma once
 
-#define IPC_CHANNEL_DLDI    17
+#define IPC_CHANNEL_FS    17

@@ -3,31 +3,31 @@
 #include <libtwl/ipc/ipcFifo.h>
 #include <string.h>
 #include "ipcChannels.h"
-#include "dldiIpcCommand.h"
+#include "fsIpcCommand.h"
 #include "cp15.h"
-#include "dldiIpc.h"
+#include "FsIpc.h"
 
 [[gnu::section(".ewram.bss")]]
-alignas(32) static dldi_ipc_cmd_t sIpcCommand;
+alignas(32) static fs_ipc_cmd_t sIpcCommand;
 [[gnu::section(".ewram.bss")]]
 alignas(32) static u8 sTempBuffers[2][512];
 
-static u32 readSectorsCacheAligned(void* buffer, u32 sector, u32 count)
+static u32 readSectorsCacheAligned(FsDevice device, void* buffer, u32 sector, u32 count)
 {
-    sIpcCommand.cmd = DLDI_IPC_CMD_READ_SECTORS;
+    sIpcCommand.cmd = device == FS_DEVICE_DLDI ? FS_IPC_CMD_DLDI_READ_SECTORS : FS_IPC_CMD_DSI_SD_READ_SECTORS;
     sIpcCommand.buffer = buffer;
     sIpcCommand.sector = sector;
     sIpcCommand.count = count;
     dc_invalidateRange(buffer, 512 * count);
     dc_flushRange(&sIpcCommand, sizeof(sIpcCommand));
-    ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_DLDI);
+    ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_FS);
     while (ipc_isRecvFifoEmpty());
     return ipc_recvWordDirect();
 }
 
-static void readSectorsNotCacheAligned(void* buffer, u32 sector, u32 count)
+static void readSectorsNotCacheAligned(FsDevice device, void* buffer, u32 sector, u32 count)
 {
-    sIpcCommand.cmd = DLDI_IPC_CMD_READ_SECTORS;
+    sIpcCommand.cmd = device == FS_DEVICE_DLDI ? FS_IPC_CMD_DLDI_READ_SECTORS : FS_IPC_CMD_DSI_SD_READ_SECTORS;
     sIpcCommand.count = 1;
     // not cache aligned, use a temp buffer
     dc_invalidateRange(sTempBuffers[0], 512);
@@ -36,7 +36,7 @@ static void readSectorsNotCacheAligned(void* buffer, u32 sector, u32 count)
         sIpcCommand.buffer = sTempBuffers[i & 1];
         sIpcCommand.sector = sector + i;
         dc_flushRange(&sIpcCommand, sizeof(sIpcCommand));
-        ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_DLDI);
+        ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_FS);
         if (i != 0)
             memcpy((u8*)buffer + 512 * (i - 1), sTempBuffers[(i - 1) & 1], 512);
         if (i != count - 1)
@@ -47,32 +47,32 @@ static void readSectorsNotCacheAligned(void* buffer, u32 sector, u32 count)
     memcpy((u8*)buffer + 512 * (count - 1), sTempBuffers[(count - 1) & 1], 512);
 }
 
-extern "C" void dldi_readSectors(void* buffer, u32 sector, u32 count)
+extern "C" void fs_readSectors(FsDevice device, void* buffer, u32 sector, u32 count)
 {
     if (count == 0)
         return;
     if (((u32)buffer >> 24) != 2 || ((u32)buffer & 0x1F))
-        readSectorsNotCacheAligned(buffer, sector, count);
+        readSectorsNotCacheAligned(device, buffer, sector, count);
     else
-        readSectorsCacheAligned(buffer, sector, count);
+        readSectorsCacheAligned(device, buffer, sector, count);
 }
 
-static void writeSectorsCacheAligned(const void* buffer, u32 sector, u32 count)
+static void writeSectorsCacheAligned(FsDevice device, const void* buffer, u32 sector, u32 count)
 {
-    sIpcCommand.cmd = DLDI_IPC_CMD_WRITE_SECTORS;
+    sIpcCommand.cmd = device == FS_DEVICE_DLDI ? FS_IPC_CMD_DLDI_WRITE_SECTORS : FS_IPC_CMD_DSI_SD_WRITE_SECTORS;
     sIpcCommand.buffer = (void*)buffer;
     sIpcCommand.sector = sector;
     sIpcCommand.count = count;
     dc_flushRange(buffer, 512 * count);
     dc_flushRange(&sIpcCommand, sizeof(sIpcCommand));
-    ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_DLDI);
+    ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_FS);
     while (ipc_isRecvFifoEmpty());
     ipc_recvWordDirect();
 }
 
-static void writeSectorsNotCacheAligned(const void* buffer, u32 sector, u32 count)
+static void writeSectorsNotCacheAligned(FsDevice device, const void* buffer, u32 sector, u32 count)
 {
-    sIpcCommand.cmd = DLDI_IPC_CMD_WRITE_SECTORS;
+    sIpcCommand.cmd = device == FS_DEVICE_DLDI ? FS_IPC_CMD_DLDI_WRITE_SECTORS : FS_IPC_CMD_DSI_SD_WRITE_SECTORS;
     sIpcCommand.count = 1;
     // not cache aligned, use a temp buffer
     memcpy(sTempBuffers[0], (u8*)buffer, 512);
@@ -82,7 +82,7 @@ static void writeSectorsNotCacheAligned(const void* buffer, u32 sector, u32 coun
         sIpcCommand.buffer = sTempBuffers[i & 1];
         sIpcCommand.sector = sector + i;
         dc_flushRange(&sIpcCommand, sizeof(sIpcCommand));
-        ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_DLDI);
+        ipc_sendWordDirect(((((u32)&sIpcCommand) >> 2) << IPC_FIFO_MSG_CHANNEL_BITS) | IPC_CHANNEL_FS);
         if (i != count - 1)
         {
             memcpy(sTempBuffers[(i + 1) & 1], (u8*)buffer + 512 * (i + 1), 512);
@@ -94,12 +94,12 @@ static void writeSectorsNotCacheAligned(const void* buffer, u32 sector, u32 coun
     memcpy((u8*)buffer + 512 * (count - 1), sTempBuffers[(count - 1) & 1], 512);
 }
 
-extern "C" void dldi_writeSectors(const void* buffer, u32 sector, u32 count)
+extern "C" void fs_writeSectors(FsDevice device, const void* buffer, u32 sector, u32 count)
 {
     if (count == 0)
         return;
     if (((u32)buffer >> 24) != 2 || ((u32)buffer & 0x1F))
-        writeSectorsNotCacheAligned(buffer, sector, count);
+        writeSectorsNotCacheAligned(device, buffer, sector, count);
     else
-        writeSectorsCacheAligned(buffer, sector, count);
+        writeSectorsCacheAligned(device, buffer, sector, count);
 }

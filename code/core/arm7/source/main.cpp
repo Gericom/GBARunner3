@@ -8,9 +8,9 @@
 #include <libtwl/sound/soundChannel.h>
 #include <libtwl/sio/sio.h>
 #include <libtwl/gfx/gfxStatus.h>
-#include "IpcServices/DldiIpcService.h"
+#include "IpcServices/FsIpcService.h"
 
-static DldiIpcService sDldiIpcService;
+static FsIpcService sFsIpcService;
 
 static rtos_event_t sVBlankEvent;
 
@@ -45,7 +45,7 @@ int main()
     sio_setGpioSiIrq(false);
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
 
-    sDldiIpcService.Start();
+    sFsIpcService.Start();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);
