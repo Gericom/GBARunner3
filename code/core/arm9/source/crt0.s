@@ -4,6 +4,8 @@
 .global _start
 .type _start, %function
 _start:
+    mov r11, r0 // argc
+    mov r12, r1 // argv
     // configure cp15
     // disable itcm, dtcm, caches and mpu
     ldr r0,= 0x00002078
@@ -127,8 +129,10 @@ ewram_bss_done:
 
     ldr sp,= dtcmStackEnd
 
-    ldr lr,= gbaRunnerMain
-    b __libc_init_array
+    push {r11, r12}
+    bl __libc_init_array
+    pop {r0, r1}
+    b gbaRunnerMain
 
 .pool
 .end

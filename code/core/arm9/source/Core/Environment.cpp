@@ -23,7 +23,7 @@ static bool detectNocashPrintSuppport()
 void Environment::Initialize()
 {
     _flags = ENVIRONMENT_FLAGS_NONE;
-    if (isDSiMode())
+    if (((*(vu32*)0x04004000) & 3) == 1)
     {
         _flags |= ENVIRONMENT_FLAGS_DSI_MODE;
     }

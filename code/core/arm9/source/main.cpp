@@ -44,6 +44,18 @@ static bool mountDldi()
     return true;
 }
 
+static bool mountDsiSd()
+{
+    FRESULT res = f_mount(&gFatFs, "sd:", 1);
+    if (res != FR_OK)
+    {
+        gLogger->Log(LogLevel::Error, "Mounting DSi sd failed\n");
+        return false;
+    }
+    f_chdrive("sd:");
+    return true;
+}
+
 static bool mountAgbSemihosting()
 {
     FRESULT res = f_mount(&gFatFs, "pc:", 1);
@@ -246,9 +258,22 @@ extern "C" void logAddress(u32 address)
     gLogger->Log(LogLevel::Trace, "0x%X\n", address);
 }
 
-extern "C" void gbaRunnerMain(void)
+static bool shouldMountDsiSd(int argc, char* argv[])
 {
-    *(vu16*)0x04000204 &= ~0x800;
+    if (!Environment::IsDsiMode())
+        return false;
+
+    if (argc == 0)
+        return true;
+
+    if (argv[0][0] == 'f' && argv[0][1] == 'a' && argv[0][2] == 't' && argv[0][3] == ':')
+        return false;
+
+    return true;
+}
+
+extern "C" void gbaRunnerMain(int argc, char* argv[])
+{
     *(vu32*)0x04000000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
     *(vu32*)0x0400006C = 0;
@@ -262,14 +287,28 @@ extern "C" void gbaRunnerMain(void)
     mem_setVramHMapping(MEM_VRAM_H_LCDC);
     mem_setVramIMapping(MEM_VRAM_I_LCDC);
     sys_set3DGeometryEnginePower(true); // enable geometry engine to generate gx fifo irq
+
+    Environment::Initialize();
+    bool mountResult;
+    if (shouldMountDsiSd(argc, argv))
+        mountResult = mountDsiSd();
+    else
+        mountResult = mountDldi();
+
+    if (!mountResult)
+    {
+        GFX_PLTT_BG_MAIN[0] = 0x1F << 10;
+        while (1);
+    }
+
+    // if (Environment::SupportsAgbSemihosting())
+        // mountAgbSemihosting();
+
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);
     memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
-    Environment::Initialize();
-    mountDldi();
-    // if (Environment::SupportsAgbSemihosting())
-        // mountAgbSemihosting();
+
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();

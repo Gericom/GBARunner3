@@ -24,3 +24,13 @@ arm_func dc_flushRange
     cmp r0, r1
     blt 1b
     bx lr
+
+arm_func dc_invalidateRange
+    add r1, r1, r0
+    bic r0, r0, #0x1F
+1:
+    mcr p15, 0, r0, c7, c6, 1
+    add r0, r0, #32
+    cmp r0, r1
+    blt 1b
+    bx lr

@@ -15,34 +15,36 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source  
-INCLUDES	:=	include build
+SOURCES		:=	source source/IpcServices
+INCLUDES	:=	source ../common build
 DATA		:=
  
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-mthumb-interwork
+ARCH	:=	-marm -mthumb-interwork -DLIBTWL_ARM7 -DARM7
 
 CFLAGS	:=	-g -Wall -O2\
 		-mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer\
+		-ffunction-sections -fdata-sections\
 		-ffast-math \
 		$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM7
-CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-rtti
+CXXFLAGS	:=	$(CFLAGS) -std=gnu++23 -Wno-volatile -fno-rtti -fno-exceptions -fno-threadsafe-statics\
+				-Wsuggest-override -Werror=suggest-override
 
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=../gbarunner7.specs -g $(ARCH) -Wl,--nmagic -Wl,-Map,$(notdir $*).map
+LDFLAGS	=	-specs=../gbarunner7.specs -g $(ARCH) -Wl,--nmagic -Wl,-Map,$(notdir $*).map,--gc-sections -ffunction-sections -fdata-sections
 
-LIBS	:=	-ldswifi7 -lmm7 -lnds7
+LIBS	:=	-ltwl7 -lnds7
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=	$(LIBNDS)
+LIBDIRS	:=	$(LIBNDS) $(CURDIR)/../../libs/libtwl/libtwl7 $(CURDIR)/../../libs/libtwl/common
  
   
 #---------------------------------------------------------------------------------

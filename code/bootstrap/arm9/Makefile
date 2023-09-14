@@ -41,13 +41,13 @@ LDFLAGS	=	-specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map),--gc-section
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lnds9
+LIBS	:=	-ltwl9 -lnds9
  
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=	$(LIBNDS)
+LIBDIRS	:=	$(LIBNDS) $(CURDIR)/../../libs/libtwl/libtwl9 $(CURDIR)/../../libs/libtwl/common
  
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
