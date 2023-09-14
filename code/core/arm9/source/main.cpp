@@ -134,11 +134,11 @@ static void applyBiosJitPatches()
     gGbaBios[0x0134 >> 2] = 0xEE800090; // ldr pc, [r0, #-4] (jump to irq handler)
 }
 
-static void loadGbaRom()
+static void loadGbaRom(const char* romPath)
 {
     UINT br;
     memset(&gFile, 0, sizeof(gFile));
-    f_open(&gFile, "/rom.gba", FA_OPEN_EXISTING | FA_READ);
+    f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
     f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
 
@@ -304,18 +304,19 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     // if (Environment::SupportsAgbSemihosting())
         // mountAgbSemihosting();
 
-    memset((void*)0x02000000, 0, 256 * 1024);
-    memset((void*)0x03000000, 0, 32 * 1024);
-    memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
-    memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
-
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
     applyBiosJitPatches();
-    loadGbaRom();
+    const char* romPath = argc > 1 ? argv[1] : "/rom.gba";
+    loadGbaRom(romPath);
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
+    // Do not clear ewram before we read argv
+    memset((void*)0x02000000, 0, 256 * 1024);
+    memset((void*)0x03000000, 0, 32 * 1024);
+    memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
+    memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     jit_init();
     dma_init();
