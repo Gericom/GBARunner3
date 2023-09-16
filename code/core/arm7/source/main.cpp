@@ -1,6 +1,7 @@
 #include "common.h"
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include <libtwl/ipc/ipcSync.h>
+#include <libtwl/mem/memSwap.h>
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/rtos/rtosThread.h>
 #include <libtwl/rtos/rtosEvent.h>
@@ -8,22 +9,45 @@
 #include <libtwl/sound/soundChannel.h>
 #include <libtwl/sio/sio.h>
 #include <libtwl/gfx/gfxStatus.h>
+#include <libtwl/i2c/i2cMcu.h>
 #include "IpcServices/FsIpcService.h"
 
 static FsIpcService sFsIpcService;
-
 static rtos_event_t sVBlankEvent;
+static volatile u8 sMcuIrqFlag = false;
 
 static void vblankIrq(u32 irqMask)
 {
     rtos_signalEvent(&sVBlankEvent);
 }
 
-static void powerButtonIrq(u32 irq2Mask)
+static void mcuIrq(u32 irq2Mask)
 {
-    i2cWriteRegister(I2C_PM, I2CREGPM_RESETFLAG, 1);
-    i2cWriteRegister(I2C_PM, I2CREGPM_PWRCNT, 1);
-    while (true);
+    sMcuIrqFlag = true;
+}
+
+static void checkMcuIrq(void)
+{
+    // mcu only exists in DSi mode
+    if (!isDSiMode())
+        return;
+
+    // check and ack the flag atomically
+    if (!mem_swapByte(false, &sMcuIrqFlag))
+        return;
+
+    // check the irq mask
+    u32 irqMask = mcu_getIrqMask();
+    if (irqMask & MCU_IRQ_RESET)
+    {
+        // power button was released
+        // todo: maybe ensure no sd writes are still pending
+
+        mcu_setWarmBootFlag(true);
+        mcu_hardReset();
+
+        while (1);
+    }
 }
 
 static void notifyArm7Ready()
@@ -64,7 +88,7 @@ int main()
 
     if (isDSiMode())
     {
-        rtos_setIrq2Func(RTOS_IRQ2_MCU, powerButtonIrq);
+        rtos_setIrq2Func(RTOS_IRQ2_MCU, mcuIrq);
         rtos_enableIrq2Mask(RTOS_IRQ2_MCU);
     }
 
@@ -73,6 +97,7 @@ int main()
     while (true)
     {
         rtos_waitEvent(&sVBlankEvent, true, true);
+        checkMcuIrq();
     }
     
     return 0;
