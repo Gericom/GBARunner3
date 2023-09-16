@@ -2,8 +2,8 @@
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include <libtwl/ipc/ipcFifo.h>
 #include <string.h>
-#include "ipcChannels.h"
-#include "fsIpcCommand.h"
+#include "IpcChannels.h"
+#include "FsIpcCommand.h"
 #include "cp15.h"
 #include "FsIpc.h"
 
