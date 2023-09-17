@@ -29,6 +29,11 @@ arm_func VMMsrTests_SetVMCpsrFlagsR0VerifyHwCpsr
     mrs r0, cpsr
     bx lr
 
+arm_func VMMsrTests_SetVMCpsrControlAndFlagsR0VerifyHwCpsr
+    vmMSR cpsr_fc, r0
+    mrs r0, cpsr
+    bx lr
+
 arm_func VMMsrTests_SetVMCpsrControlR0
     mov r1, lr // return address not in a banked register
     msr cpsr_f, #0 // clear flags

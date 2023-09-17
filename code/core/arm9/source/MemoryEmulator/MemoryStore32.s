@@ -98,4 +98,11 @@ arm_func memu_store32Rom
     bx lr
 
 arm_func memu_store32Sram
+    // todo: unaligned store should be ignored
+    ldr r10,= gSaveData
+    mov r11, r8, lsl #16
+    strb r9, [r10, r11, lsr #16]!
+    strb r9, [r10, #1]
+    strb r9, [r10, #2]
+    strb r9, [r10, #3]
     bx lr

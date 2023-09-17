@@ -25,11 +25,11 @@ vm_updateCpsr:
     beq vm_cpsrNoControlChange // skip updating control part of cpsr
     ldr r10, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
     and r13, r10, #0xF
-    and r8, r8, #0xDF // note that the thumb bit is set to 0
-    orr r8, r8, #0x10
+    and r11, r8, #0xDF // note that the thumb bit is set to 0
+    orr r11, r11, #0x10
     ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_undefinedRegTmp)]
-    strb r8, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
-    and r11, r8, #0xF
+    strb r11, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
+    and r11, r11, #0xF
     add r12, r12, r11, lsl #5
     add r12, r12, r13, lsl #1
     ldrh r12, [r12]

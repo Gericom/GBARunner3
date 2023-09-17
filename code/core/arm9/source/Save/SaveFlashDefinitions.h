@@ -1,0 +1,49 @@
+#pragma once
+
+#define FLASH_V120_OFFSET_PROG_SECTOR       0x18
+#define FLASH_V120_OFFSET_ERASE_CHIP        0x1C
+#define FLASH_V120_OFFSET_ERASE_SECTOR      0x20
+#define FLASH_V120_OFFSET_POLLING_SR        0x24
+#define FLASH_V120_OFFSET_FL_MAXTIME        0x28
+#define FLASH_V120_OFFSET_FLASH             0x2C
+#define FLASH_V120_OFFSET_READ              0x84
+#define FLASH_V120_OFFSET_VERIFY_SECTOR     0x90
+
+#define FLASH_512V130_OFFSET_PROG_SECTOR    0x14
+#define FLASH_512V130_OFFSET_ERASE_CHIP     0x18
+#define FLASH_512V130_OFFSET_ERASE_SECTOR   0x1C
+#define FLASH_512V130_OFFSET_POLLING_SR     0x20
+#define FLASH_512V130_OFFSET_FL_MAXTIME     0x24
+#define FLASH_512V130_OFFSET_FLASH          0x28
+
+#define FLASH_1MV102_OFFSET_PROG_SECTOR     0x10
+#define FLASH_1MV102_OFFSET_ERASE_CHIP      0x14
+#define FLASH_1MV102_OFFSET_ERASE_SECTOR    0x18
+#define FLASH_1MV102_OFFSET_POLLING_SR      0x1C
+#define FLASH_1MV102_OFFSET_FL_MAXTIME      0x20
+#define FLASH_1MV102_OFFSET_FLASH           0x24
+
+#define FLASH_1MV103_OFFSET_PROG_BYTE       0x10
+#define FLASH_1MV103_OFFSET_PROG_SECTOR     0x14
+#define FLASH_1MV103_OFFSET_ERASE_CHIP      0x18
+#define FLASH_1MV103_OFFSET_ERASE_SECTOR    0x1C
+#define FLASH_1MV103_OFFSET_POLLING_SR      0x20
+#define FLASH_1MV103_OFFSET_FL_MAXTIME      0x24
+#define FLASH_1MV103_OFFSET_FLASH           0x28
+
+struct flash_v120_sector
+{
+    u32 size;
+    u8 shift;
+    u16 count;
+    u16 top;
+};
+
+struct flash_v120_type
+{
+    u32 saveSize;
+    flash_v120_sector sector;
+    u16 agbWait[2];
+    u8 makerId;
+    u8 deviceId;
+};
