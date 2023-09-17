@@ -157,4 +157,7 @@ arm_func memu_load8RomHi
     b load8RomCacheMiss
 
 arm_func memu_load8Sram
+    ldr r10,= gSaveData
+    mov r11, r8, lsl #16
+    ldrb r9, [r10, r11, lsr #16]
     bx lr

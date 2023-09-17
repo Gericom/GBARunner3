@@ -34,6 +34,7 @@ SOURCES		:=	source \
 				source/Peripherals \
 				source/Peripherals/Graphics \
 				source/Peripherals/Interrupts \
+				source/Save \
 				source/SdCache \
 				source/VirtualMachine \
 				../../libs/mini-printf
@@ -62,7 +63,7 @@ CXXFLAGS	:= $(CFLAGS) -std=gnu++23 -Wno-volatile -fno-rtti -fno-exceptions -fno-
 ASFLAGS	:=	-g $(ARCH) $(INCLUDE)
 LDFLAGS	=	-T ../gbarunner9.ld -g $(ARCH) -Wl,-Map,$(notdir $*.map),--use-blx,--no-warn-rwx-segments,--gc-sections -ffunction-sections -fdata-sections
 
-LIBS	:= -lnds9
+LIBS	:= -ltwl9 -lnds9
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

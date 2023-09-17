@@ -8,7 +8,21 @@ vm_swi_base:
 
 #define DTCM(x) (vm_swi_base - 0x800 + (x))
 
+.extern sav_swiHandler
+
 arm_func vm_swi
+    // check if this is a save patch swi
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    cmp lr, #0x08000000
+        bhs 1f
+#endif
+    ldrb r13, [lr, #-2]
+    cmp r13, #0x80
+        bhs sav_swiHandler
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    1:
+#endif
+
     str lr, DTCM(vm_regs_svc + 4)
     ldr lr, DTCM(vm_cpsr)
     mrs r13, spsr

@@ -16,6 +16,8 @@
 #include "Peripherals/DmaTransfer.h"
 #include "Logger/NitroEmulatorOutputStream.h"
 #include "Logger/PlainLogger.h"
+#include "Save/SaveTagScanner.h"
+#include "Save/Save.h"
 #include "SdCache/SdCache.h"
 
 [[gnu::section(".ewram.bss")]]
@@ -206,6 +208,21 @@ static void loadGbaRom()
     *(vu32*)0x02200494 = 0xE1890093; // msr cpsr_cf, r3
     *(vu32*)0x022004A4 = 0xE1C90090; // msr spsr_cf, r0
 
+    // f_open(&gFile, "/Super Mario Advance 4 - Super Mario Bros. 3 (USA).gba", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
+    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
+
+    // f_open(&gFile, "/Banjo Kazooie - Grunty's Revenge # GBA.GBA", FA_OPEN_EXISTING | FA_READ);
+    // sdc_init();
+    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    // *(vu32*)0x02200160 = 0xE1810090; // msr cpsr_c, r0
+    // *(vu32*)0x02200180 = 0xE1810090; // msr cpsr_c, r0
+    // *(vu32*)0x02200AAC = 0x91890090; // msrls cpsr_fc, r0
+    // *(vu32*)0x02200AC8 = 0x91890090; // msrls cpsr_fc, r0
+    // *(vu32*)0x02200B04 = 0x91890091; // msrls cpsr_fc, r1
+
     // f_open(&gFile, "/gba-niccc.gba", FA_OPEN_EXISTING | FA_READ);
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
@@ -232,6 +249,29 @@ static void loadGbaRom()
     // f_read(&gFile, (void*)0x02200000, f_size(&gFile), &br);
     // *(vu32*)0x022000EC = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
+}
+
+static void handleSave()
+{
+    u32 tagRomAddress;
+    const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
+    if (saveTypeInfo && saveTypeInfo->patchFunc)
+    {
+        gLogger->Log(LogLevel::Debug, "%s\n", saveTypeInfo->tag);
+        if (!saveTypeInfo->patchFunc(saveTypeInfo, &gFile, tagRomAddress, &sdc_cache[0][0]))
+        {
+            gLogger->Log(LogLevel::Error, "Save patching failed\n");
+        }
+    }
+
+    if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
+    {
+        memset(gSaveData, 0xFF, sizeof(gSaveData));
+    }
+    else
+    {
+        memset(gSaveData, 0, sizeof(gSaveData));
+    }
 }
 
 // extern "C" void logOpcode(u32 opcode)
@@ -299,6 +339,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     relocateGbaBios();
     applyBiosVmPatches();
     loadGbaRom();
+    handleSave();
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
