@@ -11,39 +11,71 @@
 
 DTCM_DATA dma_state_t dma_state;
 
-void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep);
-void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep);
+void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int dstStep);
+void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int dstStep);
 
-extern void dma_immTransferSafe16(u32 src, u32 dst, u32 count, int srcStep);
-extern void dma_immTransferSafe32(u32 src, u32 dst, u32 count, int srcStep);
+extern void dma_immTransferSafe16(u32 src, u32 dst, u32 count, int srcStep, int dstStep);
+extern void dma_immTransferSafe32(u32 src, u32 dst, u32 count, int srcStep, int dstStep);
 
 ITCM_CODE static void dmaDummy(void)
 {
 }
 
-ITCM_CODE static inline void dmaTransfer(int channel, bool dma32)
+ITCM_CODE static inline int getSrcStep(u32 control)
+{
+    switch ((control >> 7) & 3)
+    {
+        case 0:
+        default:
+            return 1;
+        case 1:
+            return -1;
+        case 2:
+            return 0;
+    }
+}
+
+ITCM_CODE static inline int getDstStep(u32 control)
+{
+    switch ((control >> 5) & 3)
+    {
+        case 0:
+        default:
+            return 1;
+        case 1:
+            return -1;
+        case 2:
+            return 0;
+    }
+}
+
+ITCM_CODE static void dmaTransfer(int channel, bool dma32)
 {
     void* dmaIoBase = &emu_ioRegisters[0xB0 + channel * 0xC];
     u32 count = *(u16*)((u32)dmaIoBase + 8);
     if (channel == 3 && count == 0)
         count = 0x10000;
-    u32 src = dma_state.channels[channel].curSrc;
-    dma_state.channels[channel].curSrc += count << (dma32 ? 2 : 1);
-    u32 dst = dma_state.channels[channel].curDst;
     u32 control = *(u16*)((u32)dmaIoBase + 0xA);
-    if (((control >> 5) & 7) != 3)
+    int srcStep = getSrcStep(control);
+    u32 src = dma_state.channels[channel].curSrc;
+    dma_state.channels[channel].curSrc += srcStep * (count << (dma32 ? 2 : 1));
+    int dstStep = getDstStep(control);
+    u32 dst;
+    if (((control >> 5) & 3) != 3)
     {
-        dma_state.channels[channel].curDst += count << (dma32 ? 2 : 1);
+        dst = dma_state.channels[channel].curDst;
+        dma_state.channels[channel].curDst += dstStep * (count << (dma32 ? 2 : 1));
     }
     else
     {
         // reload
-        dma_state.channels[channel].curDst = *(u32*)((u32)dmaIoBase + 4);
+        dst = *(u32*)((u32)dmaIoBase + 4);
+        dma_state.channels[channel].curDst = dst;
     }
     if (dma32)
-        dma_immTransfer32(src, dst, count, 1);//srcStep);
+        dma_immTransfer32(src, dst, count, srcStep, dstStep);
     else
-        dma_immTransfer16(src, dst, count, 1);//srcStep);
+        dma_immTransfer16(src, dst, count, srcStep, dstStep);
 }
 
 ITCM_CODE static void dma0Transfer16(void)
@@ -193,7 +225,7 @@ ITCM_CODE void dma_immTransfer32RomSrc(u32 src, u32 dst, u32 count)
     } while (count > 0);
 }
 
-ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
+ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int dstStep)
 {
     src &= ~1;
     dst &= ~1;
@@ -208,9 +240,9 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
         difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstRegion >= 8 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || difference < 32)
     {
-        dma_immTransferSafe16(src, dst, count, srcStep);
+        dma_immTransferSafe16(src, dst, count, srcStep, dstStep);
         return;
     }
     if (src >= 0x08200000 || srcEnd >= 0x08200000)
@@ -224,7 +256,7 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep)
     mem_copy16((void*)src, (void*)dst, count << 1);
 }
 
-ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
+ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int dstStep)
 {
     src &= ~3;
     dst &= ~3;
@@ -239,9 +271,9 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep)
         difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstRegion >= 8 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || difference < 32)
     {
-        dma_immTransferSafe32(src, dst, count, srcStep);
+        dma_immTransferSafe32(src, dst, count, srcStep, dstStep);
         return;
     }
     if (src >= 0x08200000 || srcEnd >= 0x08200000)
@@ -339,25 +371,17 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
         case 3: // special
             return;
     }
-    int srcStep = 1;
-    switch ((value >> 7) & 3)
-    {
-        case 1:
-            srcStep = -1;
-            break;
-        case 2:
-            srcStep = 0;
-            break;
-    }
     u32 count = *(u16*)(dmaIoBase + 8);
     if (count == 0)
         count = 0x10000;
     u32 src = *(u32*)dmaIoBase;
     u32 dst = *(u32*)(dmaIoBase + 4);
+    int srcStep = getSrcStep(value);
+    int dstStep = getDstStep(value);
     if (value & (1 << 10))
-        dma_immTransfer32(src, dst, count, srcStep);
+        dma_immTransfer32(src, dst, count, srcStep, dstStep);
     else
-        dma_immTransfer16(src, dst, count, srcStep);
+        dma_immTransfer16(src, dst, count, srcStep, dstStep);
     // todo: irq
 }
 

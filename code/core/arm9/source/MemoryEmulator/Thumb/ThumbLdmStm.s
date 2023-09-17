@@ -12,7 +12,7 @@
 
         bic r8, r\rn, #3
 
-        add r\rn, r8, r12, lsl #2
+        add r\rn, r\rn, r12, lsl #2
 
         b memu_thumbLdmiaCommon
 .endm
@@ -39,12 +39,16 @@ arm_func memu_thumbLdmiaCommon
         and r13, r11, #0xFF
         ldrb r12, [r12, r13]
 
-        bic r8, r\rn, #3 // this is probably wrong
+        bic r8, r\rn, #3
 
         rsb r11, r13, #0
         and r11, r11, r13
         cmp r11, #(1 << \rn)
-        addne r\rn, r8, r12, lsl #2
+
+        and r11, r\rn, #3
+        orr r13, r11, lsl #16
+
+        addne r\rn, r\rn, r12, lsl #2
 
         sub r8, r8, #4
 
@@ -57,7 +61,8 @@ arm_func memu_thumbLdmiaCommon
 
         generate memu_thumbStmiaR\rn\()_storeReg, 8
 
-        add r\rn, r8, #4
+        add r8, r8, #4
+        orr r\rn, r8, r13, lsr #16
         memu_thumbReturn
 .endm
 
