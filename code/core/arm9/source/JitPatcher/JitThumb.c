@@ -37,7 +37,7 @@ void jit_processThumbBlock(u16* ptr)
         {
             // SWI
             u32 swiOp = instruction & 0xFF;
-            if (swiOp == 0 || swiOp == 0x26)
+            if (swiOp == 0 || swiOp == 0x26 || swiOp >= 0x80)
                 break;
         }
         else if ((instruction & 0xF000) == 0xD000)

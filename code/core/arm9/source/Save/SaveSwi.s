@@ -9,7 +9,12 @@ arm_func sav_swiHandler
     msr cpsr_c, #0x1F
     push {lr}
     blx r12
-    pop {r12}
+    push {r0}
+    ldr r0, [sp, #4]
+#ifndef GBAR3_TEST
+    bl jit_ensureBlockJitted
+#endif
+    pop {r0, r12}
     msr cpsr_c, #0x93
     tst r12, #1
     msreq spsr, #0x10

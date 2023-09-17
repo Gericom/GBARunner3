@@ -25,8 +25,6 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
-[[gnu::section(".ewram.bss")]]
-u32 gSaveData[128 * 1024 / 4];
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
