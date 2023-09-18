@@ -16,6 +16,7 @@
 #include "Peripherals/DmaTransfer.h"
 #include "Logger/NitroEmulatorOutputStream.h"
 #include "Logger/PlainLogger.h"
+#include "Logger/NullLogger.h"
 #include "SdCache/SdCache.h"
 
 [[gnu::section(".ewram.bss")]]
@@ -27,7 +28,16 @@ u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
 static NitroEmulatorOutputStream sIsNitroOutput;
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
-ILogger* gLogger = &sPlainLogger;
+static NullLogger sNullLogger;
+ILogger* gLogger;
+
+static void setupLogger()
+{
+    if (Environment::IsIsNitroEmulator())
+        gLogger = &sPlainLogger;
+    else
+        gLogger = &sNullLogger;
+}
 
 static bool mountDldi()
 {
@@ -275,6 +285,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     sys_set3DGeometryEnginePower(true); // enable geometry engine to generate gx fifo irq
 
     Environment::Initialize();
+    setupLogger();
+
     bool mountResult;
     if (shouldMountDsiSd(argc, argv))
         mountResult = mountDsiSd();
