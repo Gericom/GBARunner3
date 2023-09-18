@@ -48,6 +48,15 @@ static void checkMcuIrq(void)
 
         while (1);
     }
+    if (irqMask & MCU_IRQ_POWER_OFF)
+    {
+        // power button was held long to trigger a power off
+        // todo: maybe ensure no sd writes are still pending
+        // todo: implement pmic support in libtwl
+        writePowerManagement(PM_CONTROL_REG, PM_SYSTEM_PWR);
+
+        while (1);
+    }
 }
 
 static void notifyArm7Ready()
