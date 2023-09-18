@@ -4,7 +4,6 @@
 #include "MemFastSearch.h"
 #include "Save.h"
 #include "SaveSwi.h"
-#include "SaveCopy.h"
 #include "SaveFlashDefinitions.h"
 #include "SaveTypeInfo.h"
 #include "SaveFlash.h"
@@ -34,16 +33,20 @@ static const u16 sMaxTime[] = { 0xA, 0xFFBD, 0xC2, 0xA, 0xFFBD, 0xC2, 0x28, 0xFF
 
 static void readFlash(u16 secNo, u32 offset, u8* dst, u32 size)
 {
-    sav_copyBytesToGba(&gSaveData[(secNo << 12) + offset], dst, size);
+    u32 saveAddress = (secNo << 12) + offset;
+    for (u32 i = 0; i < size; ++i)
+    {
+        *dst++ = sav_readSaveByte(saveAddress++);
+    }
 }
 
 static u32 verifyFlashSector(u16 secNo, const u8* src)
 {
-    const u8* save = &gSaveData[secNo << 12];
+    u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        u8 saveByte = *save++;
-        u8 expectedByte = sav_readGbaByte(src++);
+        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
     }
@@ -52,11 +55,11 @@ static u32 verifyFlashSector(u16 secNo, const u8* src)
 
 static u32 verifyFlash(u16 secNo, const u8* src, u32 size)
 {
-    const u8* save = &gSaveData[secNo << 12];
+    u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < size; ++i)
     {
-        u8 saveByte = *save++;
-        u8 expectedByte = sav_readGbaByte(src++);
+        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
     }
@@ -65,79 +68,96 @@ static u32 verifyFlash(u16 secNo, const u8* src, u32 size)
 
 static u16 eraseFlashChip()
 {
-    memset(gSaveData, 0xFF, sizeof(gSaveData));
+    for (u32 i = 0; i < sizeof(gSaveData); ++i)
+    {
+        sav_writeSaveByte(i, 0xFF);
+    }
     return 0;
 }
 
 static u16 eraseFlashSector(u16 secNo)
 {
-    memset(&gSaveData[secNo << 12], 0xFF, 1 << 12);
+    for (u32 i = 0; i < (1 << 12); ++i)
+    {
+        sav_writeSaveByte((secNo << 12) + i, 0xFF);
+    }
     return 0;
 }
 
 static u16 programFlashSector(u16 secNo, const u8* src)
 {
-    sav_copyBytesFromGba(src, &gSaveData[secNo << 12], 1 << 12);
+    for (u32 i = 0; i < (1 << 12); ++i)
+    {
+        sav_writeSaveByte((secNo << 12) + i, *src++);
+    }
     return 0;
 }
 
 static u16 programFlashByte1M(u16 secNo, u32 offset, u8 data)
 {
-    gSaveData[(secNo << 12) + offset] = data;
+    sav_writeSaveByte((secNo << 12) + offset, data);
     return 0;
 }
 
 static u16 identifyFlash512()
 {
-    sav_swiTable[8] = (void*)programFlashSector;
     *sPatchInfo.progSectorPtr = (u32)sav_callSwi8;
-    sav_swiTable[9] = (void*)eraseFlashChip;
     *sPatchInfo.eraseChipPtr = (u32)sav_callSwi9;
-    sav_swiTable[10] = (void*)eraseFlashSector;
     *sPatchInfo.eraseSectorPtr = (u32)sav_callSwi10;
     *sPatchInfo.pollingSrPtr = 0;
     *sPatchInfo.flMaxTimePtr = (u32)sMaxTime;
-
-    sFlashType.saveSize = 64 * 1024;
-    sFlashType.sector.size = 0x1000;
-    mem_swapByte(12, &sFlashType.sector.shift);
-    sFlashType.sector.count = sFlashType.sector.size >> sFlashType.sector.shift;
-    sFlashType.sector.top = 0;
-    sFlashType.agbWait[0] = 0;
-    sFlashType.agbWait[1] = 3;
-    mem_swapByte(3, &sFlashType.makerId);
-    mem_swapByte(0, &sFlashType.deviceId);
     *sPatchInfo.flashPtr = (u32)&sFlashType;
     return 0;
 }
 
-static u16 identifyFlash1M()
+static void initializeFlash512()
 {
     sav_swiTable[8] = (void*)programFlashSector;
-    *sPatchInfo.progSectorPtr = (u32)sav_callSwi8;
-    if (sPatchInfo.progBytePtr)
-    {
-        sav_swiTable[9] = (void*)programFlashByte1M;
-        *sPatchInfo.progBytePtr = (u32)sav_callSwi9;
-    }
-    sav_swiTable[10] = (void*)eraseFlashChip;
-    *sPatchInfo.eraseChipPtr = (u32)sav_callSwi10;
-    sav_swiTable[11] = (void*)eraseFlashSector;
-    *sPatchInfo.eraseSectorPtr = (u32)sav_callSwi11;
-    *sPatchInfo.pollingSrPtr = 0;
-    *sPatchInfo.flMaxTimePtr = (u32)sMaxTime;
+    sav_swiTable[9] = (void*)eraseFlashChip;
+    sav_swiTable[10] = (void*)eraseFlashSector;
 
-    sFlashType.saveSize = 128 * 1024;
+    sFlashType.saveSize = 64 * 1024;
     sFlashType.sector.size = 0x1000;
     mem_swapByte(12, &sFlashType.sector.shift);
-    sFlashType.sector.count = sFlashType.sector.size >> sFlashType.sector.shift;
+    sFlashType.sector.count = sFlashType.saveSize >> sFlashType.sector.shift;
     sFlashType.sector.top = 0;
     sFlashType.agbWait[0] = 0;
     sFlashType.agbWait[1] = 3;
     mem_swapByte(3, &sFlashType.makerId);
     mem_swapByte(0, &sFlashType.deviceId);
+}
+
+static u16 identifyFlash1M()
+{
+    *sPatchInfo.progSectorPtr = (u32)sav_callSwi8;
+    if (sPatchInfo.progBytePtr)
+    {
+        *sPatchInfo.progBytePtr = (u32)sav_callSwi9;
+    }
+    *sPatchInfo.eraseChipPtr = (u32)sav_callSwi10;
+    *sPatchInfo.eraseSectorPtr = (u32)sav_callSwi11;
+    *sPatchInfo.pollingSrPtr = 0;
+    *sPatchInfo.flMaxTimePtr = (u32)sMaxTime;
     *sPatchInfo.flashPtr = (u32)&sFlashType;
     return 0;
+}
+
+static void initializeFlash1M()
+{
+    sav_swiTable[8] = (void*)programFlashSector;
+    sav_swiTable[9] = (void*)programFlashByte1M;
+    sav_swiTable[10] = (void*)eraseFlashChip;
+    sav_swiTable[11] = (void*)eraseFlashSector;
+
+    sFlashType.saveSize = 128 * 1024;
+    sFlashType.sector.size = 0x1000;
+    mem_swapByte(12, &sFlashType.sector.shift);
+    sFlashType.sector.count = sFlashType.saveSize >> sFlashType.sector.shift;
+    sFlashType.sector.top = 0;
+    sFlashType.agbWait[0] = 0;
+    sFlashType.agbWait[1] = 3;
+    mem_swapByte(3, &sFlashType.makerId);
+    mem_swapByte(0, &sFlashType.deviceId);
 }
 
 static bool loadDataV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
@@ -184,6 +204,7 @@ bool flash_patchV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     sav_swiTable[2] = (void*)verifyFlashSector;
     *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
 
+    initializeFlash512();
     return true;
 }
 
@@ -209,6 +230,7 @@ bool flash_patchV123(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     sav_swiTable[2] = (void*)verifyFlashSector;
     *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
 
+    initializeFlash512();
     return true;
 }
 
@@ -234,7 +256,12 @@ bool flash_patchV126(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     sav_swiTable[2] = (void*)verifyFlashSector;
     *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
 
-    return sav_tryPatchFunction(sVerifyFlashV126Sig, 3, (void*)verifyFlash);
+    if (sav_tryPatchFunction(sVerifyFlashV126Sig, 3, (void*)verifyFlash))
+    {
+        initializeFlash512();
+        return true;
+    }
+    return false;
 }
 
 bool flash_patch512V130(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
@@ -257,10 +284,15 @@ bool flash_patch512V130(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagR
     sPatchInfo.flMaxTimePtr = *(u32**)(tempBuffer + FLASH_512V130_OFFSET_FL_MAXTIME);
     sPatchInfo.flashPtr = *(u32**)(tempBuffer + FLASH_512V130_OFFSET_FLASH);
 
-    return sav_tryPatchFunction(sIdentifyFlashV123Sig, 0, (void*)identifyFlash512)
-        && sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash)
-        && sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector)
-        && sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash);
+    if (sav_tryPatchFunction(sIdentifyFlashV123Sig, 0, (void*)identifyFlash512) &&
+        sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash) &&
+        sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector) &&
+        sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash))
+    {
+        initializeFlash512();
+        return true;
+    }
+    return false;
 }
 
 bool flash_patch1MV102(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
@@ -288,10 +320,15 @@ bool flash_patch1MV102(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRo
     const u32* identifySignature = saveTypeInfo->type == SAVE_TYPE_FLASH1M_V102
         ? sIdentifyFlashV123Sig : sIdentifyFlash1MV103Sig;
 
-    return sav_tryPatchFunction(identifySignature, 0, (void*)identifyFlash1M)
-        && sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash)
-        && sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector)
-        && sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash);
+    if (sav_tryPatchFunction(identifySignature, 0, (void*)identifyFlash1M) &&
+        sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash) &&
+        sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector) &&
+        sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash))
+    {
+        initializeFlash1M();
+        return true;
+    }
+    return false;
 }
 
 bool flash_patch1MV103(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
@@ -314,8 +351,13 @@ bool flash_patch1MV103(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRo
     sPatchInfo.flMaxTimePtr = *(u32**)(tempBuffer + FLASH_1MV103_OFFSET_FL_MAXTIME);
     sPatchInfo.flashPtr = *(u32**)(tempBuffer + FLASH_1MV103_OFFSET_FLASH);
 
-    return sav_tryPatchFunction(sIdentifyFlash1MV103Sig, 0, (void*)identifyFlash1M)
-        && sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash)
-        && sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector)
-        && sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash);
+    if (sav_tryPatchFunction(sIdentifyFlash1MV103Sig, 0, (void*)identifyFlash1M) &&
+        sav_tryPatchFunction(sReadFlash512V130Sig, 1, (void*)readFlash) &&
+        sav_tryPatchFunction(sVerifyFlashSector512V130Sig, 2, (void*)verifyFlashSector) &&
+        sav_tryPatchFunction(sVerifyFlash512V130Sig, 3, (void*)verifyFlash))
+    {
+        initializeFlash1M();
+        return true;
+    }
+    return false;
 }

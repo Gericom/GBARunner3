@@ -234,6 +234,7 @@ SECTIONS
 	{
 		__bss_start = ABSOLUTE(.);
 		__bss_start__ = ABSOLUTE(.);
+		*(EXCLUDE_FILE(*.twl*) .ewram.bss*)
 		*(EXCLUDE_FILE(*.twl*) .dynbss)
 		*(EXCLUDE_FILE(*.twl*) .gnu.linkonce.b*)
 		*(EXCLUDE_FILE(*.twl*) .bss*)

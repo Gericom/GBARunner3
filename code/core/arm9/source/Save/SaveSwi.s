@@ -4,26 +4,37 @@
 #include "AsmMacros.inc"
 
 arm_func sav_swiHandler
+    cmp r13, #0x90
+        beq save_swiReadSaveByte
+    cmp r13, #0x91
+        beq save_swiWriteSaveByte
     adr r12, (sav_swiTable - (0x80 * 4))
     ldr r12, [r12, r13, lsl #2]
-    msr cpsr_c, #0x1F
-    push {lr}
-    blx r12
-    push {r0}
-    ldr r0, [sp, #4]
+    msr cpsr_c, #0x9F
+    push {r0-r3,r12,lr}
+    mov r0, lr
 #ifndef GBAR3_TEST
     bl jit_ensureBlockJitted
 #endif
-    pop {r0, r12}
-    msr cpsr_c, #0x93
-    tst r12, #1
-    msreq spsr, #0x10
-    msrne spsr, #0x30
-    bics pc, r12, #1
+    pop {r0-r3,r12}
+    msr cpsr_c, #0x10
+    blx r12
+    pop {lr}
+    bx lr
 
 .global sav_swiTable
 sav_swiTable:
     .space 16 * 4
+
+arm_func save_swiReadSaveByte
+    ldr r1,= gSaveData
+    ldrb r0, [r1, r0]
+    movs pc, lr
+
+arm_func save_swiWriteSaveByte
+    ldr r2,= gSaveData
+    strb r1, [r2, r0]
+    movs pc, lr
 
 thumb_func sav_callSwi0
     swi 0x80
@@ -57,3 +68,11 @@ thumb_func sav_callSwi14
     swi 0x8E
 thumb_func sav_callSwi15
     swi 0x8F
+
+thumb_func sav_readSaveByte
+    swi 0x90
+    bx lr
+
+thumb_func sav_writeSaveByte
+    swi 0x91
+    bx lr

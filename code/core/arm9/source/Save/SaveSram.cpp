@@ -1,6 +1,5 @@
 #include "common.h"
 #include "Save.h"
-#include "SaveCopy.h"
 #include "SaveTypeInfo.h"
 #include "SaveSram.h"
 
@@ -15,25 +14,26 @@ static const u32 sVerifySramV111Sig[] = { 0xB0B0B570u, 0x1C0D1C04u, 0x4A081C16u,
 
 static void readSram(const u8* src, u8* dst, u32 size)
 {
-    sav_copyBytesToGba(&gSaveData[(u32)src & 0xFFFF], dst, size);
+    for (u32 i = 0; i < size; i++)
+        *dst++ = *src++;
 }
 
 static void writeSram(const u8* src, u8* dst, u32 size)
 {
-    sav_copyBytesFromGba(src, &gSaveData[(u32)dst & 0xFFFF], size);
+    for (u32 i = 0; i < size; i++)
+        *dst++ = *src++;
 }
 
-static u32 verifySram(const u8* src, const u8* tgt, u32 size)
+static const u8* verifySram(const u8* src, const u8* tgt, u32 size)
 {
-    const u8* save = &gSaveData[(u32)tgt & 0xFFFF];
     for (u32 i = 0; i < size; ++i)
     {
-        u8 saveByte = *save++;
-        u8 expectedByte = sav_readGbaByte(src++);
+        u8 saveByte = *tgt++;
+        u8 expectedByte = *src++;
         if (saveByte != expectedByte)
-            return 0x0E000000 + ((u32)tgt & 0xFFFF) + i;
+            return tgt - 1;
     }
-    return 0;
+    return nullptr;
 }
 
 bool sram_patchV110(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)

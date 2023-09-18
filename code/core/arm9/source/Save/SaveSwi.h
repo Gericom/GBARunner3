@@ -25,6 +25,9 @@ extern u32 sav_callSwi13();
 extern u32 sav_callSwi14();
 extern u32 sav_callSwi15();
 
+extern u8 sav_readSaveByte(u32 saveAddress);
+extern void sav_writeSaveByte(u32 saveAddress, u8 value);
+
 #ifdef __cplusplus
 }
 #endif
