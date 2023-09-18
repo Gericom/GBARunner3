@@ -6,8 +6,8 @@
 static const u32 sReadSramV110Sig[] = { 0xB0A7B590u, 0x6038466Fu, 0x60BA6079u, 0x49174817u };
 static const u32 sReadSramV111Sig[] = { 0xB0A0B570u, 0x1C0D1C04u, 0x4A081C16u, 0x49088810u };
 
-static const u32 sWriteSramV110Sig[] = {0xB083B580u, 0x6038466Fu, 0x60BA6079u, 0x49094809u };
-static const u32 sWriteSramV111Sig[] = {0x1C05B530u, 0x1C131C0Cu, 0x88104A0Bu, 0x4008490Bu };
+static const u32 sWriteSramV110Sig[] = { 0xB083B580u, 0x6038466Fu, 0x60BA6079u, 0x49094809u };
+static const u32 sWriteSramV111Sig[] = { 0x1C05B530u, 0x1C131C0Cu, 0x88104A0Bu, 0x4008490Bu };
 
 static const u32 sVerifySramV110Sig[] = { 0xB0B7B590u, 0x6038466Fu, 0x60BA6079u, 0x49174817u };
 static const u32 sVerifySramV111Sig[] = { 0xB0B0B570u, 0x1C0D1C04u, 0x4A081C16u, 0x49088810u };

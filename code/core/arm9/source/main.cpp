@@ -26,6 +26,8 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
+[[gnu::section(".ewram.bss")]]
+FIL gSaveFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -273,7 +275,7 @@ static void loadGbaRom(const char* romPath)
     // *(vu32*)0x022000F8 = 0xE1890090; // msr cpsr_cf, r0
 }
 
-static void handleSave()
+static void handleSave(const char* savePath)
 {
     u32 tagRomAddress;
     const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
@@ -284,11 +286,24 @@ static void handleSave()
         {
             gLogger->Log(LogLevel::Error, "Save patching failed\n");
         }
-    }
-
-    if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
-    {
-        memset(gSaveData, 0xFF, sizeof(gSaveData));
+        
+        memset(&gSaveFile, 0, sizeof(gSaveFile));
+        if (f_open(&gSaveFile, savePath, FA_OPEN_EXISTING | FA_READ) != FR_OK)
+        {
+            if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
+            {
+                memset(gSaveData, 0xFF, sizeof(gSaveData));
+            }
+            else
+            {
+                memset(gSaveData, 0, sizeof(gSaveData));
+            }
+        }
+        else
+        {
+            UINT read = 0;
+            f_read(&gSaveFile, gSaveData, saveTypeInfo->size, &read);
+        }
     }
     else
     {
@@ -360,7 +375,15 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     applyBiosJitPatches();
     const char* romPath = argc > 1 ? argv[1] : "/rom.gba";
     loadGbaRom(romPath);
-    handleSave();
+    char* romExtension = strrchr(romPath, '.');
+    if (romExtension)
+    {
+        romExtension[1] = 's';
+        romExtension[2] = 'a';
+        romExtension[3] = 'v';
+        romExtension[4] = '\0';
+    }
+    handleSave(romPath);
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
     // Do not clear ewram before we read argv
