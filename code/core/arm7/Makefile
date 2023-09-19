@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/IpcServices
+SOURCES		:=	source source/IpcServices source/Sound
 INCLUDES	:=	source ../common build
 DATA		:=
  

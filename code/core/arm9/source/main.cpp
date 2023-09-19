@@ -21,6 +21,7 @@
 #include "Save/Save.h"
 #include "SdCache/SdCache.h"
 #include "JitPatcher/JitCommon.h"
+#include "Peripherals/Sound/GbaSound9.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -394,6 +395,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     jit_init();
     dma_init();
+    gbas_init();
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();

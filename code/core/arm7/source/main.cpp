@@ -11,8 +11,10 @@
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/i2c/i2cMcu.h>
 #include "IpcServices/FsIpcService.h"
+#include "IpcServices/GbaSoundIpcService.h"
 
 static FsIpcService sFsIpcService;
+static GbaSoundIpcService sGbaSoundIpcService;
 static rtos_event_t sVBlankEvent;
 static volatile u8 sMcuIrqFlag = false;
 
@@ -86,6 +88,7 @@ int main()
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
 
     sFsIpcService.Start();
+    sGbaSoundIpcService.Start();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);
