@@ -1,9 +1,14 @@
 #include "common.h"
 #include <string.h>
+#include <libtwl/ipc/ipcFifoSystem.h>
+#include <libtwl/ipc/ipcFifo.h>
+#include <libtwl/ipc/ipcSync.h>
 #include "Emulator/IoRegisters.h"
+#include "IpcChannels.h"
+#include "GbaSoundIpcCommand.h"
 #include "GbaSound.h"
 
-[[gnu::section(".ewram.bss")]]
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
 gbas_shared_t gGbaSoundShared;
 
 static void resetFifo(gbas_direct_channel_t* channel)
@@ -30,6 +35,13 @@ void gbas_init(void)
     memset(&gGbaSoundShared, 0, sizeof(gGbaSoundShared));
     resetFifo(&gGbaSoundShared.directChannels[0]);
     resetFifo(&gGbaSoundShared.directChannels[1]);
+    ipc_sendWordDirect(
+        ((((u32)&gGbaSoundShared) >> 5) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        (GBA_SOUND_IPC_CMD_SETUP << IPC_FIFO_MSG_CHANNEL_BITS) |
+        IPC_CHANNEL_GBA_SOUND);
+    while (ipc_isRecvFifoEmpty());
+    ipc_recvWordDirect();
+    ipc_enableArm7Irq();
 }
 
 void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
@@ -57,7 +69,7 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
     }
     else if (address >= 0x60 && address < 0xB0)
     {
-        for (u16 i = 0; i < length; i++)
+        for (u32 i = 0; i < length; ++i)
         {
             if (address == 0x82)
             {
@@ -73,14 +85,14 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
                 emu_ioRegisters[address] = value & 0x77;
                 gGbaSoundShared.directChannels[0].enables = value & 3;
                 gGbaSoundShared.directChannels[0].timerIdx = (value >> 2) & 1;
-                if(value & (1 << 3))
+                if (value & (1 << 3))
                 {
                     resetFifo(&gGbaSoundShared.directChannels[0]);
                 }
                 
                 gGbaSoundShared.directChannels[1].enables = (value >> 4) & 3;
                 gGbaSoundShared.directChannels[1].timerIdx = (value >> 6) & 1;
-                if(value & (1 << 7))
+                if (value & (1 << 7))
                 {
                     resetFifo(&gGbaSoundShared.directChannels[1]);
                 }
@@ -94,7 +106,7 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
                 emu_ioRegisters[address] = value;
                 // gbs_writeReg(address & 0xFF, value & 0xFF);
             }
-            address++;
+            ++address;
             value >>= 8;
         }
     }

@@ -7,6 +7,7 @@
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCache.h"
 #include "MemoryEmulator/HiCodeCacheMapping.h"
+#include "Peripherals/Sound/GbaSound9.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -240,7 +241,7 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int d
         difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
     {
         dma_immTransferSafe16(src, dst, count, srcStep, dstStep);
         return;
@@ -271,7 +272,7 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
         difference = -difference;
     if (srcRegion == 4 || dstRegion == 4 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
     {
         dma_immTransferSafe32(src, dst, count, srcStep, dstStep);
         return;
@@ -292,6 +293,7 @@ ITCM_CODE static void dmaStop(void* dmaIoBase, u32 value)
     *(u16*)(dmaIoBase + 0xA) = value;
     int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
+    dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
     dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
     if (!(dma_state.dmaFlags & 0xF))
     {
@@ -301,6 +303,10 @@ ITCM_CODE static void dmaStop(void* dmaIoBase, u32 value)
         {
             gfx_setHBlankIrqEnabled(false);
         }
+    }
+    if (!(dma_state.dmaFlags & 0x600))
+    {
+        vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
     }
 }
 
@@ -321,16 +327,16 @@ ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
         switch (channel)
         {
             case 0:
-                dma_state.channels[channel].dmaFunction = (void*)dma0Transfer32;
+                dma_state.channels[0].dmaFunction = (void*)dma0Transfer32;
                 break;
             case 1:
-                dma_state.channels[channel].dmaFunction = (void*)dma1Transfer32;
+                dma_state.channels[1].dmaFunction = (void*)dma1Transfer32;
                 break;
             case 2:
-                dma_state.channels[channel].dmaFunction = (void*)dma2Transfer32;
+                dma_state.channels[2].dmaFunction = (void*)dma2Transfer32;
                 break;
             case 3:
-                dma_state.channels[channel].dmaFunction = (void*)dma3Transfer32;
+                dma_state.channels[3].dmaFunction = (void*)dma3Transfer32;
                 break;
         }
     }
@@ -339,18 +345,86 @@ ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
         switch (channel)
         {
             case 0:
-                dma_state.channels[channel].dmaFunction = (void*)dma0Transfer16;
+                dma_state.channels[0].dmaFunction = (void*)dma0Transfer16;
                 break;
             case 1:
-                dma_state.channels[channel].dmaFunction = (void*)dma1Transfer16;
+                dma_state.channels[1].dmaFunction = (void*)dma1Transfer16;
                 break;
             case 2:
-                dma_state.channels[channel].dmaFunction = (void*)dma2Transfer16;
+                dma_state.channels[2].dmaFunction = (void*)dma2Transfer16;
                 break;
             case 3:
-                dma_state.channels[channel].dmaFunction = (void*)dma3Transfer16;
+                dma_state.channels[3].dmaFunction = (void*)dma3Transfer16;
                 break;
         }        
+    }
+}
+
+ITCM_CODE void dma_dmaSound1(void)
+{
+    dc_drainWriteBuffer();
+    dc_invalidateRange(&gGbaSoundShared.directChannels[0].dmaRequest, 1);
+    if (!gGbaSoundShared.directChannels[0].dmaRequest)
+        return;
+
+    void* dmaIoBase = &emu_ioRegisters[0xB0 + 1 * 0xC];
+    u32 control = *(u16*)((u32)dmaIoBase + 0xA);
+    int srcStep = getSrcStep(control);
+    u32 src = dma_state.channels[1].curSrc;
+    dma_state.channels[1].curSrc += srcStep * 16;
+    u32 dst = dma_state.channels[1].curDst;
+    dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+
+    gGbaSoundShared.directChannels[0].dmaRequest = false;
+    dc_drainWriteBuffer();
+}
+
+ITCM_CODE void dma_dmaSound2(void)
+{
+    dc_drainWriteBuffer();
+    dc_invalidateRange(&gGbaSoundShared.directChannels[1].dmaRequest, 1);
+    if (!gGbaSoundShared.directChannels[1].dmaRequest)
+        return;
+
+    void* dmaIoBase = &emu_ioRegisters[0xB0 + 2 * 0xC];
+    u32 control = *(u16*)((u32)dmaIoBase + 0xA);
+    int srcStep = getSrcStep(control);
+    u32 src = dma_state.channels[2].curSrc;
+    dma_state.channels[2].curSrc += srcStep * 16;
+    u32 dst = dma_state.channels[2].curDst;
+    dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+
+    gGbaSoundShared.directChannels[1].dmaRequest = false;
+    dc_drainWriteBuffer();
+}
+
+ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
+{
+    *(u16*)(dmaIoBase + 0xA) = value;
+    dma_state.dmaFlags |= DMA_FLAG_SOUND(channel);
+    vm_forcedIrqMask |= 1 << 16; // arm7 irq
+    dma_state.channels[channel].curSrc = *(u32*)dmaIoBase;
+    dma_state.channels[channel].curDst = *(u32*)(dmaIoBase + 4);
+    gGbaSoundShared.directChannels[channel - 1].dmaRequest = false;
+    dc_drainWriteBuffer();
+}
+
+ITCM_CODE static void dmaStartSpecial(void* dmaIoBase, u32 value)
+{
+    u32 src = *(u32*)dmaIoBase;
+    if (src >= 0x08000000)
+        return;
+    int channel = dmaIoBaseToChannel(dmaIoBase);
+    switch (channel)
+    {
+        case 0:
+            break;
+        case 1:
+        case 2:
+            dmaStartSound(dmaIoBase, value, channel);
+            break;
+        case 3:
+            break;
     }
 }
 
@@ -369,6 +443,7 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
             dmaStartHBlank(dmaIoBase, value);
             return;
         case 3: // special
+            dmaStartSpecial(dmaIoBase, value);
             return;
     }
     u32 count = *(u16*)(dmaIoBase + 8);

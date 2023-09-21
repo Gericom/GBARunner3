@@ -6,7 +6,7 @@
 
 arm_func emu_gbaSoundStore16
     mov r10, r13
-    ldr sp,= dtcmStackEnd
+    ldr sp,= dtcmSndStackEnd
     push {r0-r3,r10,lr}
     mov r0, r8
     mov r1, r9
@@ -16,7 +16,7 @@ arm_func emu_gbaSoundStore16
 
 arm_func emu_gbaSoundStore32
     mov r10, r13
-    ldr sp,= dtcmStackEnd
+    ldr sp,= dtcmSndStackEnd
     push {r0-r3,r10,lr}
     mov r0, r8
     mov r1, r9

@@ -32,8 +32,8 @@ void gbat_updateTimer(gbat_t* timer)
         if (timer->control & GBAT_CONTROL_SLAVE)
            return;//todo: implement chaining
 
-        u32 ticks = 33594931;
-        switch(timer->control & GBAT_CONTROL_PRESCALE_MASK)
+        u32 ticks = 512 << 16;
+        switch (timer->control & GBAT_CONTROL_PRESCALE_MASK)
         {
             case GBAT_CONTROL_PRESCALE_64:
                 ticks >>= 6;
@@ -46,7 +46,7 @@ void gbat_updateTimer(gbat_t* timer)
                 break;
         }
 
-        u64 counter = timer->counter + ticks;
+        u64 counter = (u64)timer->counter + ticks;
         u32 reload = timer->reload << 16;
         u32 oldTop = 0;
         u32 newTop;

@@ -12,4 +12,10 @@ dtcmIrqStack:
 .global dtcmIrqStackEnd
 dtcmIrqStackEnd:
 
+.global dtcmSndStack
+dtcmSndStack:
+    .space 128
+.global dtcmSndStackEnd
+dtcmSndStackEnd:
+
 .end

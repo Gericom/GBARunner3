@@ -15,7 +15,7 @@ static void updateDirectChannel(gbas_direct_channel_t* channel)
     //more than 2 implies a samplerate higher than 64kHz
     if (timer->curNrOverflows > 10)
         return;
-    for (u16 i = 0; i < timer->curNrOverflows; i++)
+    for (u16 i = 0; i < timer->curNrOverflows; ++i)
     {
         ++channel->sampleCounter;
         int fifoCount = channel->writeOffset - channel->readOffset;
@@ -30,7 +30,8 @@ static void updateDirectChannel(gbas_direct_channel_t* channel)
         {
             if (fifoCount >= 1)
             {
-                channel->curPlaySamples = channel->fifo[channel->readOffset++];
+                channel->curPlaySamples = channel->fifo[channel->readOffset];
+                channel->readOffset = (channel->readOffset + 1) & 7;
                 channel->isInitial = false;
                 channel->curPlaySampleCount = 4;
             }

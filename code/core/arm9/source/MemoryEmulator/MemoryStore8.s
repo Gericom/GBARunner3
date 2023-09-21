@@ -69,6 +69,7 @@ arm_func memu_store8Io
     bx lr
 
 arm_func memu_store8IoHi
+    bic r8, r8, #1
     cmp r10, #0x20C
         biclo r12, r12, #0xFF00
         orrlo r9, r12, r9, lsl #8
