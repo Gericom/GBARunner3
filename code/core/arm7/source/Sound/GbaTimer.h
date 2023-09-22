@@ -15,14 +15,12 @@
 typedef struct
 {
     bool isStarted;
-    u16 curNrOverflows; //number of overflows in the current 32kHz step
 
     u16 reload;
     u16 control;
 
     u32 counter;
-
-    u16 preScaleCounter;
+    u32 curNrOverflows; //number of overflows in the current 32kHz step
 } gbat_t;
 
 #ifdef __cplusplus

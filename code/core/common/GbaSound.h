@@ -7,7 +7,6 @@ typedef struct
     volatile u16 writeOffset;
 
     volatile bool dmaRequest;
-    bool isInitial;
     s8 curSample;
 
     u32 curPlaySamples;
@@ -16,8 +15,6 @@ typedef struct
     u16 timerIdx;
     u16 volume;
     u16 enables;
-
-    u32 sampleCounter;
 } gbas_direct_channel_t __attribute__((aligned(4)));
 
 typedef struct

@@ -8,6 +8,7 @@
 #include "SdCache/SdCache.h"
 #include "MemoryEmulator/HiCodeCacheMapping.h"
 #include "Peripherals/Sound/GbaSound9.h"
+#include "VirtualMachine/VMNestedIrq.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -453,10 +454,18 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
     u32 dst = *(u32*)(dmaIoBase + 4);
     int srcStep = getSrcStep(value);
     int dstStep = getDstStep(value);
+    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    {
+        vm_enableNestedIrqs();
+    }
     if (value & (1 << 10))
         dma_immTransfer32(src, dst, count, srcStep, dstStep);
     else
         dma_immTransfer16(src, dst, count, srcStep, dstStep);
+    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    {
+        vm_disableNestedIrqs();
+    }
     // todo: irq
 }
 

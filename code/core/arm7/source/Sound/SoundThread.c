@@ -26,7 +26,7 @@ static s16 sSoundBufferLeft[SOUND_BUFFER_SIZE];
 static s16 sSoundBufferRight[SOUND_BUFFER_SIZE];
 
 static int sSoundBufferWritePtr;
-static u16 sSamplePosition;
+static u32 sSamplePosition;
 
 static void soundTimerIrq(u32 irqMask)
 {
@@ -38,9 +38,10 @@ static void soundThreadMain(void* arg)
     while (true)
     {
         u16 playbackSampleCount = tmr_getCounter(SOUND_TIMER_SAMPLE_COUNTER);
-        int difference = playbackSampleCount - sSamplePosition;
+        int difference = playbackSampleCount - (u16)(sSamplePosition / 4);
         if (difference < 0)
             difference += 0x10000;
+        difference *= 4;
         while (difference-- > 0)
         {
             gbas_updateMixer(&sSoundBufferLeft[sSoundBufferWritePtr], &sSoundBufferRight[sSoundBufferWritePtr]);
@@ -76,7 +77,7 @@ static void startTimers(void)
 {
     tmr_stop(SOUND_TIMER_SAMPLERATE);
     tmr_stop(SOUND_TIMER_SAMPLE_COUNTER);
-    tmr_configure(SOUND_TIMER_SAMPLERATE, TMCNT_H_CLK_SYS, SOUND_TIMER_SAMPLERATE_RELOAD, true);
+    tmr_configure(SOUND_TIMER_SAMPLERATE, TMCNT_H_CLK_SYS, SOUND_TIMER_SAMPLERATE_RELOAD * 4, true);
     tmr_configure(SOUND_TIMER_SAMPLE_COUNTER, TMCNT_H_CLK_PREV_TMR_OVF, 0, false);
 
     u32 irq = RTOS_IRQ_TIMER(SOUND_TIMER_SAMPLERATE);

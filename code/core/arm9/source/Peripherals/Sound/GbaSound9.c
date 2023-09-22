@@ -18,7 +18,6 @@ static void resetFifo(gbas_direct_channel_t* channel)
     channel->curPlaySampleCount = 0;
     channel->curPlaySamples = 0;
     channel->curSample = 0;
-    channel->isInitial = true;
 }
 
 static void writeFifo32(gbas_direct_channel_t* channel, u32 val, u32 mask)

@@ -15,9 +15,8 @@ static void updateDirectChannel(gbas_direct_channel_t* channel)
     //more than 2 implies a samplerate higher than 64kHz
     if (timer->curNrOverflows > 10)
         return;
-    for (u16 i = 0; i < timer->curNrOverflows; ++i)
+    for (u32 i = 0; i < timer->curNrOverflows; ++i)
     {
-        ++channel->sampleCounter;
         int fifoCount = channel->writeOffset - channel->readOffset;
         if (fifoCount < 0)
             fifoCount += 8;
@@ -32,7 +31,6 @@ static void updateDirectChannel(gbas_direct_channel_t* channel)
             {
                 channel->curPlaySamples = channel->fifo[channel->readOffset];
                 channel->readOffset = (channel->readOffset + 1) & 7;
-                channel->isInitial = false;
                 channel->curPlaySampleCount = 4;
             }
             else
@@ -42,27 +40,25 @@ static void updateDirectChannel(gbas_direct_channel_t* channel)
                 samp |= samp << 16;
                 channel->curPlaySamples = samp;
                 channel->curPlaySampleCount = 4;
-                channel->readOffset += 4;
+                channel->readOffset = (channel->readOffset + 1) & 7;
             }            
         }
 
-        u32 curPlaySamples = channel->curPlaySamples;
-        channel->curSample = (s8)curPlaySamples;
-        curPlaySamples >>= 8;
-        channel->curPlaySamples = curPlaySamples;
+        channel->curSample = (s8)channel->curPlaySamples;
+        channel->curPlaySamples >>= 8;
         channel->curPlaySampleCount--;
     }
 }
 
-static s16 applyBias(int val)
+static s16 applyBias(int sample)
 {
     //todo: use real bias
-    val += 0x200;
-    if (val >= 0x400)
-        val = 0x3FF;
-    else if (val < 0)
-        val = 0;
-    return (val - 0x200) << 6;
+    sample += 0x200;
+    if (sample >= 0x400)
+        sample = 0x3FF;
+    else if (sample < 0)
+        sample = 0;
+    return (sample - 0x200) << 6;
 }
 
 void gbas_init(gbas_shared_t* sharedData)
@@ -107,7 +103,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
             // left = sDmgSamp[0];
             // right = sDmgSamp[1];
 
-            s16 sampA = sSharedData->directChannels[0].curSample << 2;
+            int sampA = sSharedData->directChannels[0].curSample << 2;
             if (sSharedData->directChannels[0].volume == 0)
                 sampA = sampA >> 1;
 
@@ -116,7 +112,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
             if (sSharedData->directChannels[0].enables & 1)
                 right += sampA;
 
-            s16 sampB = sSharedData->directChannels[1].curSample << 2;
+            int sampB = sSharedData->directChannels[1].curSample << 2;
             if (sSharedData->directChannels[1].volume == 0)
                 sampB = sampB >> 1;
 

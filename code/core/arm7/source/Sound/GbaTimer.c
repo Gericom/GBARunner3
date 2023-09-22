@@ -1,6 +1,17 @@
 #include "common.h"
 #include "GbaTimer.h"
 
+#define TICKS_PER_UPDATE    512
+#define TICK_SHIFT          1
+
+static const u32 sPrescaleShiftedTicksPerUpdate[3] =
+{
+    TICKS_PER_UPDATE << TICK_SHIFT,
+    (TICKS_PER_UPDATE << TICK_SHIFT) >> 6,
+    (TICKS_PER_UPDATE << TICK_SHIFT) >> 8,
+    (TICKS_PER_UPDATE << TICK_SHIFT) >> 10
+};
+
 void gbat_initTimer(gbat_t* timer)
 {
     timer->isStarted = 0;
@@ -8,57 +19,39 @@ void gbat_initTimer(gbat_t* timer)
     timer->reload = 0;
     timer->control = 0;
     timer->counter = 0;
-    timer->preScaleCounter = 0;
 }
 
 void gbat_updateTimer(gbat_t* timer)
 {
-    if (!(timer->control & GBAT_CONTROL_ENABLED))
+    u32 control = timer->control;
+    if (!(control & GBAT_CONTROL_ENABLED))
     {        
-        timer->isStarted = 0;
+        timer->isStarted = false;
         timer->curNrOverflows = 0;
         return;
     }
 
     if (!timer->isStarted)
     {
-        timer->counter = timer->reload << 16;
-        timer->isStarted = 1;
+        timer->counter = timer->reload << TICK_SHIFT;
+        timer->isStarted = true;
         timer->curNrOverflows = 0;
-        timer->preScaleCounter = 0;
     }
     else
     {
-        if (timer->control & GBAT_CONTROL_SLAVE)
+        if (control & GBAT_CONTROL_SLAVE)
            return;//todo: implement chaining
 
-        u32 ticks = 512 << 16;
-        switch (timer->control & GBAT_CONTROL_PRESCALE_MASK)
+        u32 ticks = sPrescaleShiftedTicksPerUpdate[control & GBAT_CONTROL_PRESCALE_MASK];
+        u32 counter = timer->counter + ticks;
+        u32 reload = (timer->reload - 0x10000) << TICK_SHIFT;
+        u32 overflows = 0;
+        while (counter >= (0x10000 << TICK_SHIFT))
         {
-            case GBAT_CONTROL_PRESCALE_64:
-                ticks >>= 6;
-                break;
-            case GBAT_CONTROL_PRESCALE_256:
-                ticks >>= 8;
-                break;
-            case GBAT_CONTROL_PRESCALE_1024:
-                ticks >>= 10;
-                break;
-        }
-
-        u64 counter = (u64)timer->counter + ticks;
-        u32 reload = timer->reload << 16;
-        u32 oldTop = 0;
-        u32 newTop;
-        while (true)
-        {
-            newTop = counter >> 32;
-            if (oldTop == newTop)
-                break;
-            oldTop = newTop;
             counter += reload;
+            ++overflows;
         }
         timer->counter = counter;
-        timer->curNrOverflows = newTop;
+        timer->curNrOverflows = overflows;
     }
 }
