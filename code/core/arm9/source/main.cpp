@@ -374,7 +374,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     relocateGbaBios();
     applyBiosVmPatches();
     applyBiosJitPatches();
-    const char* romPath = argc > 1 ? argv[1] : "/1865 - The Legend of Zelda - The Minish Cap (U)(DCS).gba";
+    const char* romPath = argc > 1 ? argv[1] : "/rom.gba";
     loadGbaRom(romPath);
     char* romExtension = strrchr(romPath, '.');
     if (romExtension)
