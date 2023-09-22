@@ -17,7 +17,7 @@ void ThreadIpcService::ThreadMain()
 void ThreadIpcService::Start()
 {
     rtos_createEvent(&_event);
-    rtos_createThread(&_thread, 5, [] (void* arg)
+    rtos_createThread(&_thread, _priority, [] (void* arg)
     {
         static_cast<ThreadIpcService*>(arg)->ThreadMain();
     }, this, _stack, _stackSize);
