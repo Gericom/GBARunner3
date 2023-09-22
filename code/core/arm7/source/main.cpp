@@ -12,6 +12,7 @@
 #include <libtwl/i2c/i2cMcu.h>
 #include "IpcServices/FsIpcService.h"
 #include "IpcServices/GbaSoundIpcService.h"
+#include "FramerateAdjustment.h"
 
 static FsIpcService sFsIpcService;
 static GbaSoundIpcService sGbaSoundIpcService;
@@ -103,6 +104,9 @@ int main()
         rtos_setIrq2Func(RTOS_IRQ2_MCU, mcuIrq);
         rtos_enableIrq2Mask(RTOS_IRQ2_MCU);
     }
+
+    fps_initializeFramerateAdjustment();
+    fps_startFramerateAdjustment();
 
     notifyArm7Ready();
 
