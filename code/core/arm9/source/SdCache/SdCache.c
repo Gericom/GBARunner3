@@ -84,15 +84,7 @@ void sdc_init(void)
     sRandomState = 0xA512ED48; // initial random seed
     for (u32 i = 0; i < SDC_ROM_BLOCK_COUNT; i++)
     {
-        u32 romAddress = i * SDC_BLOCK_SIZE;
-        if (romAddress < 2 * 1024 * 1024)
-        {
-            sdc_romBlockToCacheBlock[i] = (void*)(0x02200000 + romAddress);
-        }
-        else
-        {
-            sdc_romBlockToCacheBlock[i] = 0;
-        }
+        sdc_romBlockToCacheBlock[i] = NULL;
     }
     for (u32 i = 0; i < SDC_BLOCK_COUNT; i++)
         sCacheBlockToRomBlock[i] = SDC_ROM_BLOCK_INVALID;
