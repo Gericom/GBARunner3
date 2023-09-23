@@ -13,6 +13,10 @@ static u32 sRandomState;
 /// @brief Maps sd cache blocks to rom blocks.
 static u16 sCacheBlockToRomBlock[SDC_BLOCK_COUNT];
 
+/// @brief The number of usable blocks in the cache. This can be less than the
+///        total number of cache blocks when some blocks are permanently loaded.
+static u32 sBlockCount;
+
 static DWORD sClusterTable[512];
 
 // temporarily
@@ -23,7 +27,7 @@ extern FIL gFile;
 static u32 getBlockToReplace(void)
 {
     sRandomState = sRandomState * 1566083941u + 2531011u;
-    return ((sRandomState >> 16) * SDC_BLOCK_COUNT) >> 16;
+    return ((sRandomState >> 16) * sBlockCount) >> 16;
 }
 
 /// @brief Loads a rom block to the given buffer.
@@ -58,14 +62,8 @@ static void loadRomBlock(u32 romBlock, void* dst)
     dc_flushRange(dst, SDC_BLOCK_SIZE);
 }
 
-extern void logAddress(u32 address);
-
-const void* sdc_loadRomBlockDirect(u32 romAddress)
+static void* loadRomBlockDirect(u32 romBlock, u32 blockIdx)
 {
-    vm_enableNestedIrqs();
-    // logAddress(romAddress);
-    u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
-    u32 blockIdx = getBlockToReplace();
     u32 oldRomBlock = sCacheBlockToRomBlock[blockIdx];
     if (oldRomBlock != SDC_ROM_BLOCK_INVALID)
     {
@@ -75,13 +73,44 @@ const void* sdc_loadRomBlockDirect(u32 romAddress)
     void* cacheBlock = &sdc_cache[blockIdx][0];
     sdc_romBlockToCacheBlock[romBlock] = cacheBlock;
     loadRomBlock(romBlock, cacheBlock);
+    return cacheBlock;
+}
+
+extern void logAddress(u32 address);
+
+const void* sdc_loadRomBlockDirect(u32 romAddress)
+{
+    vm_enableNestedIrqs();
+    // logAddress(romAddress);
+    u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
+    u32 blockIdx = getBlockToReplace();
+    void* cacheBlock = loadRomBlockDirect(romBlock, blockIdx);
     vm_disableNestedIrqs();
     return cacheBlock;
+}
+
+void* sdc_loadRomBlockForPatching(u32 romAddress)
+{
+    u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
+    void* data = sdc_romBlockToCacheBlock[romBlock];
+    // if not loaded at all yet, or not permanent
+    if (!data || (u32)data < &sdc_cache[sBlockCount][0])
+    {
+        if (data)
+        {
+            // if already loaded, but not permanent, invalidate block
+            sCacheBlockToRomBlock[((u32)data - (u32)&sdc_cache[0][0]) / SDC_BLOCK_SIZE] = SDC_ROM_BLOCK_INVALID;
+        }
+
+        data = loadRomBlockDirect(romBlock, --sBlockCount);
+    }
+    return (void*)((u32)data + (romAddress & SDC_BLOCK_MASK));
 }
 
 void sdc_init(void)
 {
     sRandomState = 0xA512ED48; // initial random seed
+    sBlockCount = SDC_BLOCK_COUNT;
     for (u32 i = 0; i < SDC_ROM_BLOCK_COUNT; i++)
     {
         sdc_romBlockToCacheBlock[i] = NULL;

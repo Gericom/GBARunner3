@@ -21,6 +21,9 @@
 #include "Save/Save.h"
 #include "SdCache/SdCache.h"
 #include "JitPatcher/JitCommon.h"
+#include "Peripherals/Sound/GbaSound9.h"
+#include "Patches/HarvestMoonPatches.h"
+#include "GameCode.h"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -153,6 +156,9 @@ static void loadGbaRom(const char* romPath)
     f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
     f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+
+    u32 gameCode = *(u32*)0x022000AC;
+    HarvestMoonPatches().TryApplyPatches(gameCode);
 
     // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();

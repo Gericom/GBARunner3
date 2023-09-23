@@ -32,6 +32,7 @@ SOURCES		:=	source \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \
 				source/MemoryEmulator/Thumb \
+				source/Patches \
 				source/Peripherals \
 				source/Peripherals/Graphics \
 				source/Peripherals/Interrupts \
