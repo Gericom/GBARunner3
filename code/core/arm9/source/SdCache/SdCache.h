@@ -21,6 +21,12 @@ extern "C" {
 /// @return A pointer to the newly loaded block.
 const void* sdc_loadRomBlockDirect(u32 romAddress);
 
+/// @brief Permanently loads the rom block that contains the given romAddress
+///        into the sd cache for the purpose of applying patches.
+/// @param romAddress An address in the block to load permanently into the cache.
+/// @return A pointer to romAddress in the cache block.
+void* sdc_loadRomBlockForPatching(u32 romAddress);
+
 static inline const void* sdc_getRomBlock(u32 romAddress)
 {
     u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
