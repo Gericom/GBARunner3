@@ -9,9 +9,6 @@
 .org vm_hwIEAddr - VM_DTCM_BASE
     .word 0x04000210
 
-.org vm_forcedIrqMask - VM_DTCM_BASE
-    .word 0x210001 // gx fifo, arm7 sync and vblank
-
 .org vm_emulatedIrqMask - VM_DTCM_BASE
     .word 0xFFFFFF80 // timers and display irqs have a hw source
 
