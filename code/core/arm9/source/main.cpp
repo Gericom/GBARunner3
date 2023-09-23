@@ -21,7 +21,6 @@
 #include "Save/Save.h"
 #include "SdCache/SdCache.h"
 #include "JitPatcher/JitCommon.h"
-#include "Peripherals/Sound/GbaSound9.h"
 #include "Patches/HarvestMoonPatches.h"
 #include "GameCode.h"
 
