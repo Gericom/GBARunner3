@@ -1,6 +1,7 @@
 #include "common.h"
 #include <libtwl/mem/memVram.h>
 #include <libtwl/mem/memNtrWram.h>
+#include <libtwl/mem/memExtern.h>
 #include <libtwl/sys/sysPower.h>
 #include <libtwl/gfx/gfxPalette.h>
 #include <libtwl/gfx/gfx2d.h>
@@ -354,6 +355,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 
     Environment::Initialize();
     setupLogger();
+
+    mem_setMainMemoryPriority(EXMEMCNT_MAIN_MEM_PRIO_ARM9);
 
     bool mountResult;
     if (shouldMountDsiSd(argc, argv))
