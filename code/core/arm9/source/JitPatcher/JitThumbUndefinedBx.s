@@ -15,6 +15,7 @@
         .else
             // pc
             add r8, r11, #4
+            bic r8, r8, #2 // 32 bit align target address
             b ensureJittedCommon
         .endif
 .endm
