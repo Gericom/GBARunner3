@@ -1,11 +1,12 @@
 #include "common.h"
 #include <libtwl/ipc/ipcSync.h>
 #include "GbaTimer.h"
+#include "GbSound.h"
 #include "GbaSound.h"
 #include "GbaSoundDefinitions.h"
 #include "GbaSound7.h"
 
-static gbas_shared_t* sSharedData;
+gbas_shared_t* gSoundSharedData;
 static gbat_t sTimers[2];
 
 static bool sPaused;
@@ -63,9 +64,10 @@ static int applyBias(int sample)
 
 void gbas_init(gbas_shared_t* sharedData)
 {
-    sSharedData = sharedData;
+    gSoundSharedData = sharedData;
     gbat_initTimer(&sTimers[0]);
     gbat_initTimer(&sTimers[1]);
+    gbs_init();
     sPaused = false; //true;
 }
 
@@ -93,12 +95,12 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
         gbat_updateTimer(&sTimers[1]);
         
         //master enable
-        if (sSharedData->masterEnable)
+        if (gSoundSharedData->masterEnable)
         {
-            u32 soundCntH = sSharedData->soundCntH;
-            updateDirectChannel(&sSharedData->directChannels[0],
+            u32 soundCntH = gSoundSharedData->soundCntH;
+            updateDirectChannel(&gSoundSharedData->directChannels[0],
                 &sTimers[(soundCntH & GBA_SOUNDCNT_H_DIRECT_A_TIMER_1) ? 1 : 0]);
-            updateDirectChannel(&sSharedData->directChannels[1],
+            updateDirectChannel(&gSoundSharedData->directChannels[1],
                 &sTimers[(soundCntH & GBA_SOUNDCNT_H_DIRECT_B_TIMER_1) ? 1 : 0]);
 
             // dmga_sample(sDmgSamp);
@@ -106,7 +108,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
             // left = sDmgSamp[0];
             // right = sDmgSamp[1];
 
-            int sampA = (s8)sSharedData->directChannels[0].curPlaySamples << 2;
+            int sampA = (s8)gSoundSharedData->directChannels[0].curPlaySamples << 2;
             if (!(soundCntH & GBA_SOUNDCNT_H_DIRECT_A_VOLUME_FULL))
                 sampA = sampA >> 1;
 
@@ -115,7 +117,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
             if (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_ENABLE_RIGHT)
                 right += sampA;
 
-            int sampB = (s8)sSharedData->directChannels[1].curPlaySamples << 2;
+            int sampB = (s8)gSoundSharedData->directChannels[1].curPlaySamples << 2;
             if (!(soundCntH & GBA_SOUNDCNT_H_DIRECT_B_VOLUME_FULL))
                 sampB = sampB >> 1;
 

@@ -54,9 +54,13 @@ arm_func memu_store8Iwram
     bx lr
 
 arm_func memu_store8Io
-    ldr r12,= emu_ioRegisters
-    ldr r11,= memu_store16IoTable
     sub r10, r8, #0x04000000
+    sub r11, r10, #0x60
+    cmp r11, #0x48
+        blo emu_gbaSoundStore8
+
+    ldr r11,= memu_store16IoTable
+    ldr r12,= emu_ioRegisters
     ldrh r11, [r11, r10]
     tst r8, #1
     ldrh r12, [r12, r10]

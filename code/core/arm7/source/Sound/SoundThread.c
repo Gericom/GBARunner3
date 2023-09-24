@@ -6,6 +6,7 @@
 #include <libtwl/timer/timer.h>
 #include <libtwl/sound/soundChannel.h>
 #include "GbaSound7.h"
+#include "SoundThread.h"
 
 #define SOUND_CHANNEL_LEFT              0
 #define SOUND_CHANNEL_RIGHT             1

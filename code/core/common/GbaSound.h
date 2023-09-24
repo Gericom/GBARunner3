@@ -16,4 +16,5 @@ typedef struct
     gbas_direct_channel_t directChannels[2];
     bool masterEnable;
     u16 soundCntH;
+    u16 soundCntX;
 } gbas_shared_t;

@@ -1,6 +1,8 @@
 #pragma once
 #include "GbaSound.h"
 
+extern gbas_shared_t* gSoundSharedData;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
