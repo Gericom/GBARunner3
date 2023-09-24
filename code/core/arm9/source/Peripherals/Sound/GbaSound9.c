@@ -47,7 +47,6 @@ static void writeGbAudioReg(u32 reg, u32 val)
             emu_ioRegisters[reg] = val;
             break;
         case GBA_REG_OFFS_SOUND1CNT_X: //NR13
-            emu_ioRegisters[reg] = val;
             break;
         case (GBA_REG_OFFS_SOUND1CNT_X + 1): //NR14
             emu_ioRegisters[reg] = val & ~0xBF;
@@ -59,7 +58,6 @@ static void writeGbAudioReg(u32 reg, u32 val)
             emu_ioRegisters[reg] = val;
             break;
         case GBA_REG_OFFS_SOUND2CNT_H: //NR23
-            emu_ioRegisters[reg] = val;
             break;
         case (GBA_REG_OFFS_SOUND2CNT_H + 1): //NR24
             emu_ioRegisters[reg] = val & ~0xBF;
@@ -68,19 +66,16 @@ static void writeGbAudioReg(u32 reg, u32 val)
             emu_ioRegisters[reg] = val & ~0x1F;
             break;
         case GBA_REG_OFFS_SOUND3CNT_H: //NR31
-            emu_ioRegisters[reg] = val;
             break;
         case (GBA_REG_OFFS_SOUND3CNT_H + 1): //NR32
             emu_ioRegisters[reg] = val & ~0x1F;
             break;
         case GBA_REG_OFFS_SOUND3CNT_X: //NR33
-            emu_ioRegisters[reg] = val;
             break;
         case (GBA_REG_OFFS_SOUND3CNT_X + 1): //NR34
             emu_ioRegisters[reg] = val & ~0xBF;
             break;
         case GBA_REG_OFFS_SOUND4CNT_L: //NR41
-            emu_ioRegisters[reg] = val;
             break;
         case (GBA_REG_OFFS_SOUND4CNT_L + 1): //NR42
             emu_ioRegisters[reg] = val;
@@ -92,7 +87,7 @@ static void writeGbAudioReg(u32 reg, u32 val)
             emu_ioRegisters[reg] = val & ~0xBF;
             break;
         case GBA_REG_OFFS_SOUNDCNT_L: //NR50
-            emu_ioRegisters[reg] = val;
+            emu_ioRegisters[reg] = val & 0x77;
             break;
         case (GBA_REG_OFFS_SOUNDCNT_L + 1): //NR51
             emu_ioRegisters[reg] = val;
