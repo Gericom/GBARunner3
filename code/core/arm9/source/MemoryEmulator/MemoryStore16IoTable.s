@@ -135,13 +135,21 @@
     .elseif (\index << 1) == GBA_REG_OFFS_DMA3CNT_H
         .short emu_dmaCntHStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_L
-        .short emu_timerCntL01Store16
+        .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_H
-        .short emu_timerCntH01Store16
+        .short emu_timerCntHStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_L
-        .short emu_timerCntL01Store16
+        .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_H
-        .short emu_timerCntH01Store16
+        .short emu_timerCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_TM2CNT_L
+        .short emu_timerCntLStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_TM2CNT_H
+        .short emu_timerCntHStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_TM3CNT_L
+        .short emu_timerCntLStore16
+    .elseif (\index << 1) == GBA_REG_OFFS_TM3CNT_H
+        .short emu_timerCntHStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SIODATA32_L
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SIODATA32_H
