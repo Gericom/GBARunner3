@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 void gbs_init(void);
-void gbs_writeReg(u8 reg, u8 val);
+void gbs_writeReg(u32 reg, u8 val);
 
 #ifdef __cplusplus
 }

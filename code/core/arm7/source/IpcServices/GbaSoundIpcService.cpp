@@ -32,11 +32,19 @@ void GbaSoundIpcService::OnMessageReceived(u32 data)
             gbas_setTimerControl(timer, control);
             break;
         }
-        case GBA_SOUND_IPC_CMD_GB_REG_WRITE:
+        case GBA_SOUND_IPC_CMD_GB_REG_WRITE_8:
         {
             u32 reg = (data >> 4) & 0xFF;
             u32 value = (data >> 12) & 0xFF;
             gbs_writeReg(reg, value);
+            break;
+        }
+        case GBA_SOUND_IPC_CMD_GB_REG_WRITE_16:
+        {
+            u32 reg = (data >> 4) & 0xFF;
+            u32 value = (data >> 12) & 0xFFFF;
+            gbs_writeReg(reg, value & 0xFF);
+            gbs_writeReg(reg + 1, value >> 8);
             break;
         }
     }

@@ -33,6 +33,8 @@
         .short memu_load16UndefinedZero
     .elseif (\index << 1) == 0x7E
         .short memu_load16UndefinedZero
+    .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_X
+        .short emu_gbaSoundLoadSoundCntX
     .elseif (\index << 1) == 0x86
         .short memu_load16UndefinedZero
     .elseif (\index << 1) == 0x8A

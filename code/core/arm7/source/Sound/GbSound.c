@@ -3,6 +3,7 @@
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/sound/soundChannel.h>
 #include <libtwl/timer/timer.h>
+#include <libtwl/sio/sio.h>
 #include "GbaIoRegOffsets.h"
 #include "GbaSoundDefinitions.h"
 #include "GbaSound7.h"
@@ -569,11 +570,23 @@ static void frameSeqUpdateLength()
 static void frameSeqUpdateVolume()
 {
     if (sChannelPlaying & 1)
+    {
+        // logDebug("ch1\n");
         gbs_updateEnvelope(&sChannel1Env);
+        updateChannelVolume(0);
+    }
     if (sChannelPlaying & 2)
+    {
+        // logDebug("ch2\n");
         gbs_updateEnvelope(&sChannel2Env);
+        updateChannelVolume(1);
+    }
     if (sChannelPlaying & 8)
+    {
+        // logDebug("ch4\n");
         gbs_updateEnvelope(&sChannel4Env);
+        updateChannelVolume(3);
+    }
 }
 
 /*
@@ -632,6 +645,12 @@ void gbs_frameSeqTick()
 {
     if (!sMasterEnable)
         return;
+
+    if (!(REG_RCNT0_H & RCNT0_H_DATA_KEY_DEBUG))
+    {
+        while (1);
+    }
+
     // Step   Length Ctr  Vol Env     Sweep
     // ---------------------------------------
     // 0      Clock       -           -
@@ -745,9 +764,9 @@ void gbs_init(void)
 }
 
 //assumes an 8 bit write
-void gbs_writeReg(u8 reg, u8 val)
+void gbs_writeReg(u32 reg, u8 val)
 {
-    if (!sMasterEnable && reg != 0x84)
+    if (!sMasterEnable && reg != 0x84 && reg < 0x90)
         return;
 
     switch (reg)
