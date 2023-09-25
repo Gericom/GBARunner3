@@ -571,19 +571,16 @@ static void frameSeqUpdateVolume()
 {
     if (sChannelPlaying & 1)
     {
-        // logDebug("ch1\n");
         gbs_updateEnvelope(&sChannel1Env);
         updateChannelVolume(0);
     }
     if (sChannelPlaying & 2)
     {
-        // logDebug("ch2\n");
         gbs_updateEnvelope(&sChannel2Env);
         updateChannelVolume(1);
     }
     if (sChannelPlaying & 8)
     {
-        // logDebug("ch4\n");
         gbs_updateEnvelope(&sChannel4Env);
         updateChannelVolume(3);
     }
@@ -645,11 +642,6 @@ void gbs_frameSeqTick()
 {
     if (!sMasterEnable)
         return;
-
-    if (!(REG_RCNT0_H & RCNT0_H_DATA_KEY_DEBUG))
-    {
-        while (1);
-    }
 
     // Step   Length Ctr  Vol Env     Sweep
     // ---------------------------------------
@@ -973,8 +965,8 @@ void gbs_writeReg(u32 reg, u8 val)
         case 0x9D:
         case 0x9E:
         case 0x9F:
-            sChannel3WaveData[1 - sChannel3CurPlayBank][(reg & 0xF) << 1] = ((val & 0xF0) | (val >> 4)) - 128;
-            sChannel3WaveData[1 - sChannel3CurPlayBank][((reg & 0xF) << 1) + 1] = (((val & 0xF) << 4) | (val & 0xF)) - 128;
+            sChannel3WaveData[1 - sChannel3CurPlayBank][(reg & 0xF) << 1] = 127 - ((val & 0xF0) | (val >> 4));
+            sChannel3WaveData[1 - sChannel3CurPlayBank][((reg & 0xF) << 1) + 1] = 127 - (((val & 0xF) << 4) | (val & 0xF));
             break;
     }
 }
