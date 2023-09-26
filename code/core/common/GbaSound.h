@@ -14,6 +14,7 @@ typedef struct
 typedef struct
 {
     u16 soundCntH;
-    u16 soundCntX;
+    u8 soundCntX; // only enable flags
+    u8 masterEnable;
     gbas_direct_channel_t directChannels[2];
 } gbas_shared_t;

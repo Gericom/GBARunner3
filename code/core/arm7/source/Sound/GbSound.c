@@ -31,6 +31,7 @@
 //- https://problemkaputt.de/gbatek.htm
 //- https://github.com/mgba-emu/mgba
 
+[[gnu::aligned(4)]]
 static const u8 sLfsr7Table[] =
 {
     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F, 0x80, 0x80, 0x80, 0x80, 0x80, 0x7F, 0x7F, 0x80, 0x80,
@@ -97,7 +98,6 @@ static const u8 sLfsr7Table[] =
 
 static int sFrameSeqStep;
 
-static int sChannelLength[4];
 static int sChannelLengthCounter[4];
 static bool sChannelUseLen[4];
 
@@ -118,6 +118,7 @@ static int sChannel1SweepAmount;
 static bool sChannel3IsMode64;
 static int sChannel3CurPlayBank;
 static bool sChannel3IsEnabled;
+[[gnu::aligned(4)]]
 static s8 sChannel3WaveData[2][32];
 
 static int sChannel4Div;
@@ -234,6 +235,8 @@ static void calcChannelVolume(int channel, int* volumeL, int* shiftL, int* volum
             sl = SOUNDCNT_SHIFT_4; //division by 16
         else if (sMixVolume == 1)
             vl >>= 1; //sadly one bit is lost here
+        if (vl > 127)
+            vl = 127;
         *volumeL = vl;
         *shiftL = sl;
     }
@@ -251,6 +254,8 @@ static void calcChannelVolume(int channel, int* volumeL, int* shiftL, int* volum
             sr = SOUNDCNT_SHIFT_4; //division by 16
         else if (sMixVolume == 1)
             vr >>= 1; //sadly one bit is lost here
+        if (vr > 127)
+            vr = 127;
         *volumeR = vr;
         *shiftR = sr;
     }
@@ -500,7 +505,7 @@ static void startChannel(int channel)
         }
     }
     sChannelPlaying |= 1 << channel;
-    gSoundSharedData->soundCntX = sChannelPlaying | (sMasterEnable << 7);
+    gSoundSharedData->soundCntX = sChannelPlaying;
 }
 
 static void stopChannel(int channel)
@@ -527,7 +532,7 @@ static void stopChannel(int channel)
             break;
     }
     sChannelPlaying &= ~(1 << channel);
-    gSoundSharedData->soundCntX = sChannelPlaying | (sMasterEnable << 7);
+    gSoundSharedData->soundCntX = sChannelPlaying;
 }
 
 /*
@@ -669,11 +674,6 @@ void gbs_init(void)
 {
     sFrameSeqStep = 0;
 
-    sChannelLength[0] = 0;
-    sChannelLength[1] = 0;
-    sChannelLength[2] = 0;
-    sChannelLength[3] = 0;
-
     sChannelLengthCounter[0] = 0;
     sChannelLengthCounter[1] = 0;
     sChannelLengthCounter[2] = 0;
@@ -771,8 +771,7 @@ void gbs_writeReg(u32 reg, u8 val)
             // sChannel1SweepAmount = val & 7;
             break;
         case 0x62: //NR11
-            sChannelLength[0] = val & 0x3F;
-            sChannelLengthCounter[0] = 64 - sChannelLength[0];
+            sChannelLengthCounter[0] = 64 - (val & 0x3F);
             sChannel1Duty = val >> 6;
             updateChannelDuty(0);
             break;
@@ -805,8 +804,7 @@ void gbs_writeReg(u32 reg, u8 val)
             }
             break;
         case 0x68: //NR21
-            sChannelLength[1] = val & 0x3F;
-            sChannelLengthCounter[1] = 64 - sChannelLength[1];
+            sChannelLengthCounter[1] = 64 - (val & 0x3F);
             sChannel2Duty = val >> 6;
             updateChannelDuty(1);
             break;
@@ -843,8 +841,7 @@ void gbs_writeReg(u32 reg, u8 val)
                 updateChannelVolume(2);
             break;
         case 0x72: //NR31
-            sChannelLength[2] = val;
-            sChannelLengthCounter[2] = 256 - sChannelLength[2];
+            sChannelLengthCounter[2] = 256 - val;
             break;
         case 0x73: //NR32
             if (val & 0x80)
@@ -882,8 +879,7 @@ void gbs_writeReg(u32 reg, u8 val)
             }
             break;
         case 0x78: //NR41
-            sChannelLength[3] = val & 0x3F;
-            sChannelLengthCounter[3] = 64 - sChannelLength[3];
+            sChannelLengthCounter[3] = 64 - (val & 0x3F);
             break;
         case 0x79: //NR42
             if (!gbs_writeEnvelope(&sChannel4Env, val))

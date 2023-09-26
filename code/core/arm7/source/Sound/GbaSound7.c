@@ -95,7 +95,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
         gbat_updateTimer(&sTimers[1]);
         
         //master enable
-        if (gSoundSharedData->soundCntX & GBA_SOUNDCNT_X_MASTER_ENABLE)
+        if (gSoundSharedData->masterEnable)
         {
             u32 soundCntH = gSoundSharedData->soundCntH;
             updateDirectChannel(&gSoundSharedData->directChannels[0],

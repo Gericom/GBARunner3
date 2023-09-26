@@ -19,7 +19,7 @@ static const u8 sRegisterMasks[] =
     (u8)~0x3F, (u8)~0x00, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF, (u8)~0xBF, (u8)~0xFF, (u8)~0xFF,
     (u8)~0x1F, (u8)~0xFF, (u8)~0xFF, (u8)~0x1F, (u8)~0xFF, (u8)~0xBF, (u8)~0xFF, (u8)~0xFF,
     (u8)~0xFF, (u8)~0x00, (u8)~0xFF, (u8)~0xFF, (u8)~0x00, (u8)~0xBF, (u8)~0xFF, (u8)~0xFF,
-    (u8)~0x88, (u8)~0x00, (u8)~0x00, (u8)~0x88, (u8)~0x7F, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF,
+    (u8)~0x88, (u8)~0x00, (u8)~0xF0, (u8)~0x88, (u8)~0x7F, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF,
     (u8)~0x00, (u8)~0x00, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF, (u8)~0xFF,
     (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00,
     (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00, (u8)~0x00
@@ -44,23 +44,25 @@ static void writeFifo32(gbas_direct_channel_t* channel, u32 val, u32 mask)
 
 static void writeGbAudioReg(u32 reg, u32 val)
 {
-    if (!(gGbaSoundShared.soundCntX & GBA_SOUNDCNT_X_MASTER_ENABLE) && reg != GBA_REG_OFFS_SOUNDCNT_X && reg < 0x90)
+    if (!gGbaSoundShared.masterEnable && reg != GBA_REG_OFFS_SOUNDCNT_X && reg < 0x90)
         return;
-
-    emu_ioRegisters[reg] = val & sRegisterMasks[reg - GBA_REG_OFFS_SOUND1CNT_L];
 
     if (reg == GBA_REG_OFFS_SOUNDCNT_X)
     {
-        if (!(val & GBA_SOUNDCNT_X_MASTER_ENABLE))
+        if (val & GBA_SOUNDCNT_X_MASTER_ENABLE)
         {
-            emu_ioRegisters[reg] = 0;
-            gGbaSoundShared.soundCntX = 0;
+            emu_ioRegisters[reg] = GBA_SOUNDCNT_X_MASTER_ENABLE;
+            gGbaSoundShared.masterEnable = true;
         }
         else
         {
-            emu_ioRegisters[reg] |= GBA_SOUNDCNT_X_MASTER_ENABLE;
-            gGbaSoundShared.soundCntX |= GBA_SOUNDCNT_X_MASTER_ENABLE;
+            emu_ioRegisters[reg] = 0;
+            gGbaSoundShared.masterEnable = false;
         }
+    }
+    else
+    {
+        emu_ioRegisters[reg] = val & sRegisterMasks[reg - GBA_REG_OFFS_SOUND1CNT_L];
     }
 }
 
@@ -70,7 +72,7 @@ void gbas_init(void)
     resetFifo(&gGbaSoundShared.directChannels[0]);
     resetFifo(&gGbaSoundShared.directChannels[1]);
     ipc_sendWordDirect(
-        ((((u32)&gGbaSoundShared) >> 5) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        ((((u32)&gGbaSoundShared) >> 5) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
         (GBA_SOUND_IPC_CMD_SETUP << IPC_FIFO_MSG_CHANNEL_BITS) |
         IPC_CHANNEL_GBA_SOUND);
     while (ipc_isRecvFifoEmpty());
@@ -103,39 +105,35 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
     }
     else if (address >= GBA_REG_OFFS_SOUND1CNT_L && address < GBA_REG_OFFS_DMA0SAD)
     {
+        // send to the arm 7
+        while (ipc_isSendFifoFull());
         if (length == 1)
         {
-            // send to the arm 7
-            while (ipc_isSendFifoFull());
             ipc_sendWordDirect(
-                ((value & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+                ((value & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
+                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
                 (GBA_SOUND_IPC_CMD_GB_REG_WRITE_8 << IPC_FIFO_MSG_CHANNEL_BITS) |
                 IPC_CHANNEL_GBA_SOUND);
         }
         else if (length == 2)
         {
-            // send to the arm 7
-            while (ipc_isSendFifoFull());
             ipc_sendWordDirect(
-                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
+                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
                 (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
                 IPC_CHANNEL_GBA_SOUND);
         }
         else
         {
-            // send to the arm 7
-            while (ipc_isSendFifoFull());
             ipc_sendWordDirect(
-                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
+                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
                 (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
                 IPC_CHANNEL_GBA_SOUND);
             while (ipc_isSendFifoFull());
             ipc_sendWordDirect(
-                ((value >> 16) << (IPC_FIFO_MSG_CHANNEL_BITS + 4 + 8)) |
-                (((address + 2) & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+                ((value >> 16) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
+                (((address + 2) & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
                 (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
                 IPC_CHANNEL_GBA_SOUND);
         }
@@ -146,7 +144,6 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
             {
                 emu_ioRegisters[address] = value;
                 ((u8*)&gGbaSoundShared.soundCntH)[0] = value;
-                writeGbAudioReg(address & 0xFF, value & 0xFF);
             }
             else if (address == (GBA_REG_OFFS_SOUNDCNT_H + 1))
             {

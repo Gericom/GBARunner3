@@ -19,8 +19,6 @@ arm_func vm_nestedIrqHandler
     mov r13, #0x04000000
     ldr r0, [r13, #0x214]
     str lr, DTCM(vm_irqSavedLR)
-    ldr lr, [r13, #0x210]
-    and r0, r0, lr
     str r0, [r13, #0x214]
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
@@ -57,8 +55,6 @@ arm_func vm_irq
     mov r13, #0x04000000
     ldr r0, [r13, #0x214]
     str lr, DTCM(vm_irqSavedLR)
-    ldr lr, [r13, #0x210]
-    and r0, r0, lr
     str r0, [r13, #0x214]
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)

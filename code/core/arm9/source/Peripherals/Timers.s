@@ -36,8 +36,8 @@ arm_func emu_timerCntLStore16
     tst r8, #4 // check if timer 1
     mov r11, #0x04000000
     mov r10, #0x30
-    orr r10, r10, r9, lsl #10
-    orrne r10, r10, #(1 << 9) // timer 1
+    orr r10, r10, r9, lsl #9
+    orrne r10, r10, #(1 << 8) // timer 1
     str r10, [r11, #0x188]
     bx lr
 
@@ -76,8 +76,8 @@ arm_func emu_timerCntHStore16
     tst r10, #0x10 // check if timer 1
     mov r11, #0x04000000
     mov r10, #0x50
-    orr r10, r10, r9, lsl #10
-    orrne r10, r10, #(1 << 9) // timer 1
+    orr r10, r10, r9, lsl #9
+    orrne r10, r10, #(1 << 8) // timer 1
     str r10, [r11, #0x188]
     bx lr
 
@@ -114,12 +114,12 @@ arm_func emu_timerCntStore32
     mov r12, r9, lsl #16
     mov r11, #0x04000000
     mov r10, #0x30
-    orr r10, r10, r12, lsr #6
+    orr r10, r10, r12, lsr #7
     orrne r10, r10, #(1 << 9) // timer 1
     str r10, [r11, #0x188]
     mov r12, r9, lsr #16
     mov r10, #0x50
-    orr r10, r10, r12, lsl #10
-    orrne r10, r10, #(1 << 9) // timer 1
+    orr r10, r10, r12, lsl #9
+    orrne r10, r10, #(1 << 8) // timer 1
     str r10, [r11, #0x188]
     bx lr
