@@ -84,7 +84,7 @@ arm_func memu_store16Vram345
         bicmi r10, r10, #(0x8000 << 15)
 
     cmp r10, #(0x14000 << 15)
-        addge r11, r11, #0x3F0000
+        addhs r11, r11, #0x3F0000
     add r11, r11, r10, lsr #15
     strh r9, [r11]
     bx lr
