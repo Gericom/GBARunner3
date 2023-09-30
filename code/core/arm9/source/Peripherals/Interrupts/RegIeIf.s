@@ -36,13 +36,22 @@ arm_func emu_regIfStore16
     bx lr
 
 arm_func emu_regIeIfLoad32
-    ldr r11,= (emu_ioRegisters + 0x200)
-    ldrh r9, [r11]
-
     ldr r11,= vm_emulatedIfImeIe
+    ldr r12, [r11, #(vm_emulatedIrqMask - vm_emulatedIfImeIe)]
+    ldr r10, [r11, #(vm_forcedIrqMask - vm_emulatedIfImeIe)]
+    ldr r9, [r11, #(vm_hwIEAddr - vm_emulatedIfImeIe)]
+    orr r12, r12, r10
+    ldrh r9, [r9, #4] // DS REG_IF
+
     ldr r10, [r11]
     mov r10, r10, lsl #18
-    orr r9, r9, r10, lsr #2   
+    bic r9, r9, r12
+    orr r9, r9, r10, lsr #18
+
+    ldr r11,= (emu_ioRegisters + 0x200)
+    ldrh r12, [r11]
+
+    orr r9, r12, r9, lsl #16
 
     bx lr
 

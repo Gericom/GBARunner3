@@ -88,6 +88,14 @@ arm_func vm_irq
 
     str r13, DTCM(vm_regs_irq + 4)
 
+    // only forced irqs stay on in DS REG_IE
+    // if this is not done we can get in a loop of short
+    // timer irqs for example
+    ldr r13, DTCM(vm_forcedIrqMask)
+    mov r0, #0x04000000
+    str r13, [r0, #0x210]
+    ldr r0, DTCM(vm_irqSavedR0)
+
     mrs r13, spsr
     bic r13, r13, #0xCF
     orr r13, r13, lr
