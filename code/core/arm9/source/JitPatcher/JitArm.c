@@ -87,6 +87,16 @@ void jit_processArmBlock(u32* ptr)
                 break;
             }
         }
+        else if ((instruction & 0x0E300000) == 0x08300000)
+        {
+            // LDM with writeback and base register first reg in rlist
+            u32 baseReg = (instruction >> 16) & 0xF;
+            if ((instruction & (1 << baseReg)) && !(instruction & ((1 << baseReg) - 1)))
+            {
+                // disable writeback
+                *ptr &= ~(1 << 21);
+            }
+        }
         else if ((instruction & 0x0C50F000) == 0x0410F000)
         {
             // LDR pc
