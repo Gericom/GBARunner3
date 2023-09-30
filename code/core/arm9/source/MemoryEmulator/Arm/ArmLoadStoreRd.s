@@ -116,6 +116,11 @@ generate memu_armLdrRd, 16
 
 .macro memu_armLdrbRd rd
     arm_func memu_armLdrbR\rd
+        .if \rd == 15
+            memu_armReturn
+            .mexit
+        .endif
+
         and r10, r8, #0x0F000000
         cmp r8, #0x10000000
         addlo r10, r13, r10, lsr #22

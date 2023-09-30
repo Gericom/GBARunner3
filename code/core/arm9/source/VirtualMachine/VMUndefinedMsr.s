@@ -46,9 +46,7 @@ vm_cpsrFinish:
     movs pc, lr
 
 vm_finishCpsrControlAndFlags:
-    eor r11, r10, r8
-    tst r11, #0x80
-    blne emu_updateIrqs
+    bl emu_updateIrqs
 
 vm_finishCpsrWithFlags:
     ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
@@ -59,11 +57,8 @@ vm_finishCpsrWithFlags:
     movs pc, lr
     
 vm_finishCpsrOnlyControl:
-    eor r11, r10, r8
-    tst r11, #0x80
-    adrne lr, vm_cpsrFinish
-    bne emu_updateIrqs
-    b vm_cpsrFinish
+    adr lr, vm_cpsrFinish
+    b emu_updateIrqs
 
 generate vm_armUndefinedMsrRegCpsrRm, 16
 

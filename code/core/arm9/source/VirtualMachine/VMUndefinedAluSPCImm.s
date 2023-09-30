@@ -50,9 +50,7 @@ vm_armUndefinedAluSPCImm:
     bx lr // call mode switch function
 2:
     mov r13, r12
-    eor r11, r11, r12
-    tst r11, #0x80
-    blne emu_updateIrqs
+    bl emu_updateIrqs
 
 vm_finishAlusImmNoIrq:
     ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
