@@ -378,6 +378,11 @@ ITCM_CODE void dma_dmaSound1(void)
 
     gGbaSoundShared.directChannels[0].dmaRequest = false;
     dc_drainWriteBuffer();
+
+    if (control & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << 9;
+    }
 }
 
 ITCM_CODE void dma_dmaSound2(void)
@@ -397,6 +402,11 @@ ITCM_CODE void dma_dmaSound2(void)
 
     gGbaSoundShared.directChannels[1].dmaRequest = false;
     dc_drainWriteBuffer();
+
+    if (control & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << 10;
+    }
 }
 
 ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
