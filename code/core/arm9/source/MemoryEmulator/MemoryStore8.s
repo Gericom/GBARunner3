@@ -111,9 +111,7 @@ arm_func memu_store8Vram345
         bxhs lr
 
     orr r9, r9, r9, lsl #8
-    add r11, r11, r10, lsr #15
-    strh r9, [r11]
-    bx lr
+    b memu_store16Vram345Finish
 
 arm_func memu_store8Rom
     bx lr

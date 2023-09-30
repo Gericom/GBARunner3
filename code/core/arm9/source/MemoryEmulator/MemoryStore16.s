@@ -85,8 +85,25 @@ arm_func memu_store16Vram345
 
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram345Finish
     add r11, r11, r10, lsr #15
     strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 0x88888889
+    add r11, r11, #0x40000
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+    // rlo and rhi are equal on purpose
+    // on the arm9 only the hi part will be written
+    umull r12, r12, r10, r12
+    @ orr r9, r9, #0x8000
+    @ mov r12, r12, lsr #23
+    @ mov r12, r12, lsl #5
+    mov r12, r12, lsr #22
+    mov r12, r12, lsl #4
+    strh r9, [r11, r12]
     bx lr
 
 arm_func memu_store16Oam

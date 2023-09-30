@@ -29,10 +29,18 @@ arm_func emu_regDispCntStore16
     cmp r11, #2
         orreq r10, r10, #2
         biceq r10, r10, #(3 << 8) // disable bg0 and bg1
+    cmp r11, #3
+        orrge r10, r10, #5
+        bicge r10, r10, #(11 << 8) // disable bg0, bg1 and bg3
 
     // todo: bitmap modes
     orr r10, r10, #0x10000
     str r10, [r8]
+
+    and r9, r9, #(1 << 4)
+    ldrge r10,= 0x5080 //0x5084
+    addge r10, r10, r9, lsl #6
+    strgeh r10, [r8, #0xC]
 
     and r12, r12, #7
     sub r12, r12, #3
