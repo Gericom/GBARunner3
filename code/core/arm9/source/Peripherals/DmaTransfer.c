@@ -289,9 +289,8 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
     mem_copy32((void*)src, (void*)dst, count << 2);
 }
 
-ITCM_CODE static void dmaStop(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStop(void* dmaIoBase)
 {
-    *(u16*)(dmaIoBase + 0xA) = value;
     int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
     dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
@@ -383,6 +382,15 @@ ITCM_CODE void dma_dmaSound1(void)
     {
         vm_emulatedIfImeIe |= 1 << 9;
     }
+    if (!(control & (1 << 9)))
+    {
+        dma_state.dmaFlags &= ~DMA_FLAG_SOUND(1);
+        if (!(dma_state.dmaFlags & 0x600))
+        {
+            vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
+        }
+        *(u16*)((u32)dmaIoBase + 0xA) &= ~0x8000;
+    }
 }
 
 ITCM_CODE void dma_dmaSound2(void)
@@ -406,6 +414,15 @@ ITCM_CODE void dma_dmaSound2(void)
     if (control & (1 << 14))
     {
         vm_emulatedIfImeIe |= 1 << 10;
+    }
+    if (!(control & (1 << 9)))
+    {
+        dma_state.dmaFlags &= ~DMA_FLAG_SOUND(2);
+        if (!(dma_state.dmaFlags & 0x600))
+        {
+            vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
+        }
+        *(u16*)((u32)dmaIoBase + 0xA) &= ~0x8000;
     }
 }
 
@@ -494,7 +511,8 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
     else if (!(value & 0x8000))
     {
         // dma was stopped
-        dmaStop(dmaIoBase, value);
+        *(u16*)(dmaIoBase + 0xA) = value;
+        dmaStop(dmaIoBase);
     }
     else
     {

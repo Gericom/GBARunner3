@@ -41,8 +41,8 @@ arm_func emu_regDispCntStore16
         bxpl lr
 
     movs r11, r11
-    adrmi r9, bitmapToTiledTable
-    adrpl r9, tiledToBitmapTable
+    ldrmi r9,= bitmapToTiledTable
+    ldrpl r9,= tiledToBitmapTable
 
     // switch vram block F between bg and obj
     ldr r11,= 0x04000245
@@ -70,6 +70,8 @@ tiledBitmapSwitch:
     str r11, [r10]
     str r11, [r12]
     bx lr
+
+.text
 
 bitmapToTiledTable:
     .word memu_load32Table + (6 * 4)
