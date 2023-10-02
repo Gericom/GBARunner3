@@ -16,9 +16,11 @@ arm_func vm_swi
     cmp lr, #0x08000000
         bhs 1f
 #endif
+#ifndef GBAR3_TEST
     ldrb r13, [lr, #-2]
     cmp r13, #0x80
         bhs sav_swiHandler
+#endif
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     1:
 #endif
