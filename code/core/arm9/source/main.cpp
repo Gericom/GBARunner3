@@ -30,8 +30,6 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
-[[gnu::section(".ewram.bss")]]
-FIL gSaveFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -286,36 +284,20 @@ static void handleSave(const char* savePath)
 {
     u32 tagRomAddress;
     const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
-    if (saveTypeInfo && saveTypeInfo->patchFunc)
+    
+    if (saveTypeInfo)
     {
         gLogger->Log(LogLevel::Debug, "%s\n", saveTypeInfo->tag);
-        if (!saveTypeInfo->patchFunc(saveTypeInfo, &gFile, tagRomAddress, &sdc_cache[0][0]))
+        if (saveTypeInfo->patchFunc)
         {
-            gLogger->Log(LogLevel::Error, "Save patching failed\n");
-        }
-        
-        memset(&gSaveFile, 0, sizeof(gSaveFile));
-        if (f_open(&gSaveFile, savePath, FA_OPEN_EXISTING | FA_READ) != FR_OK)
-        {
-            if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
+            if (!saveTypeInfo->patchFunc(saveTypeInfo, &gFile, tagRomAddress, &sdc_cache[0][0]))
             {
-                memset(gSaveData, 0xFF, sizeof(gSaveData));
-            }
-            else
-            {
-                memset(gSaveData, 0, sizeof(gSaveData));
+                gLogger->Log(LogLevel::Error, "Save patching failed\n");
             }
         }
-        else
-        {
-            UINT read = 0;
-            f_read(&gSaveFile, gSaveData, saveTypeInfo->size, &read);
-        }
     }
-    else
-    {
-        memset(gSaveData, 0, sizeof(gSaveData));
-    }
+
+    sav_initializeSave(saveTypeInfo, savePath);
 }
 
 // extern "C" void logOpcode(u32 opcode)

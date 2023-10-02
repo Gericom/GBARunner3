@@ -36,7 +36,7 @@ static void readFlash(u16 secNo, u32 offset, u8* dst, u32 size)
     u32 saveAddress = (secNo << 12) + offset;
     for (u32 i = 0; i < size; ++i)
     {
-        *dst++ = sav_readSaveByte(saveAddress++);
+        *dst++ = sav_readSaveByteFromFileFromUserMode(saveAddress++);
     }
 }
 
@@ -45,7 +45,7 @@ static u32 verifyFlashSector(u16 secNo, const u8* src)
     u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 saveByte = sav_readSaveByteFromFileFromUserMode(saveAddress++);
         u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
@@ -58,7 +58,7 @@ static u32 verifyFlash(u16 secNo, const u8* src, u32 size)
     u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < size; ++i)
     {
-        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 saveByte = sav_readSaveByteFromFileFromUserMode(saveAddress++);
         u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
@@ -70,8 +70,9 @@ static u16 eraseFlashChip()
 {
     for (u32 i = 0; i < sizeof(gSaveData); ++i)
     {
-        sav_writeSaveByte(i, 0xFF);
+        sav_writeSaveByteToFileFromUserMode(i, 0xFF);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
@@ -79,8 +80,9 @@ static u16 eraseFlashSector(u16 secNo)
 {
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        sav_writeSaveByte((secNo << 12) + i, 0xFF);
+        sav_writeSaveByteToFileFromUserMode((secNo << 12) + i, 0xFF);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
@@ -88,14 +90,16 @@ static u16 programFlashSector(u16 secNo, const u8* src)
 {
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        sav_writeSaveByte((secNo << 12) + i, *src++);
+        sav_writeSaveByteToFileFromUserMode((secNo << 12) + i, *src++);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
 static u16 programFlashByte1M(u16 secNo, u32 offset, u8 data)
 {
-    sav_writeSaveByte((secNo << 12) + offset, data);
+    sav_writeSaveByteToFileFromUserMode((secNo << 12) + offset, data);
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
