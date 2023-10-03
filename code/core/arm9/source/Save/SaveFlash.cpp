@@ -8,6 +8,10 @@
 #include "SaveTypeInfo.h"
 #include "SaveFlash.h"
 
+#define MAKER_ID_MACRONIX           0xC2
+#define DEVICE_ID_MACRONIX_512K     0x1C
+#define DEVICE_ID_MACRONIX_1M       0x09
+
 static const u32 sIdentifyFlashV120Sig[] = { 0xB082B580u, 0x480E466Fu, 0x880A490Du, 0x1C114B0Du };
 static const u32 sIdentifyFlashV123Sig[] = { 0x4A07B510u, 0x49078810u, 0x21034008u, 0x80104308u };
 static const u32 sIdentifyFlash1MV103Sig[] = { 0x4A07B510u, 0x49078810u, 0x21034008u, 0x80104308u };
@@ -127,8 +131,8 @@ static void initializeFlash512()
     sFlashType.sector.top = 0;
     sFlashType.agbWait[0] = 0;
     sFlashType.agbWait[1] = 3;
-    mem_swapByte(3, &sFlashType.makerId);
-    mem_swapByte(0, &sFlashType.deviceId);
+    mem_swapByte(MAKER_ID_MACRONIX, &sFlashType.makerId);
+    mem_swapByte(DEVICE_ID_MACRONIX_512K, &sFlashType.deviceId);
 }
 
 static u16 identifyFlash1M()
@@ -160,8 +164,8 @@ static void initializeFlash1M()
     sFlashType.sector.top = 0;
     sFlashType.agbWait[0] = 0;
     sFlashType.agbWait[1] = 3;
-    mem_swapByte(3, &sFlashType.makerId);
-    mem_swapByte(0, &sFlashType.deviceId);
+    mem_swapByte(MAKER_ID_MACRONIX, &sFlashType.makerId);
+    mem_swapByte(DEVICE_ID_MACRONIX_1M, &sFlashType.deviceId);
 }
 
 static bool loadDataV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
