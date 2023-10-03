@@ -13,7 +13,7 @@ arm_func sav_swiHandler
     cmp r13, #0x93
         beq sav_swiWriteSaveByteToFile
     cmp r13, #0x94
-        beq sav_swiWriteSaveByte
+        beq sav_swiFlushSaveFile
     adr r12, (sav_swiTable - (0x80 * 4))
     ldr r12, [r12, r13, lsl #2]
     msr cpsr_c, #0x9F
