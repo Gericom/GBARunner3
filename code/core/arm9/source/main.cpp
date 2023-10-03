@@ -24,6 +24,7 @@
 #include "JitPatcher/JitCommon.h"
 #include "Peripherals/Sound/GbaSound9.h"
 #include "Patches/HarvestMoonPatches.h"
+#include "Patches/BadMixerPatch.h"
 #include "GameCode.h"
 
 [[gnu::section(".ewram.bss")]]
@@ -158,6 +159,10 @@ static void loadGbaRom(const char* romPath)
 
     u32 gameCode = *(u32*)0x022000AC;
     HarvestMoonPatches().TryApplyPatches(gameCode);
+    if (BadMixerPatch().TryApplyPatch())
+    {
+        gLogger->Log(LogLevel::Debug, "Bad mixer patch applied\n");
+    }
 
     // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();
