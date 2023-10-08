@@ -46,7 +46,7 @@ ensureJittedCommon:
     movs pc, r8
 
 ensureJittedStaticRom:
-    ldr r11,= gStaticRomJitBits
+    ldr r11,= gJitState // staticRomJitBits
     mov r9, r9, lsr #1
     ldrb r11, [r11, r9, lsr #3]
     and r9, r9, #0x7
@@ -63,7 +63,7 @@ ensureJittedIWram:
     mcreq p15, 0, lr, c7, c10, 4
     mcreq p15, 0, lr, c7, c5, 0
 
-    ldr r11,= gIWramJitBits
+    ldr r11,= (gJitState + 0x20000) // iWramJitBits
     mov r9, r9, lsr #1
     ldrb r11, [r11, r9, lsr #3]
     and r9, r9, #0x7
