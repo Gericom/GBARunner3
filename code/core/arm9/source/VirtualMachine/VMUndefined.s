@@ -39,13 +39,13 @@ arm_func vm_undefinedThumb
 
     ldr r10, DTCM(vm_undefinedSpsr)
 
-    mov r12, lr, lsr #4
-    cmp r12, #0xDE0
+    mov r12, lr, lsr #8
+    cmp r12, #0xB1
 #ifndef GBAR3_TEST
         ldreq r12,= jit_thumbUndefinedBxR0
 #endif
-        andeq lr, lr, #0xF
-        addeq pc, r12, lr, lsl #3
+        andeq lr, lr, #0xF0
+        addeq pc, r12, lr, lsr #1
 
 1:
     add r12, r11, #4
@@ -54,10 +54,7 @@ arm_func vm_undefinedThumb
     nop
     mov r1, r11
 
-    bic r12, r1, #0x01000000
-    add r12, r12, #0x00400000
-
-    ldrh r0, [r12]
+    mov r0, lr
 
 arm_func vm_undefinedThumbContinue
     mov r2, sp

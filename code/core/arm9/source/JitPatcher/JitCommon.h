@@ -9,6 +9,11 @@ extern "C" {
 /// @return A pointer to the word containing the JIT bits for the given address.
 u32* jit_getJitBits(const void* ptr);
 
+/// @brief Gets a pointer to the word containing the JIT auxillary bits for the given address.
+/// @param ptr The address.
+/// @return A pointer to the word containing the JIT auxillary bits for the given address.
+u32* jit_getJitAuxBits(const void* ptr);
+
 /// @brief Finds the start of the block (continous region) containing the given address.
 /// @param ptr The address.
 /// @return A pointer to the start of the block that contains the given address.

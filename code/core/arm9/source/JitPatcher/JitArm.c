@@ -4,7 +4,8 @@
 #include "MemoryEmulator/MemoryLoad32.h"
 #include "JitArm.h"
 
-static void __attribute__((noinline)) armJitNotImplemented()
+[[gnu::noreturn, gnu::noinline]]
+static void armJitNotImplemented()
 {
     asm volatile ("bkpt #0");
     while (1);
