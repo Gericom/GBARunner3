@@ -318,6 +318,8 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
         {
             // LDMIA Rn!, {...,pc}
             u32* src = (u32*)registers[rn];
+            u32 align = (u32)src & 3;
+            src = (u32*)((u32)src & ~3);
             for (u32 i = 0; i < 15; i++)
             {
                 if (instruction & (0x20 << i))
@@ -326,7 +328,8 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
                 }
             }
             u32 branchDestination = *src++;
-            registers[rn] = (u32)src;
+            branchDestination &= ~3;
+            registers[rn] = (u32)src | align;
             jit_ensureBlockJitted((void*)branchDestination);
             return (u32*)branchDestination;
         }
@@ -364,6 +367,7 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
                     break;
             }
             u32 branchDestination = memu_load32FromC((rn + op2) & ~3);
+            branchDestination &= ~3;
             jit_ensureBlockJitted((void*)branchDestination);
             return (u32*)branchDestination;
         }
