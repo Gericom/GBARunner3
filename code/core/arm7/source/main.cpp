@@ -10,6 +10,7 @@
 #include <libtwl/sio/sio.h>
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/i2c/i2cMcu.h>
+#include <libtwl/spi/spiPmic.h>
 #include "IpcServices/FsIpcService.h"
 #include "IpcServices/GbaSoundIpcService.h"
 #include "FramerateAdjustment.h"
@@ -55,8 +56,7 @@ static void checkMcuIrq(void)
     {
         // power button was held long to trigger a power off
         // todo: maybe ensure no sd writes are still pending
-        // todo: implement pmic support in libtwl
-        writePowerManagement(PM_CONTROL_REG, PM_SYSTEM_PWR);
+        pmic_shutdown();
 
         while (1);
     }
@@ -79,11 +79,11 @@ int main()
     // clear sound registers
     dmaFillWords(0, (void*)&REG_SOUNDxCNT(0), 0x100);
 
-    writePowerManagement(PM_CONTROL_REG, (readPowerManagement(PM_CONTROL_REG) & ~PM_SOUND_MUTE) | PM_SOUND_AMP);
+    pmic_setAmplifierEnable(true);
     powerOn(POWER_SOUND);
 
     readUserSettings();
-    ledBlink(0);
+    pmic_setPowerLedBlink(PMIC_CONTROL_POWER_LED_BLINK_NONE);
 
     sio_setGpioSiIrq(false);
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
@@ -109,6 +109,8 @@ int main()
     fps_startFramerateAdjustment();
 
     notifyArm7Ready();
+
+    pmic_setBottomBacklightEnable(false);
 
     while (true)
     {

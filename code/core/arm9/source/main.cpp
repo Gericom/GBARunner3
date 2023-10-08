@@ -333,6 +333,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
     *(vu32*)0x04000000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
+    GFX_PLTT_BG_SUB[0] = 0;
     *(vu32*)0x0400006C = 0;
 
     mem_setVramCMapping(MEM_VRAM_C_LCDC);
