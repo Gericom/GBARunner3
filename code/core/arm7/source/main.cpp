@@ -53,7 +53,6 @@ static void checkMcuIrq(void)
     {
         // power button was held long to trigger a power off
         // todo: maybe ensure no sd writes are still pending
-        // todo: implement pmic support in libtwl
         pmic_shutdown();
 
         while (1);
