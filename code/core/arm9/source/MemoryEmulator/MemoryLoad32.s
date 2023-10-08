@@ -5,6 +5,14 @@
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
 
+arm_func memu_load32FromC
+    push {r8-r11,lr}
+    mov r8, r0
+    bl memu_load32
+    mov r0, r9
+    pop {r8-r11,lr}
+    bx lr
+
 /// @brief Loads a 32-bit value from the given GBA memory address.
 ///        When unaligned rotation is applied.
 /// @param r0-r7 Preserved.

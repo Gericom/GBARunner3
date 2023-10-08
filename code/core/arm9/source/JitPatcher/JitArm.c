@@ -1,6 +1,7 @@
 #include "common.h"
 #include "SdCache/SdCache.h"
 #include "JitCommon.h"
+#include "MemoryEmulator/MemoryLoad32.h"
 #include "JitArm.h"
 
 static void __attribute__((noinline)) armJitNotImplemented()
@@ -362,7 +363,7 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
                     armJitNotImplemented();
                     break;
             }
-            u32 branchDestination = *(u32*)(rn + op2);
+            u32 branchDestination = memu_load32FromC((rn + op2) & ~3);
             jit_ensureBlockJitted((void*)branchDestination);
             return (u32*)branchDestination;
         }
