@@ -30,7 +30,7 @@ ensureJittedCommon:
     cmp lr, #0x00200000
     bhs 1f
 
-    ldr r12,= gStaticRomJitBits
+    ldr r12,= gJitState // staticRomJitBits
     movs lr, lr, lsr #1
         biccc r10, r10, #0x20 // thumb bit
     ldrb r12, [r12, lr, lsr #3]
