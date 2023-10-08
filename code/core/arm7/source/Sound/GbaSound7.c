@@ -32,16 +32,9 @@ static void updateDirectChannel(gbas_direct_channel_t* channel, const gbat_t* ti
             if (fifoCount >= 1)
             {
                 channel->curPlaySamples = channel->fifo[readOffset];
+                channel->curPlaySampleCount = 3;
+                channel->readOffset = (readOffset + 1) & 7;
             }
-            else
-            {
-                u32 samp = (u8)channel->curPlaySamples;
-                samp |= samp << 8;
-                samp |= samp << 16;
-                channel->curPlaySamples = samp;
-            }            
-            channel->curPlaySampleCount = 3;
-            channel->readOffset = (readOffset + 1) & 7;
         }
         else
         {
