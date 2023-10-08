@@ -369,11 +369,14 @@ ITCM_CODE void dma_dmaSound1(void)
 
     void* dmaIoBase = &emu_ioRegisters[0xB0 + 1 * 0xC];
     u32 control = *(u16*)((u32)dmaIoBase + 0xA);
-    int srcStep = getSrcStep(control);
     u32 src = dma_state.channels[1].curSrc;
-    dma_state.channels[1].curSrc += srcStep * 16;
-    u32 dst = dma_state.channels[1].curDst;
-    dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+    int srcStep = getSrcStep(control);
+    if (src >= 0x02000000)
+    {
+        dma_state.channels[1].curSrc += srcStep * 16;
+        u32 dst = dma_state.channels[1].curDst;
+        dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+    }
 
     gGbaSoundShared.directChannels[0].dmaRequest = false;
     dc_drainWriteBuffer();
@@ -402,11 +405,14 @@ ITCM_CODE void dma_dmaSound2(void)
 
     void* dmaIoBase = &emu_ioRegisters[0xB0 + 2 * 0xC];
     u32 control = *(u16*)((u32)dmaIoBase + 0xA);
-    int srcStep = getSrcStep(control);
     u32 src = dma_state.channels[2].curSrc;
-    dma_state.channels[2].curSrc += srcStep * 16;
-    u32 dst = dma_state.channels[2].curDst;
-    dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+    int srcStep = getSrcStep(control);
+    if (src >= 0x02000000)
+    {
+        dma_state.channels[2].curSrc += srcStep * 16;
+        u32 dst = dma_state.channels[2].curDst;
+        dma_immTransferSafe32(src, dst, 4, srcStep, 0);
+    }
 
     gGbaSoundShared.directChannels[1].dmaRequest = false;
     dc_drainWriteBuffer();
