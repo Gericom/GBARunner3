@@ -5,6 +5,7 @@
 #ifdef __cplusplus
 
 #include "Logger/ILogger.h"
+#include "Core/Heap/GlobalHeap.h"
 
 extern ILogger* gLogger;
 

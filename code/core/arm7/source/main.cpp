@@ -13,10 +13,12 @@
 #include <libtwl/spi/spiPmic.h>
 #include "IpcServices/FsIpcService.h"
 #include "IpcServices/GbaSoundIpcService.h"
+#include "IpcServices/SystemIpcService.h"
 #include "FramerateAdjustment.h"
 
 static FsIpcService sFsIpcService;
 static GbaSoundIpcService sGbaSoundIpcService;
+static SystemIpcService sSystemIpcService;
 static rtos_event_t sVBlankEvent;
 static volatile u8 sMcuIrqFlag = false;
 
@@ -90,6 +92,7 @@ int main()
 
     sFsIpcService.Start();
     sGbaSoundIpcService.Start();
+    sSystemIpcService.Start();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);
@@ -109,8 +112,6 @@ int main()
     fps_startFramerateAdjustment();
 
     notifyArm7Ready();
-
-    pmic_setBottomBacklightEnable(false);
 
     while (true)
     {

@@ -24,7 +24,12 @@ export TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source \
 				../common \
+				source/Application \
+				source/Application/Settings \
+				source/Application/Settings/Enums \
+				source/Application/Settings/Json \
 				source/Core \
+				source/Core/Heap \
 				source/Emulator \
 				source/Fat \
 				source/JitPatcher \

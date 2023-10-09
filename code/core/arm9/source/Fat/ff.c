@@ -653,25 +653,27 @@ static void st_qword (BYTE* ptr, QWORD val)	/* Store an 8-byte word in little-en
 /* Copy memory to memory */
 static void mem_cpy (void* dst, const void* src, UINT cnt)
 {
-	BYTE *d = (BYTE*)dst;
-	const BYTE *s = (const BYTE*)src;
+	memcpy(dst, src, cnt);
+	// BYTE *d = (BYTE*)dst;
+	// const BYTE *s = (const BYTE*)src;
 
-	if (cnt != 0) {
-		do {
-			*d++ = *s++;
-		} while (--cnt);
-	}
+	// if (cnt != 0) {
+	// 	do {
+	// 		*d++ = *s++;
+	// 	} while (--cnt);
+	// }
 }
 
 
 /* Fill memory block */
 static void mem_set (void* dst, int val, UINT cnt)
 {
-	BYTE *d = (BYTE*)dst;
+	memset(dst, val, cnt);
+	// BYTE *d = (BYTE*)dst;
 
-	do {
-		*d++ = (BYTE)val;
-	} while (--cnt);
+	// do {
+	// 	*d++ = (BYTE)val;
+	// } while (--cnt);
 }
 
 
