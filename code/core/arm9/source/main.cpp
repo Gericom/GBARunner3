@@ -6,6 +6,8 @@
 #include <libtwl/gfx/gfx2d.h>
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/rtos/rtosIrq.h>
+#include <libtwl/ipc/ipcFifo.h>
+#include <libtwl/ipc/ipcFifoSystem.h>
 #include <array>
 #include <string.h>
 #include "cp15.h"
@@ -22,7 +24,14 @@
 #include "SdCache/SdCache.h"
 #include "JitPatcher/JitCommon.h"
 #include "Patches/HarvestMoonPatches.h"
+#include "Application/Settings/AppSettingsService.h"
+#include "SystemIpcCommand.h"
+#include "IpcChannels.h"
 #include "GameCode.h"
+
+#define DEFAULT_ROM_FILE_PATH   "/rom.gba"
+#define BIOS_FILE_PATH          "/_gba/bios.bin"
+#define SETTINGS_FILE_PATH      "/_gba/gbarunner3.json"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
@@ -83,7 +92,7 @@ static bool mountAgbSemihosting()
 static void loadGbaBios()
 {
     memset(&gFile, 0, sizeof(gFile));
-    f_open(&gFile, "/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+    f_open(&gFile, BIOS_FILE_PATH, FA_OPEN_EXISTING | FA_READ);
     UINT br;
     f_read(&gFile, gGbaBios, 16 * 1024, &br);
     f_close(&gFile);
@@ -322,9 +331,46 @@ static bool shouldMountDsiSd(int argc, char* argv[])
     return true;
 }
 
+static void setTopBacklight(bool enabled)
+{
+    ipc_sendWordDirect(
+        ((enabled ? 1 : 0) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        (SYSTEM_IPC_CMD_SET_TOP_BACKLIGHT << IPC_FIFO_MSG_CHANNEL_BITS) |
+        IPC_CHANNEL_SYSTEM);
+    while (ipc_isRecvFifoEmpty());
+    ipc_recvWordDirect();
+}
+
+static void setBottomBacklight(bool enabled)
+{
+    ipc_sendWordDirect(
+        ((enabled ? 1 : 0) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        (SYSTEM_IPC_CMD_SET_BOTTOM_BACKLIGHT << IPC_FIFO_MSG_CHANNEL_BITS) |
+        IPC_CHANNEL_SYSTEM);
+    while (ipc_isRecvFifoEmpty());
+    ipc_recvWordDirect();
+}
+
+static void setupGbaScreen()
+{
+    if (gAppSettingsService.GetAppSettings().displaySettings.gbaScreen == GbaScreen::Top)
+    {
+        sys_setMainEngineToTopScreen();
+        setBottomBacklight(false);
+    }
+    else
+    {
+        sys_setMainEngineToBottomScreen();
+        setTopBacklight(false);
+    }
+}
+
 extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
+    heap_init();
+
     *(vu32*)0x04000000 = 0x10000;
+    *(vu32*)0x04001000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
     GFX_PLTT_BG_SUB[0] = 0;
     *(vu32*)0x0400006C = 0;
@@ -357,11 +403,15 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     // if (Environment::SupportsAgbSemihosting())
         // mountAgbSemihosting();
 
+    gAppSettingsService.TryLoadAppSettings(SETTINGS_FILE_PATH);
+
+    setupGbaScreen();
+
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
     applyBiosJitPatches();
-    const char* romPath = argc > 1 ? argv[1] : "/rom.gba";
+    const char* romPath = argc > 1 ? argv[1] : DEFAULT_ROM_FILE_PATH;
     loadGbaRom(romPath);
     char* romExtension = strrchr(romPath, '.');
     if (romExtension)

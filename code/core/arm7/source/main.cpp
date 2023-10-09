@@ -12,8 +12,10 @@
 #include <libtwl/i2c/i2cMcu.h>
 #include <libtwl/spi/spiPmic.h>
 #include "IpcServices/FsIpcService.h"
+#include "IpcServices/SystemIpcService.h"
 
 static FsIpcService sFsIpcService;
+static SystemIpcService sSystemIpcService;
 static rtos_event_t sVBlankEvent;
 static volatile u8 sMcuIrqFlag = false;
 
@@ -86,6 +88,7 @@ int main()
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
 
     sFsIpcService.Start();
+    sSystemIpcService.Start();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);
@@ -102,8 +105,6 @@ int main()
     }
 
     notifyArm7Ready();
-
-    pmic_setBottomBacklightEnable(false);
 
     while (true)
     {

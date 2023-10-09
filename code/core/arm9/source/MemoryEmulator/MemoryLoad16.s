@@ -190,7 +190,7 @@ load16RomCacheMiss:
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r9, r11, r13
-    cmp r9, #512
+    cmp r9, #1024
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
