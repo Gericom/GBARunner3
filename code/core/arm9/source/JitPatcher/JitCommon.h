@@ -19,6 +19,8 @@ typedef struct
     /// @brief Stores for each halfword in VRAM whether it was processed by the JIT (1) or not (0).
     u32 vramJitBits[(96 * 1024) / 2 / 32];
 
+    u32 dummyJitBits;
+
     /// @brief Stores 2 auxillary bits for each halfword in the statically loaded part of the rom.
     u32 staticRomJitAuxBits[(2 * 1024 * 1024) / 32];
 
@@ -33,6 +35,8 @@ typedef struct
 
     /// @brief Stores 2 auxillary bits for each halfword in VRAM.
     u32 vramJitAuxBits[(96 * 1024) / 32];
+
+    u32 dummyJitAuxBits;
 } jit_state_t;
 
 extern jit_state_t gJitState;
@@ -42,16 +46,14 @@ extern "C" {
 #endif
 
 [[gnu::pure]]
-int jit_getJitBitsOffset(const void* ptr);
+u32 jit_getJitBitsOffset(const void* ptr);
 
 /// @brief Gets a pointer to the word containing the JIT bits for the given address.
 /// @param ptr The address.
 /// @return A pointer to the word containing the JIT bits for the given address.
 static inline u32* jit_getJitBits(const void* ptr)
 {
-    int offset = jit_getJitBitsOffset(ptr);
-    if (offset < 0)
-        return NULL;
+    u32 offset = jit_getJitBitsOffset(ptr);
     return &gJitState.staticRomJitBits[offset >> 2];
 }
 
@@ -60,9 +62,7 @@ static inline u32* jit_getJitBits(const void* ptr)
 /// @return A pointer to the word containing the JIT auxillary bits for the given address.
 static inline u32* jit_getJitAuxBits(const void* ptr)
 {
-    int offset = jit_getJitBitsOffset(ptr);
-    if (offset < 0)
-        return NULL;
+    u32 offset = jit_getJitBitsOffset(ptr);
     return &gJitState.staticRomJitAuxBits[offset >> 1];
 }
 

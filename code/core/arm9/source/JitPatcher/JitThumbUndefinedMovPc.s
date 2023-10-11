@@ -1,0 +1,23 @@
+.section ".itcm", "ax"
+.altmacro
+
+#include "AsmMacros.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
+
+.macro jit_thumbUndefinedMovPcRm rm
+    arm_func jit_thumbUndefinedMovPcR\rm
+        .if \rm < 8
+            orr r8, r\rm, #1
+        .elseif \rm < 15
+            stmdb sp, {r\rm}^
+            nop
+            ldr r8, [sp, #-4]
+            orr r8, r8, #1
+        .else
+            // pc
+            add r8, r11, #5
+        .endif
+        b jit_thumbEnsureJitted
+.endm
+
+generate jit_thumbUndefinedMovPcRm, 16

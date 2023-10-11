@@ -1,9 +1,12 @@
 #pragma once
 
-.global vm_armUndefinedDispatchTable
-.set vm_armUndefinedDispatchTable, 0xFFFFF640
+.global vm_thumbUndefinedDispatchTable
+.set vm_thumbUndefinedDispatchTable, 0xFFFFF32C
 
-#define VM_DTCM_BASE 0xFFFFFE80
+.global vm_armUndefinedDispatchTable
+.set vm_armUndefinedDispatchTable, 0xFFFFF72C
+
+#define VM_DTCM_BASE 0xFFFFFF2C
 
 .struct VM_DTCM_BASE
 vm_irqSavedR0:
@@ -15,8 +18,6 @@ vm_irqVector:
     .word 0
 .global vm_swiVector
 vm_swiVector:
-    .word 0
-vm_toIrqSwitchTableAddr:
     .word 0
 vm_hwIEAddr:
     .word 0  // Address of DS REG_IE; 0x04000210
@@ -54,6 +55,8 @@ vm_undefinedRegTmp:
     .word 0
 vm_undefinedArmTableAddr:
     .word 0
+vm_undefinedThumbTableAddr:
+    .word 0
 vm_svcRegsAddr:
     .word 0
 vm_modeSwitchTableAddr:
@@ -73,13 +76,25 @@ vm_spsr_irq:
 .global vm_spsr_svc
 vm_spsr_svc:
     .word 0
+
+.global memu_inst_addr
+memu_inst_addr:
     .word 0
+.global memu_thumb_r0
+memu_thumb_r0:
     .word 0
+.global memu_thumb_table_addr
+memu_thumb_table_addr:
     .word 0
+
 .global vm_spsr_abt
 vm_spsr_abt:
     .word 0
+
+.global memu_arm_table_addr
+memu_arm_table_addr:
     .word 0
+
     .word 0
     .word 0
 .global vm_spsr_und

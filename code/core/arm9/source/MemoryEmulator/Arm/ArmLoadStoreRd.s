@@ -3,8 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
-#include "../MemoryEmuDtcm.inc"
-
+#include "VirtualMachine/VMDtcmDefs.inc"
 .macro memu_armStrRd rd
     arm_func memu_armStrR\rd
         .if \rd < 8

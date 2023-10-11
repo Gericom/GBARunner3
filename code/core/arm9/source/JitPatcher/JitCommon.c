@@ -10,7 +10,7 @@
 jit_state_t gJitState;
 
 [[gnu::section(".itcm"), gnu::optimize("Oz")]]
-int jit_getJitBitsOffset(const void* ptr)
+u32 jit_getJitBitsOffset(const void* ptr)
 {
     u32 jitBitsOffset;
     u32 offset;
@@ -47,7 +47,7 @@ int jit_getJitBitsOffset(const void* ptr)
     }
     else
     {
-        jitBitsOffset = -1;
+        jitBitsOffset = offsetof(jit_state_t, dummyJitBits);
         offset = 0;
     }
 
@@ -95,8 +95,6 @@ bool jit_isBlockJitted(void* ptr)
     }
 
     const u32* const jitBits = jit_getJitBits(ptr);
-    if (!jitBits)
-        return true;
     u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
     if (*jitBits & (1 << bitIdx))
         return true;
@@ -113,8 +111,6 @@ void jit_ensureBlockJitted(void* ptr)
     }
 
     const u32* const jitBits = jit_getJitBits(ptr);
-    if (!jitBits)
-        return;
     u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
     if (*jitBits & (1 << bitIdx))
         return;
@@ -133,4 +129,5 @@ void jit_ensureBlockJitted(void* ptr)
 void jit_init(void)
 {
     memset(&gJitState, 0, sizeof(gJitState));
+    gJitState.dummyJitBits = ~0u;
 }
