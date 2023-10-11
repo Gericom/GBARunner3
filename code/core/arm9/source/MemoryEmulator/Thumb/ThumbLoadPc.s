@@ -3,7 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ThumbMacros.inc"
-#include "../MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 
 #ifdef GBAR3_HICODE_CACHE_MAPPING
 

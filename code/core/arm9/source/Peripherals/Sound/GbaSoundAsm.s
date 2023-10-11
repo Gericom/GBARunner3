@@ -8,7 +8,7 @@ arm_func emu_gbaSoundStore8
     mov r11, #1
 gbaSoundStore:
     mov r10, r13
-    ldr sp,= dtcmSndStackEnd
+    ldr sp,= dtcmStack + 128
     push {r0-r3,r10,lr}
     mov r0, r8
     mov r1, r9

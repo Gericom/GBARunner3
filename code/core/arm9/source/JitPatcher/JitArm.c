@@ -342,7 +342,6 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
         if ((instruction & 0x00600400) == 0x00400400)
         {
             //ldr pc, [Rn, Rm, shift]
-            u32 op = (instruction >> 17) & 0xF;
             u32 rn = registers[instruction & 0xF];
             u32 rm = registers[(instruction >> 5) & 0xF];
             u32 shiftType = (instruction >> 13) & 0x3;

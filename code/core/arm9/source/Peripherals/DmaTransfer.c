@@ -360,34 +360,35 @@ ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
     }
 }
 
-ITCM_CODE void dma_dmaSound1(void)
+[[gnu::noinline]]
+ITCM_CODE static void dmaSound(u32 channel)
 {
     dc_drainWriteBuffer();
-    dc_invalidateRange(&gGbaSoundShared.directChannels[0].dmaRequest, 1);
-    if (!gGbaSoundShared.directChannels[0].dmaRequest)
+    dc_invalidateRange(&gGbaSoundShared.directChannels[channel - 1].dmaRequest, 1);
+    if (!gGbaSoundShared.directChannels[channel - 1].dmaRequest)
         return;
 
-    void* dmaIoBase = &emu_ioRegisters[0xB0 + 1 * 0xC];
+    void* dmaIoBase = &emu_ioRegisters[0xB0 + channel * 0xC];
     u32 control = *(u16*)((u32)dmaIoBase + 0xA);
-    u32 src = dma_state.channels[1].curSrc;
+    u32 src = dma_state.channels[channel].curSrc;
     int srcStep = getSrcStep(control);
     if (src >= 0x02000000)
     {
-        dma_state.channels[1].curSrc += srcStep * 16;
-        u32 dst = dma_state.channels[1].curDst;
+        dma_state.channels[channel].curSrc += srcStep * 16;
+        u32 dst = dma_state.channels[channel].curDst;
         dma_immTransferSafe32(src, dst, 4, srcStep, 0);
     }
 
-    gGbaSoundShared.directChannels[0].dmaRequest = false;
+    gGbaSoundShared.directChannels[channel - 1].dmaRequest = false;
     dc_drainWriteBuffer();
 
     if (control & (1 << 14))
     {
-        vm_emulatedIfImeIe |= 1 << 9;
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
     }
     if (!(control & (1 << 9)))
     {
-        dma_state.dmaFlags &= ~DMA_FLAG_SOUND(1);
+        dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
         if (!(dma_state.dmaFlags & 0x600))
         {
             vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
@@ -396,40 +397,14 @@ ITCM_CODE void dma_dmaSound1(void)
     }
 }
 
+ITCM_CODE void dma_dmaSound1(void)
+{
+    dmaSound(1);
+}
+
 ITCM_CODE void dma_dmaSound2(void)
 {
-    dc_drainWriteBuffer();
-    dc_invalidateRange(&gGbaSoundShared.directChannels[1].dmaRequest, 1);
-    if (!gGbaSoundShared.directChannels[1].dmaRequest)
-        return;
-
-    void* dmaIoBase = &emu_ioRegisters[0xB0 + 2 * 0xC];
-    u32 control = *(u16*)((u32)dmaIoBase + 0xA);
-    u32 src = dma_state.channels[2].curSrc;
-    int srcStep = getSrcStep(control);
-    if (src >= 0x02000000)
-    {
-        dma_state.channels[2].curSrc += srcStep * 16;
-        u32 dst = dma_state.channels[2].curDst;
-        dma_immTransferSafe32(src, dst, 4, srcStep, 0);
-    }
-
-    gGbaSoundShared.directChannels[1].dmaRequest = false;
-    dc_drainWriteBuffer();
-
-    if (control & (1 << 14))
-    {
-        vm_emulatedIfImeIe |= 1 << 10;
-    }
-    if (!(control & (1 << 9)))
-    {
-        dma_state.dmaFlags &= ~DMA_FLAG_SOUND(2);
-        if (!(dma_state.dmaFlags & 0x600))
-        {
-            vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
-        }
-        *(u16*)((u32)dmaIoBase + 0xA) &= ~0x8000;
-    }
+    dmaSound(2);
 }
 
 ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)

@@ -1,7 +1,7 @@
 .section ".itcm", "ax"
 
 #include "AsmMacros.inc"
-#include "MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
 

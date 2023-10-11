@@ -6,7 +6,7 @@
 
 vm_irq_base:
 
-#define DTCM(x) (vm_irq_base - 0xDC + (x))
+#define DTCM(x) (vm_irq_base - 0xD0 + (x))
 
 /// @brief Irq handler to be used when only emulation irqs should be handled,
 ///        and no irqs should be passed through to the VM. Should be branched

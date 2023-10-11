@@ -4,7 +4,7 @@
 
 #include "AsmMacros.inc"
 #include "ThumbMacros.inc"
-#include "../MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 
 thumb_dispatch_base:
 

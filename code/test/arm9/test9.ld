@@ -176,14 +176,13 @@ SECTIONS
 		KEEP (MemoryLoadStoreTables.o(.dtcm))
 		. = 0x1180;
 		KEEP (ArmDtcm.o(.dtcm))
-		*(EXCLUDE_FILE(MemoryEmuDtcmPool.o VMDtcm.o VMUndefined.o) .dtcm)
+		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x3640;
-		KEEP (VMUndefined.o(.dtcm))
-		. = 0x3E80;
+		. = 0x332C;
+		KEEP (VMUndefinedThumbTable.o(.dtcm))
+		KEEP (VMUndefinedArmTable.o(.dtcm))
+		. = 0x3F2C;
 		KEEP (VMDtcm.o(.dtcm))
-		. = 0x3F80;
-		KEEP (MemoryEmuDtcmPool.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>ewram :dtcm = 0xff
@@ -195,7 +194,7 @@ SECTIONS
 		KEEP (vectors.o(.itcm))
 		. = 0x20;
 		KEEP (VMUndefined.o(.itcm))
-		. = 0xDC;
+		. = 0xD0;
 		KEEP (VMIrq.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))

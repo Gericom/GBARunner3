@@ -2,7 +2,7 @@
 .arm
 
 #include "AsmMacros.inc"
-#include "MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 
 arm_func memu_prefetchAbort
     sub lr, lr, #4
