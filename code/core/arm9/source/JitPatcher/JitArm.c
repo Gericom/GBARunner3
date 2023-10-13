@@ -366,7 +366,16 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
                     armJitNotImplemented();
                     break;
             }
-            u32 branchDestination = memu_load32FromC((rn + op2) & ~3);
+            u32 address = (rn + op2) & ~3;
+            u32 branchDestination;
+            if (address >= 0x02200000 && address < 0x02400000)
+            {
+                branchDestination = *(u32*)address;
+            }
+            else
+            {
+                branchDestination = memu_load32FromC(address);
+            }
             branchDestination &= ~3;
             jit_ensureBlockJitted((void*)branchDestination);
             return (u32*)branchDestination;
