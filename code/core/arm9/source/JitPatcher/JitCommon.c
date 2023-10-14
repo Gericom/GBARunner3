@@ -94,12 +94,9 @@ bool jit_isBlockJitted(void* ptr)
         ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
     }
 
-    const u32* const jitBits = jit_getJitBits(ptr);
-    u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
-    if (*jitBits & (1 << bitIdx))
-        return true;
-
-    return false;
+    const u8* const jitBits = jit_getJitBits(ptr);
+    u32 bitIdx = ((u32)ptr & 0xF) >> 1;
+    return (*jitBits >> bitIdx) & 1;
 }
 
 [[gnu::section(".itcm")]]
@@ -110,9 +107,9 @@ void jit_ensureBlockJitted(void* ptr)
         ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
     }
 
-    const u32* const jitBits = jit_getJitBits(ptr);
-    u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
-    if (*jitBits & (1 << bitIdx))
+    const u8* const jitBits = jit_getJitBits(ptr);
+    u32 bitIdx = ((u32)ptr & 0xF) >> 1;
+    if ((*jitBits >> bitIdx) & 1)
         return;
     if ((u32)ptr & 1)
     {

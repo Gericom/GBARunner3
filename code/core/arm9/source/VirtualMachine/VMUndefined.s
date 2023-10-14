@@ -35,31 +35,29 @@ arm_func vm_undefined
 
 arm_func vm_undefinedThumb
     ldrh lr, [r11, #-2]!
-    ldr sp,= (dtcmStackEnd - 0x40)
-    ldr r12, DTCM(vm_undefinedThumbTableAddr)
-    mov r10, lr, lsl #19
-    mov r10, r10, lsr #22
-    ldrh r12, [r12, r10]
     ldr r10, DTCM(vm_undefinedSpsr)
+    ldr r12, DTCM(vm_undefinedThumbTableAddr)
+    mov r13, lr, lsl #19
+    mov r13, r13, lsr #22
+    ldrh r12, [r12, r13]
+    ldr sp,= (dtcmStackEnd - 0x28)
     bx r12
 
+.extern jit_thumbEnsureJitted
+
 arm_func vm_undefinedThumbNotInTable
-    add r12, r11, #4
-    str r12, [sp, #0x3C]
-    stmia sp, {r0-lr}^
+    stmia sp, {r0-r7,sp,lr}^
     nop
     mov r1, r11 // instruction address
     mov r0, lr  // instruction
     mov r2, sp  // registers
-    mov r3, r10 // spsr
 #ifndef GBAR3_TEST
     bl jit_handleThumbUndefined
 #endif
-    movs r8, r0, lsr #1
-        biccc r10, r10, #0x20 // thumb bit
-    ldmia sp, {r0-lr}^
-    nop
-    msr spsr, r10
-    movs pc, r8, lsl #1
+    mov r8, r0
+    ldmia sp, {r0-r7,sp,lr}^
+#ifndef GBAR3_TEST
+    b jit_thumbEnsureJitted
+#endif
 
 .end

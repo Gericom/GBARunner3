@@ -17,22 +17,19 @@ void jit_processArmBlock(u32* ptr)
     // logAddress((u32)ptr);
     void* const blockStart = jit_findBlockStart(ptr);
     void* blockEnd = jit_findBlockEnd(ptr);
-    u32* jitBits = jit_getJitBits(ptr);
+    u8* jitBits = jit_getJitBits(ptr);
     do
     {
-        if (jitBits)
+        u32 bitIdx = ((u32)ptr & 0xF) >> 1;
+        u32 bitMask = 3 << bitIdx;
+        if (*jitBits & bitMask)
         {
-            u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
-            u32 bitMask = 3 << bitIdx;
-            if (*jitBits & bitMask)
-            {
-                // stop because this instruction was already processed
-                break;
-            }
-            *jitBits |= bitMask;
-            if (bitIdx == 30)
-                jitBits++;
+            // stop because this instruction was already processed
+            break;
         }
+        *jitBits |= bitMask;
+        if (bitIdx == 6)
+            jitBits++;
         u32 instruction = *ptr;
         if ((instruction & 0x0E000000) == 0x0A000000)
         {

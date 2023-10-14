@@ -51,19 +51,19 @@ u32 jit_getJitBitsOffset(const void* ptr);
 /// @brief Gets a pointer to the word containing the JIT bits for the given address.
 /// @param ptr The address.
 /// @return A pointer to the word containing the JIT bits for the given address.
-static inline u32* jit_getJitBits(const void* ptr)
+static inline u8* jit_getJitBits(const void* ptr)
 {
     u32 offset = jit_getJitBitsOffset(ptr);
-    return &gJitState.staticRomJitBits[offset >> 2];
+    return (u8*)gJitState.staticRomJitBits + offset;
 }
 
 /// @brief Gets a pointer to the word containing the JIT auxillary bits for the given address.
 /// @param ptr The address.
 /// @return A pointer to the word containing the JIT auxillary bits for the given address.
-static inline u32* jit_getJitAuxBits(const void* ptr)
+static inline u16* jit_getJitAuxBits(const void* ptr)
 {
     u32 offset = jit_getJitBitsOffset(ptr);
-    return &gJitState.staticRomJitAuxBits[offset >> 1];
+    return (u16*)gJitState.staticRomJitAuxBits + offset;
 }
 
 /// @brief Finds the start of the block (continous region) containing the given address.
@@ -78,8 +78,6 @@ void* jit_findBlockEnd(const void* ptr);
 
 bool jit_isBlockJitted(void* ptr);
 void jit_ensureBlockJitted(void* ptr);
-
-bool jit_conditionPass(u32 cpsr, u32 condition);
 
 /// @brief Initializes the JIT patcher.
 void jit_init(void);

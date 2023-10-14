@@ -17,24 +17,21 @@ void jit_processThumbBlock(u16* ptr)
 {
     void* const blockStart = jit_findBlockStart(ptr);
     void* blockEnd = jit_findBlockEnd(ptr);
-    u32* jitBits = jit_getJitBits(ptr);
-    u32* jitAuxBits = jit_getJitAuxBits(ptr);
+    u8* jitBits = jit_getJitBits(ptr);
+    u16* jitAuxBits = jit_getJitAuxBits(ptr);
     do
     {
-        if (jitBits)
+        u32 bitIdx = ((u32)ptr & 0xF) >> 1;
+        u32 bitMask = 1 << bitIdx;
+        if (*jitBits & bitMask)
         {
-            u32 bitIdx = ((u32)ptr & 0x3F) >> 1;
-            u32 bitMask = 1 << bitIdx;
-            if (*jitBits & bitMask)
-            {
-                // stop because this instruction was already processed
-                break;
-            }
-            *jitBits |= bitMask;
-            if (bitIdx == 31)
-                jitBits++;
+            // stop because this instruction was already processed
+            break;
         }
-        u32 auxBitIdx = (u32)ptr & 0x1F;
+        *jitBits |= bitMask;
+        if (bitIdx == 7)
+            jitBits++;
+        u32 auxBitIdx = (u32)ptr & 0xF;
         u32 instruction = *ptr;
         if ((instruction & 0xFF00) == 0xDF00)
         {
@@ -113,24 +110,59 @@ void jit_processThumbBlock(u16* ptr)
             }
         }
         
-        if (jitAuxBits)
-        {
-            if (auxBitIdx == 30)
-                jitAuxBits++;
-        }
+        if (auxBitIdx == 0xE)
+            jitAuxBits++;
     } while ((u32)++ptr < (u32)blockEnd);
 }
 
 [[gnu::section(".itcm")]]
-u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registers, u32 cpsr)
+u16* jit_handleThumbBCond(u16* instructionPtr, u32 instruction, bool conditionPass)
 {
-    u32* jitAuxBits = jit_getJitAuxBits(instructionPtr);
-    u32 auxBits = ((*jitAuxBits) >> ((u32)instructionPtr & 0x1F)) & 3;
+    // todo: check if previous instruction was actually the first bl part
+    u16* jitAuxBits = jit_getJitAuxBits(instructionPtr);
+    u32 auxBits = ((*jitAuxBits) >> ((u32)instructionPtr & 0xF)) & 3;
+
+    u32 offset = ((instruction & 0x3F) << 2) | auxBits;
+
+    u32 branchDestination = (u32)instructionPtr + 5 + ((int)(offset << 24) >> 23);
+
+    u32 address;
+    u32 otherAddress;
+    if (conditionPass)
+    {
+        address = branchDestination;
+        otherAddress = (u32)instructionPtr + 3;
+    }
+    else
+    {
+        address = (u32)instructionPtr + 3;
+        otherAddress = branchDestination;
+    }
+
+    if (jit_isBlockJitted((void*)otherAddress))
+    {
+        u32 condition = (instruction >> 6) & 0xF;
+        *instructionPtr = 0xD000 | (condition << 8) | offset;
+        dc_drainWriteBuffer();
+        ic_invalidateAll();
+    }
+#ifdef TRACE_THUMB_UNDEFINED
+    logAddress(0xD000);
+    logAddress(address);
+#endif
+    return (u16*)address;
+}
+
+[[gnu::section(".itcm")]]
+u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registers)
+{
+    u16* jitAuxBits = jit_getJitAuxBits(instructionPtr);
+    u32 auxBits = ((*jitAuxBits) >> ((u32)instructionPtr & 0xF)) & 3;
     if ((instruction & 0xFF80) == 0b1011101110000000)
     {
         // pop pc
         u32 rList = ((instruction & 0x7F) << 1) | (auxBits & 1);
-        u32* sp = (u32*)registers[13];
+        u32* sp = (u32*)registers[8];
         for (u32 i = 0; i < 8; ++i)
         {
             if (rList & (1 << i))
@@ -139,48 +171,12 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
             }
         }
         u32 branchDestination = (*sp++) | 1;
-        registers[13] = (u32)sp;
+        registers[8] = (u32)sp;
 #ifdef TRACE_THUMB_UNDEFINED
         logAddress(0xBD00);
         logAddress(branchDestination);
 #endif
-        jit_ensureBlockJitted((void*)branchDestination);
         return (u16*)branchDestination;
-    }
-    else if ((instruction & 0xFC00) == 0b1011100000000000)
-    {
-        // b cond
-        u32 condition = (instruction >> 6) & 0xF;
-        bool conditionPass = jit_conditionPass(cpsr, condition);
-
-        u32 offset = ((instruction & 0x3F) << 2) | auxBits;
-
-        u32 branchDestination = ((u32)instructionPtr + 4 + ((int)(offset << 24) >> 23)) | 1;
-        bool putBack;
-        u32 address;
-        if (conditionPass)
-        {
-            address = branchDestination;
-            jit_ensureBlockJitted((void*)address);
-            putBack = jit_isBlockJitted((void*)((u32)instructionPtr + 3));
-        }
-        else
-        {
-            address = (u32)instructionPtr + 3;
-            jit_ensureBlockJitted((void*)address);
-            putBack = jit_isBlockJitted((void*)branchDestination);
-        }
-        if (putBack)
-        {
-            *instructionPtr = 0xD000 | (condition << 8) | offset;
-            dc_drainWriteBuffer();
-            ic_invalidateAll();
-        }
-#ifdef TRACE_THUMB_UNDEFINED
-        logAddress(0xD000);
-        logAddress(address);
-#endif
-        return (u16*)address;
     }
     else if ((instruction & 0xFA00) == 0b1011001000000000)
     {
@@ -191,7 +187,6 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
         logAddress(0xE000);
         logAddress(branchDestination);
 #endif
-        jit_ensureBlockJitted((void*)branchDestination);
         *instructionPtr = 0xE000 | offset;
         dc_drainWriteBuffer();
         ic_invalidateAll();
@@ -202,18 +197,20 @@ u16* jit_handleThumbUndefined(u32 instruction, u16* instructionPtr, u32* registe
         // bl lr+imm
         // todo: check if previous instruction was actually the first bl part
         u32 offset = (instruction & 0x7FE) | (auxBits & 1);
-        u32 branchDestination = (registers[14] + ((offset << 21) >> 20)) | 1;
+        u32 branchDestination = (registers[9] + ((offset << 21) >> 20)) | 1;
 #ifdef TRACE_THUMB_UNDEFINED
         logAddress(0xF800);
         logAddress(branchDestination);
 #endif
-        jit_ensureBlockJitted((void*)branchDestination);
+        registers[9] = (u32)instructionPtr + 3;
         *instructionPtr = 0xF800 | offset;
         dc_drainWriteBuffer();
         ic_invalidateAll();
-        registers[14] = (u32)instructionPtr + 3;
         return (u16*)branchDestination;
     }
-    thumbJitNotImplemented();
-    return (u16*)((u32)instructionPtr + 3);
+    else
+    {
+        thumbJitNotImplemented();
+        return (u16*)((u32)instructionPtr + 3);
+    }
 }
