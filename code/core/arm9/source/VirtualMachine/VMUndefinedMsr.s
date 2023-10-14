@@ -6,19 +6,25 @@
 
 .macro vm_armUndefinedMsrRegCpsrRm rm
     arm_func vm_armUndefinedMsrRegCpsrR\rm
+        .if \rm == 15
+            // pc is not allowed
+            msr cpsr_c, #0xDB
+            movs pc, lr
+            .mexit
+        .endif
+
         ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rm < 8
             mov r8, r\rm
+            b vm_updateCpsr
         .elseif \rm < 15
             stmia r13, {r\rm}^
-            nop
-            ldr r8, [r13]
-        .else
-            // pc is not allowed
+            b vm_updateCpsrHiReg
         .endif
-        b vm_updateCpsr
 .endm
 
+vm_updateCpsrHiReg:
+    ldr r8, [r13]
 vm_updateCpsr:
     mov r9, r13
     tst lr, #0x10000
@@ -64,22 +70,28 @@ generate vm_armUndefinedMsrRegCpsrRm, 16
 
 .macro vm_armUndefinedMsrRegSpsrRm rm
     arm_func vm_armUndefinedMsrRegSpsrR\rm
+        .if \rm == 15
+            // pc is not allowed
+            msr cpsr_c, #0xDB
+            movs pc, lr
+            .mexit
+        .endif
+
         ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]!
         .if \rm < 8
             mov r8, r\rm
+            b vm_updateSpsr
         .elseif \rm < 15
             add r12, r13, #(vm_undefinedRegTmp - vm_cpsr)
             stmia r12, {r\rm}^
-            nop
-            ldr r8, [r12]
-        .else
-            // pc is not allowed
+            b vm_updateSpsrHiReg
         .endif
-        b vm_updateSpsr
 .endm
 
 generate vm_armUndefinedMsrRegSpsrRm, 16
 
+vm_updateSpsrHiReg:
+    ldr r8, [r12]
 vm_updateSpsr:
     and r9, r9, #0xF
     add r12, r13, r9, lsl #2

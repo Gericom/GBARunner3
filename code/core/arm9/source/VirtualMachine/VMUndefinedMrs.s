@@ -6,6 +6,13 @@
 
 .macro vm_armUndefinedMrsCpsrRm rm
     arm_func vm_armUndefinedMrsCpsrR\rm
+        .if \rm == 15
+            // pc is not allowed
+            msr cpsr_c, #0xDB
+            movs pc, lr
+            .mexit
+        .endif
+
         ldrb r10, [r13, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable + 3)]
         ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
         .if \rm < 8
@@ -14,8 +21,6 @@
             orr r9, r9, r10, lsl #24
             str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
             ldmia r13, {r\rm}^
-        .else
-            // pc is not allowed
         .endif
         msr cpsr_c, #0xDB
         movs pc, lr
@@ -25,6 +30,13 @@ generate vm_armUndefinedMrsCpsrRm, 16
 
 .macro vm_armUndefinedMrsSpsrRm rm
     arm_func vm_armUndefinedMrsSpsrR\rm
+        .if \rm == 15
+            // pc is not allowed
+            msr cpsr_c, #0xDB
+            movs pc, lr
+            .mexit
+        .endif
+
         ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
         and r9, r9, #0xF
         add r12, r13, r9, lsl #2
@@ -34,8 +46,6 @@ generate vm_armUndefinedMrsCpsrRm, 16
             ldr r9, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
             str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
             ldmia r13, {r\rm}^
-        .else
-            // pc is not allowed
         .endif
         msr cpsr_c, #0xDB
         movs pc, lr
