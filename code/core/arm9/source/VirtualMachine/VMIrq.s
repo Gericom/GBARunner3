@@ -14,12 +14,18 @@ vm_irq_base:
 /// @param lr The return address + 4.
 arm_func vm_nestedIrqHandler
     str r0, DTCM(vm_irqSavedR0)
-    // todo: Don't tigger hblank irq on scanlines beyond the gba screen
 
     mov r13, #0x04000000
     ldr r0, [r13, #0x214]
     str lr, DTCM(vm_irqSavedLR)
     str r0, [r13, #0x214]
+
+    // Don't tigger hblank irq on scanlines beyond the gba screen
+    ldrh r13, [r13, #6]
+    sub r13, r13, #160
+    subs r13, r13, #32
+    biclo r0, r0, #2 // HBLANK IRQ
+
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
     and r13, r13, r0 // bits to add to the emulated IF
@@ -50,12 +56,17 @@ arm_func vm_irq
     str r0, DTCM(vm_irqSavedR0)
     // here emulator irq tasks can be performed
 
-    // todo: Don't tigger hblank irq on scanlines beyond the gba screen
-
     mov r13, #0x04000000
     ldr r0, [r13, #0x214]
     str lr, DTCM(vm_irqSavedLR)
     str r0, [r13, #0x214]
+
+    // Don't tigger hblank irq on scanlines beyond the gba screen
+    ldrh r13, [r13, #6]
+    sub r13, r13, #160
+    subs r13, r13, #32
+    biclo r0, r0, #2 // HBLANK IRQ
+
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
     and r13, r13, r0 // bits to add to the emulated IF
