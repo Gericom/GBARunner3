@@ -25,6 +25,9 @@ arm_func vm_swi
     1:
 #endif
 
+    mov r13, #0
+    mcr p15, 0, r13, c7, c5, 0
+
     str lr, DTCM(vm_regs_svc + 4)
     ldr lr, DTCM(vm_cpsr)
     mrs r13, spsr

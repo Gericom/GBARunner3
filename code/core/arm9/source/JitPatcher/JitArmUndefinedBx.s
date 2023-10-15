@@ -96,3 +96,24 @@ jit_armUndefinedBxRmTable:
     .word jit_armUndefinedBxR13
     .word jit_armUndefinedBxR14
     .word jit_armUndefinedBxR15
+
+.text
+
+.macro jit_armPlaceBackBxRm rm
+    arm_func jit_armPlaceBackBxR\rm
+        ldr r8,= (0x012FFF10 | (\rm))
+        b jit_armPlaceBackBxRmCommon
+.endm
+
+generate jit_armPlaceBackBxRm, 16
+
+arm_func jit_armPlaceBackBxRmCommon
+    and r9, lr, #0xF0000000
+    orr r8, r8, r9
+    str r8, [r11, #-4]!
+    mov r8, #0
+    mcr p15, 0, r8, c7, c10, 4
+    mcr p15, 0, r8, c7, c5, 0
+    ldr r10, [r13, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable)]
+    msr spsr, r10
+    movs pc, r11
