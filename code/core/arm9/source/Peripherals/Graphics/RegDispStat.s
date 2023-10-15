@@ -8,7 +8,7 @@
 arm_func emu_regDispStatLoad16
     ldr r11,= emu_ioRegisters
     ldrh r9, [r8]
-    ldrh r10, [r11, #4]
+    ldrh r10, [r11, #GBA_REG_OFFS_DISPSTAT]
     and r9, r9, #7
     bic r10, r10, #0xC7
     orr r9, r9, r10
@@ -17,7 +17,7 @@ arm_func emu_regDispStatLoad16
 arm_func emu_regDispStatVCountLoad32
     ldr r11,= emu_ioRegisters
     ldrh r9, [r8]
-    ldrh r10, [r11, #4]
+    ldrh r10, [r11, #GBA_REG_OFFS_DISPSTAT]
     and r9, r9, #7
     bic r10, r10, #0xC7
     orr r9, r9, r10
@@ -26,7 +26,7 @@ arm_func emu_regDispStatVCountLoad32
     cmp r12, #160
         blt 1f
     cmp r12, #192
-        movlt r12, #159
+        movlt r12, #160
         blt 1f
     sub r12, r12, #32
     cmp r12, #227
@@ -39,12 +39,13 @@ arm_func emu_regDispStatVCountLoad32
 arm_func emu_regDispStatStore16
     mov r9, r9, lsl #16
     mov r9, r9, lsr #16
+    bic r9, r9, #0xC7
     ldr r11,= emu_ioRegisters
     ldr r12,= vm_hwIrqMask
     strh r9, [r11, #GBA_REG_OFFS_DISPSTAT]
     ldr r11, [r12]
     and r10, r9, #(7 << 3)
-    bic r11, r11, #3
+    bic r11, r11, #7
     orr r11, r11, r10, lsr #3
     str r11, [r12]
     ldr r10, [r12, #(vm_forcedIrqMask - vm_hwIrqMask)]
@@ -53,7 +54,7 @@ arm_func emu_regDispStatStore16
     mov r10, r10, lsl #3
     mov r9, r9, lsr #8 // vcount match line
     cmp r9, #160
-        addgt r9, r9, #32
+        addge r9, r9, #32
     orr r9, r10, r9, lsl #8
     tst r9, #0x10000
         orrne r9, r9, #0x80
