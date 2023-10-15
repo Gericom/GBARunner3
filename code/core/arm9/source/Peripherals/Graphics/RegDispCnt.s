@@ -40,6 +40,11 @@ arm_func emu_regDispCntStore16
     teq r11, r12
         bxpl lr
 
+    ldr pc,= tiledBitmapSwitch
+
+.text
+
+tiledBitmapSwitch:
     movs r11, r11
     ldrmi r9,= bitmapToTiledTable
     ldrpl r9,= tiledToBitmapTable
@@ -50,7 +55,6 @@ arm_func emu_regDispCntStore16
     movpl r12, #0x91 // bitmap -> bg
     strb r12, [r11]
 
-tiledBitmapSwitch:
     ldmia r9!, {r10, r11, r12}
     str r11, [r10], #0x40
     str r11, [r12]
@@ -70,8 +74,6 @@ tiledBitmapSwitch:
     str r11, [r10]
     str r11, [r12]
     bx lr
-
-.text
 
 bitmapToTiledTable:
     .word memu_load32Table + (6 * 4)

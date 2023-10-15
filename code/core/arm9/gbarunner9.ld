@@ -181,8 +181,6 @@ SECTIONS
 		KEEP (VMUndefined.o(.itcm))
 		. = 0xD0;
 		KEEP (VMIrq.o(.itcm))
-		. = 0x3D0;
-		KEEP (RegIme.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0x460;
