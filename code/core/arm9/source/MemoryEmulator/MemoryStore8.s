@@ -91,10 +91,7 @@ haltcnt:
 
 arm_func memu_store8Pltt
     orr r9, r9, r9, lsl #8
-    bic r10, r8, #0x00FF0000
-    bic r10, r10, #0x0000FC00
-    strh r9, [r10]
-    bx lr
+    b memu_store16Pltt
 
 arm_func memu_store8Vram012
     mov r11, #0x06000000

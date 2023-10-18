@@ -63,9 +63,13 @@ arm_func memu_store16Io
     bx lr
 
 arm_func memu_store16Pltt
+    ldr r11,= gColorLut
+    bic r9, r9, #0x8000
+    add r11, r11, r9, lsl #1
+    ldrh r11, [r11]
     bic r10, r8, #0x00FF0000
     bic r10, r10, #0x0000FC00
-    strh r9, [r10]
+    strh r11, [r10]
     bx lr
 
 arm_func memu_store16Vram012

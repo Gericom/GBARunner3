@@ -240,7 +240,7 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int d
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcRegion == 4 || dstRegion == 4 ||
+    if (srcRegion == 4 || dstRegion == 4 || dstRegion == 5 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
         srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
     {
@@ -271,7 +271,7 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcRegion == 4 || dstRegion == 4 ||
+    if (srcRegion == 4 || dstRegion == 4 || dstRegion == 5 ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
         srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
     {

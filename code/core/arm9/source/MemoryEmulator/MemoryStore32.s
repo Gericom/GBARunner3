@@ -64,9 +64,17 @@ arm_func memu_store32Io
     bx lr
 
 arm_func memu_store32Pltt
+    ldr r11,= gColorLut
+    mov r12, r9, lsl #17
+    add r12, r11, r12, lsr #16
+    ldrh r12, [r12]
+    bic r9, r9, #0x80000000
+    add r11, r11, r9, lsr #15
+    ldrh r11, [r11]
     bic r10, r8, #0x00FF0000
     bic r10, r10, #0x0000FC00
-    str r9, [r10]
+    strh r12, [r10]
+    strh r11, [r10, #2]
     bx lr
 
 arm_func memu_store32Vram012
