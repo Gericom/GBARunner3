@@ -227,6 +227,16 @@ ITCM_CODE void dma_immTransfer32RomSrc(u32 src, u32 dst, u32 count)
     } while (count > 0);
 }
 
+static inline bool fastDmaSourceAllowed(u32 srcRegion)
+{
+    return 0b0011111111001100 & (1 << srcRegion);
+}
+
+static inline bool fastDmaDestinationAllowed(u32 dstRegion)
+{
+    return 0x0000000011001100 & (1 << dstRegion);
+}
+
 ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int dstStep)
 {
     src &= ~1;
@@ -240,9 +250,9 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int d
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcRegion == 4 || dstRegion == 4 || dstRegion == 5 ||
+    if (!fastDmaSourceAllowed(srcRegion) || !fastDmaDestinationAllowed(dstRegion) ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || difference < 32)
     {
         dma_immTransferSafe16(src, dst, count, srcStep, dstStep);
         return;
@@ -271,9 +281,9 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcRegion == 4 || dstRegion == 4 || dstRegion == 5 ||
+    if (!fastDmaSourceAllowed(srcRegion) || !fastDmaDestinationAllowed(dstRegion) ||
         srcRegion != srcEndRegion || dstRegion != dstEndRegion ||
-        srcStep <= 0 || dstStep <= 0 || dstRegion >= 8 || srcRegion < 2 || dstRegion < 2 || difference < 32)
+        srcStep <= 0 || dstStep <= 0 || difference < 32)
     {
         dma_immTransferSafe32(src, dst, count, srcStep, dstStep);
         return;

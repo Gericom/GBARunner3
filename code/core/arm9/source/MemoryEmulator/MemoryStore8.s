@@ -13,11 +13,12 @@
 arm_func memu_store8
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]
+arm_func memu_store8Undefined
     bx lr
 
 .global memu_itcmStore8Table
 memu_itcmStore8Table:
-    .word memu_store8Bios // 00
+    .word memu_store8Undefined // 00
     .word memu_store8Undefined // 01
     .word memu_store8Ewram // 02
     .word memu_store8Iwram // 03
@@ -33,14 +34,6 @@ memu_itcmStore8Table:
     .word memu_store8Rom // 0D
     .word memu_store8Sram // 0E
     .word memu_store8Sram // 0F
-
-arm_func memu_store8Undefined
-    bx lr
-
-arm_func memu_store8Bios
-    cmp r8, #0x4000
-        bxhs lr
-    bx lr
 
 arm_func memu_store8Ewram
     bic r10, r8, #0x00FC0000

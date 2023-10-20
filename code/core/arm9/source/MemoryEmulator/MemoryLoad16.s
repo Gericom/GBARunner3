@@ -127,12 +127,12 @@ unalignedReturn:
     .word 0
 
 arm_func memu_load16Pltt
-    bic r9, r8, #0x00FF0000
-    bic r9, r9, #0x0000FC00
-    ldrh r9, [r9]
+    ldr r10,= gShadowPalette
+    mov r9, r8, lsl #22
+    mov r9, r9, lsr #22
+    ldrh r9, [r10, r9]
     tst r8, #1
-        bxeq lr
-    mov r9, r9, ror #8
+        movne r9, r9, ror #8
     bx lr
 
 arm_func memu_load16Vram012
@@ -163,12 +163,10 @@ arm_func memu_load16Vram345
     bx lr
 
 arm_func memu_load16Oam
-    bic r9, r8, #0x00FF0000
-    bic r9, r9, #0x0000FC00
+    bic r9, r8, #0x400
     ldrh r9, [r9]
     tst r8, #1
-        bxeq lr
-    mov r9, r9, ror #8
+        movne r9, r9, ror #8
     bx lr
 
 arm_func memu_load16Rom

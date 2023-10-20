@@ -87,9 +87,9 @@ unalignedReturn:
     .word 0
 
 arm_func memu_load8Pltt
-    bic r9, r8, #0x00FF0000
-    bic r9, r9, #0x0000FC00
-    ldrb r9, [r9]
+    ldr r10,= gShadowPalette
+    mov r9, r8, lsl #22
+    ldrb r9, [r10, r9, lsr #22]
     bx lr
 
 arm_func memu_load8Vram012
@@ -112,8 +112,7 @@ arm_func memu_load8Vram345
     bx lr
 
 arm_func memu_load8Oam
-    bic r9, r8, #0x00FF0000
-    bic r9, r9, #0x0000FC00
+    bic r9, r8, #0x400
     ldrb r9, [r9]
     bx lr
 
