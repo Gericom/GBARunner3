@@ -234,7 +234,7 @@ static inline bool fastDmaSourceAllowed(u32 srcRegion)
 
 static inline bool fastDmaDestinationAllowed(u32 dstRegion)
 {
-    return 0x0000000011001100 & (1 << dstRegion);
+    return 0b0000000011001100 & (1 << dstRegion);
 }
 
 ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int dstStep)
