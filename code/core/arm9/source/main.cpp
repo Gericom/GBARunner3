@@ -381,6 +381,12 @@ static void setupColorCorrection()
     }
 }
 
+static void setupGbaScreenBrightness()
+{
+    logAddress(gAppSettingsService.GetAppSettings().displaySettings.gbaScreenBrightness);
+    *(vu16*)0x0400006C = 0x8000 | (16 - gAppSettingsService.GetAppSettings().displaySettings.gbaScreenBrightness);
+}
+
 extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
     heap_init();
@@ -425,6 +431,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 
     setupGbaScreen();
     setupColorCorrection();
+    setupGbaScreenBrightness();
 
     loadGbaBios();
     relocateGbaBios();

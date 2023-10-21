@@ -1,4 +1,6 @@
 #include "common.h"
+#include <libtwl/mem/memSwap.h>
+#include <algorithm>
 #include <memory>
 #include "ArduinoJson.h"
 #include "../AppSettings.h"
@@ -9,6 +11,7 @@
 #define KEY_DISPLAY_SETTINGS                        "displaySettings"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN             "gbaScreen"
 #define KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION   "gbaColorCorrection"
+#define KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS  "gbaScreenBrightness"
 
 #define ENUM_STRING_GBA_SCREEN_TOP                  "top"
 #define ENUM_STRING_GBA_SCREEN_BOTTOM               "bottom"
@@ -51,8 +54,16 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
     if (json.isNull())
         return;
 
+    gLogger->Log(LogLevel::Debug, "readDisplaySettings\n");
     tryParseGbaScreen(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN], displaySettings.gbaScreen);
     tryParseGbaColorCorrection(json[KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION], displaySettings.gbaColorCorrection);
+    gLogger->Log(LogLevel::Debug, "brightness %s\n", json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<const char*>());
+    if (json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].is<int>())
+    {
+        gLogger->Log(LogLevel::Debug, "brightness\n");
+        displaySettings.gbaScreenBrightness = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<int>(),
+            DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN, DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX);
+    }
 }
 
 static void readJson(const JsonDocument& json, AppSettings& appSettings)
@@ -74,9 +85,16 @@ bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSetting
 
     u32 bytesRead = 0;
     if (_settingsFile.Read(fileDataPtr, fileSize, bytesRead) != FR_OK ||
-        _settingsFile.Close() != FR_OK ||
-        deserializeJson(_jsonDocument, fileDataPtr, fileSize) != DeserializationError::Ok)
+        bytesRead != fileSize ||
+        _settingsFile.Close() != FR_OK)
     {
+        return false;
+    }
+
+    auto result = deserializeJson(_jsonDocument, fileDataPtr, fileSize);
+    if (result != DeserializationError::Ok)
+    {
+        gLogger->Log(LogLevel::Debug, "Json deserialization error: %d\n", result);
         return false;
     }
 
