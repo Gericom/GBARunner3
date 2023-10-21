@@ -100,4 +100,12 @@ static constexpr u16 calculateColor(const u16 i)
     return (outB << 10) | ((outG >> 1) << 5) | (outR) | (outG << 15);
 }
 
-const std::array<u16, COLOR_LUT_SIZE> gColorLut = makeArray<u16, COLOR_LUT_SIZE>(calculateColor);
+std::array<u16, COLOR_LUT_SIZE> gColorLut = makeArray<u16, COLOR_LUT_SIZE>(calculateColor);
+
+void clut_disableColorCorrection()
+{
+    for (u32 i = 0; i < COLOR_LUT_SIZE; ++i)
+    {
+        gColorLut[i] = i;
+    }
+}

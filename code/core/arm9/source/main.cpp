@@ -31,6 +31,7 @@
 #include "SystemIpcCommand.h"
 #include "IpcChannels.h"
 #include "GameCode.h"
+#include "ColorLut.h"
 
 #define DEFAULT_ROM_FILE_PATH   "/rom.gba"
 #define BIOS_FILE_PATH          "/_gba/bios.bin"
@@ -372,6 +373,14 @@ static void setupGbaScreen()
     }
 }
 
+static void setupColorCorrection()
+{
+    if (gAppSettingsService.GetAppSettings().displaySettings.gbaColorCorrection == GbaColorCorrection::None)
+    {
+        clut_disableColorCorrection();
+    }
+}
+
 extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
     heap_init();
@@ -415,6 +424,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     gAppSettingsService.TryLoadAppSettings(SETTINGS_FILE_PATH);
 
     setupGbaScreen();
+    setupColorCorrection();
 
     loadGbaBios();
     relocateGbaBios();
