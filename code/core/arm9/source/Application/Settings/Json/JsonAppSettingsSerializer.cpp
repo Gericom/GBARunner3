@@ -54,13 +54,10 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
     if (json.isNull())
         return;
 
-    gLogger->Log(LogLevel::Debug, "readDisplaySettings\n");
     tryParseGbaScreen(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN], displaySettings.gbaScreen);
     tryParseGbaColorCorrection(json[KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION], displaySettings.gbaColorCorrection);
-    gLogger->Log(LogLevel::Debug, "brightness %s\n", json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<const char*>());
     if (json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].is<int>())
     {
-        gLogger->Log(LogLevel::Debug, "brightness\n");
         displaySettings.gbaScreenBrightness = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<int>(),
             DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN, DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX);
     }

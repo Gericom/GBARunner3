@@ -95,7 +95,11 @@ vm_spsr_abt:
 memu_arm_table_addr:
     .word 0
 
+.global dma_transferRegister
+dma_transferRegister:
     .word 0
+.global dma_stepTable
+dma_stepTable:
     .word 0
 .global vm_spsr_und
 vm_spsr_und:

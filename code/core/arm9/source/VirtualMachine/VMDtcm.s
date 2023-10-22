@@ -30,6 +30,9 @@
 .org memu_arm_table_addr - VM_DTCM_BASE
     .word memu_armDispatchTable
 
+.org dma_stepTable - VM_DTCM_BASE
+    .byte 1, -1, 0, 1
+
 .org vm_regs_und+4 - VM_DTCM_BASE
     .word 0
 
