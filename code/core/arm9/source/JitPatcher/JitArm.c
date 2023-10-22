@@ -1,7 +1,7 @@
 #include "common.h"
 #include "SdCache/SdCache.h"
 #include "JitCommon.h"
-#include "MemoryEmulator/MemoryLoad32.h"
+#include "MemoryEmulator/MemoryLoadStore.h"
 #include "JitArm.h"
 
 [[gnu::noreturn, gnu::noinline]]
