@@ -128,3 +128,12 @@ void jit_init(void)
     memset(&gJitState, 0, sizeof(gJitState));
     gJitState.dummyJitBits = ~0u;
 }
+
+void jit_disable(void)
+{
+    memset(gJitState.staticRomJitBits, 0xFF, sizeof(gJitState.staticRomJitBits));
+    memset(gJitState.dynamicRomJitBits, 0xFF, sizeof(gJitState.dynamicRomJitBits));
+    memset(gJitState.iWramJitBits, 0xFF, sizeof(gJitState.iWramJitBits));
+    memset(gJitState.eWramJitBits, 0xFF, sizeof(gJitState.eWramJitBits));
+    memset(gJitState.vramJitBits, 0xFF, sizeof(gJitState.vramJitBits));
+}

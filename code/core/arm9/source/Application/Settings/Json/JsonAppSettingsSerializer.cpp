@@ -13,11 +13,15 @@
 #define KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION   "gbaColorCorrection"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS  "gbaScreenBrightness"
 
+#define KEY_RUN_SETTINGS                            "runSettings"
+#define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
+
 #define ENUM_STRING_GBA_SCREEN_TOP                  "top"
 #define ENUM_STRING_GBA_SCREEN_BOTTOM               "bottom"
 
 #define ENUM_STRING_GBA_COLOR_CORRECTION_NONE       "none"
 #define ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001    "agb001"
+
 
 static bool tryParseGbaScreen(const char* gbaScreenString, GbaScreen& gbaScreen)
 {
@@ -63,9 +67,40 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
     }
 }
 
+static bool tryParseJitPatchAddresses(const JsonArrayConst& jitPatchAddresses, RunSettings& runSettings)
+{
+    if (jitPatchAddresses.isNull())
+        return false;
+
+    runSettings.jitPatchAddresses = std::make_unique<u32[]>(jitPatchAddresses.size());
+    int i = 0;
+    for (const char* addressString : jitPatchAddresses)
+    {
+        if (addressString[0] == '0' && addressString[1] == 'x')
+            addressString += 2;
+        u32 parsedAddress = strtol(addressString, nullptr, 16);
+        if (parsedAddress != 0)
+        {
+            runSettings.jitPatchAddresses[i++] = parsedAddress;
+        }
+    }
+
+    runSettings.jitPatchAddressCount = i;
+    return true;
+}
+
+static void readRunSettings(const JsonObjectConst& json, RunSettings& runSettings)
+{
+    if (json.isNull())
+        return;
+
+    tryParseJitPatchAddresses(json[KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES], runSettings);
+}
+
 static void readJson(const JsonDocument& json, AppSettings& appSettings)
 {
     readDisplaySettings(json[KEY_DISPLAY_SETTINGS], appSettings.displaySettings);
+    readRunSettings(json[KEY_RUN_SETTINGS], appSettings.runSettings);
 }
 
 bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSettings& appSettings)

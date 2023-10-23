@@ -82,6 +82,8 @@ void jit_ensureBlockJitted(void* ptr);
 /// @brief Initializes the JIT patcher.
 void jit_init(void);
 
+void jit_disable(void);
+
 #ifdef __cplusplus
 }
 #endif

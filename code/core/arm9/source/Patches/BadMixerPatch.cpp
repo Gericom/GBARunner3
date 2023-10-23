@@ -1,5 +1,4 @@
 #include "common.h"
-#include "GameCode.h"
 #include "SdCache/SdCache.h"
 #include "MemFastSearch.h"
 #include "BadMixerPatch.h"

@@ -1,5 +1,5 @@
 #include "common.h"
-#include "GameCode.h"
+#include "GbaHeader.h"
 #include "SdCache/SdCache.h"
 #include "HarvestMoonPatches.h"
 
