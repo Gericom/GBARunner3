@@ -35,7 +35,7 @@
 #include "MemoryEmulator/MemoryLoadStore.h"
 #include "ColorLut.h"
 
-#define DEFAULT_ROM_FILE_PATH           "/Mario Kart Super Circuit (U).gba"
+#define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
 #define SETTINGS_FILE_PATH              "/_gba/gbarunner3.json"
 #define GAME_SETTINGS_FILE_PATH_FORMAT  "/_gba/configs/%c%c%c%c%02X.json"
