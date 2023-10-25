@@ -3,6 +3,7 @@
 #include "Fat/diskio.h"
 #include "VirtualMachine/VMNestedIrq.h"
 #include "cp15.h"
+#include "JitPatcher/JitCommon.h"
 #include "SdCache.h"
 
 void* sdc_romBlockToCacheBlock[SDC_ROM_BLOCK_COUNT];
@@ -73,6 +74,7 @@ static void* loadRomBlockDirect(u32 romBlock, u32 blockIdx)
     void* cacheBlock = &sdc_cache[blockIdx][0];
     sdc_romBlockToCacheBlock[romBlock] = cacheBlock;
     loadRomBlock(romBlock, cacheBlock);
+    memset(&gJitState.dynamicRomJitBits[blockIdx * SDC_BLOCK_SIZE / 2 / 32], 0, SDC_BLOCK_SIZE / 2 / 32);
     return cacheBlock;
 }
 
@@ -81,7 +83,6 @@ extern void logAddress(u32 address);
 const void* sdc_loadRomBlockDirect(u32 romAddress)
 {
     vm_enableNestedIrqs();
-    // logAddress(romAddress);
     u32 romBlock = ((romAddress << 7) >> 7) / SDC_BLOCK_SIZE;
     u32 blockIdx = getBlockToReplace();
     void* cacheBlock = loadRomBlockDirect(romBlock, blockIdx);

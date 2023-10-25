@@ -1,4 +1,5 @@
 #pragma once
+#include "SdCache/SdCacheDefs.h"
 
 typedef struct
 {

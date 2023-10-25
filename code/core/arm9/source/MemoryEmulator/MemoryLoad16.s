@@ -172,11 +172,12 @@ arm_func memu_load16Oam
 arm_func memu_load16Rom
     ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r12, r8, #(3 << (SDC_BLOCK_SHIFT - 2))
+memu_load16RomContinue:
     ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
+    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
     cmp r11, #0
         beq load16RomCacheMiss
-    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
     ldrh r9, [r11, r9]
     tst r8, #1
         bxeq lr
@@ -184,40 +185,28 @@ arm_func memu_load16Rom
     bx lr
 
 load16RomCacheMiss:
-    mov r10, r13
     ldr r11,= dtcmStackEnd
+    mov r10, r13
     // check if we already had a stack
-    sub r9, r11, r13
-    cmp r9, #1024
+    sub r12, r11, r13
+    cmp r12, #1024
     // if not begin at the end of the stack
     movhs sp, r11
-    push {r0-r3,lr}
+    push {r0-r3,r10,lr}
     mov r0, r8
     bl sdc_loadRomBlockDirect
-    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
-    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
     ldrh r9, [r0, r9]
-    pop {r0-r3,lr}
-    mov r13, r10
+    ldmfd sp, {r0-r3,r13,lr}
     tst r8, #1
         bxeq lr
     mov r9, r9, ror #8
     bx lr
 
 arm_func memu_load16RomHi
-    ldr r11,= sdc_romBlockToCacheBlock
+    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r9, r8, #0x0E000000
     bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))
-    ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
-    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
-    cmp r11, #0
-        beq load16RomCacheMiss
-    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
-    ldrh r9, [r11, r9]
-    tst r8, #1
-        bxeq lr
-    mov r9, r9, ror #8
-    bx lr
+    b memu_load16RomContinue
 
 arm_func memu_load16Sram
     ldr r10,= gSaveData

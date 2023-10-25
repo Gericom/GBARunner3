@@ -181,7 +181,7 @@ SECTIONS
 		KEEP (VMUndefined.o(.itcm))
 		. = 0xB8;
 		KEEP (VMIrq.o(.itcm))
-		KEEP (PrefetchAbort.o(.itcm))
+		KEEP (RegVCount.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0x460;

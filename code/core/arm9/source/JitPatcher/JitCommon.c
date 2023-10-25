@@ -89,9 +89,20 @@ void* jit_findBlockEnd(const void* ptr)
 [[gnu::section(".itcm")]]
 bool jit_isBlockJitted(void* ptr)
 {
+    if ((u32)ptr >= 0x02400000 && (u32)ptr < 0x03000000)
+    {
+        ptr = (void*)((u32)ptr + 0x08000000 - 0x02200000);
+    }
     if ((u32)ptr >= 0x08000000)
     {
-        ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+        if ((u32)ptr >= 0x08200000)
+        {
+            ptr = (const u8*)sdc_getRomBlock((u32)ptr) + (((u32)ptr) & SDC_BLOCK_MASK);
+        }
+        else
+        {
+            ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+        }
     }
 
     const u8* const jitBits = jit_getJitBits(ptr);
@@ -102,9 +113,20 @@ bool jit_isBlockJitted(void* ptr)
 [[gnu::section(".itcm")]]
 void jit_ensureBlockJitted(void* ptr)
 {
+    if ((u32)ptr >= 0x02400000 && (u32)ptr < 0x03000000)
+    {
+        ptr = (void*)((u32)ptr + 0x08000000 - 0x02200000);
+    }
     if ((u32)ptr >= 0x08000000)
     {
-        ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+        if ((u32)ptr >= 0x08200000)
+        {
+            ptr = (const u8*)sdc_getRomBlock((u32)ptr) + (((u32)ptr) & SDC_BLOCK_MASK);
+        }
+        else
+        {
+            ptr = (void*)((u32)ptr - 0x08000000 + 0x02200000);
+        }
     }
 
     const u8* const jitBits = jit_getJitBits(ptr);
