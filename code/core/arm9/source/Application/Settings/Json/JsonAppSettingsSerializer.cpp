@@ -15,6 +15,7 @@
 
 #define KEY_RUN_SETTINGS                            "runSettings"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
+#define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE         "enableWramICache"
 
 #define ENUM_STRING_GBA_SCREEN_TOP                  "top"
 #define ENUM_STRING_GBA_SCREEN_BOTTOM               "bottom"
@@ -95,6 +96,8 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
         return;
 
     tryParseJitPatchAddresses(json[KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES], runSettings);
+    runSettings.enableWramInstructionCache
+        = json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE] | static_cast<bool>(runSettings.enableWramInstructionCache);
 }
 
 static void readJson(const JsonDocument& json, AppSettings& appSettings)

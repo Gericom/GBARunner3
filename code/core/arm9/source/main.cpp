@@ -34,6 +34,7 @@
 #include "GbaHeader.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
 #include "ColorLut.h"
+#include "MemoryProtectionUnit.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -418,7 +419,7 @@ static void applyGameJitPatches()
             gLogger->Log(LogLevel::Debug, "0x%08X\n", jitPatchAddress);
             if (jitPatchAddress < 0x08200000u)
             {
-                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - 0x08200000u + 0x02200000u));
+                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - 0x08000000u + 0x02200000u));
             }
 
             jit_processArmInstruction(static_cast<u32*>(sdc_loadRomBlockForPatching(jitPatchAddress)));
@@ -442,6 +443,13 @@ static void setupJit()
         // jit enabled
         applyBiosJitPatches();
     }
+}
+
+static void setupWramInstructionCache()
+{
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    mpu_setRegionICacheEnable(MPU_REGION_6, runSettings.enableWramInstructionCache);
+    mpu_setRegionICacheEnable(MPU_REGION_7, runSettings.enableWramInstructionCache);
 }
 
 static void loadGameSpecificSettings()
@@ -535,6 +543,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
+    setupWramInstructionCache();
 
     rtos_setIrqMask(RTOS_IRQ_VBLANK);
     rtos_ackIrqMask(~0u);
