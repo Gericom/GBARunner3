@@ -109,7 +109,7 @@ old_mode_abt:
     add r13, lr, #(vm_regs_abt - vm_regs_svc)
     stmia r13, {r13,lr}^
     nop
-    ldmdb lr, {r13,lr}^
+    ldmia lr, {r13,lr}^
     nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
