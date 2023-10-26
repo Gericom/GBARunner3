@@ -68,6 +68,30 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
     }
 }
 
+static u32 parseHexString(const char* hexString)
+{
+    if (hexString == nullptr || hexString[0] == 0)
+    {
+        return 0;
+    }
+
+    if (hexString[0] == '0' && hexString[1] == 'x')
+    {
+        hexString += 2;
+    }
+
+    u32 value = 0;
+    char c;
+    while ((c = *hexString++) != 0)
+    {
+        // https://stackoverflow.com/a/57112610
+        c = ((c & 0xF) + (c >> 6)) | ((c >> 3) & 8);
+        value = (value << 4) | (c & 0xF);
+    }
+
+    return value;
+}
+
 static bool tryParseJitPatchAddresses(const JsonArrayConst& jitPatchAddresses, RunSettings& runSettings)
 {
     if (jitPatchAddresses.isNull())
@@ -77,13 +101,7 @@ static bool tryParseJitPatchAddresses(const JsonArrayConst& jitPatchAddresses, R
     int i = 0;
     for (const char* addressString : jitPatchAddresses)
     {
-        if (addressString[0] == '0' && addressString[1] == 'x')
-            addressString += 2;
-        u32 parsedAddress = strtol(addressString, nullptr, 16);
-        if (parsedAddress != 0)
-        {
-            runSettings.jitPatchAddresses[i++] = parsedAddress;
-        }
+        runSettings.jitPatchAddresses[i++] = parseHexString(addressString);
     }
 
     runSettings.jitPatchAddressCount = i;
