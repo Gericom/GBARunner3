@@ -108,6 +108,124 @@ arm_func dma_immTransferSafe32
     bne 1b
     pop {r4,r5,r8-r11,pc}
 
+arm_func dma_dmaSound1Fast
+    ldr r0,= gGbaSoundShared + 0x28
+    mov r1, #0
+    mcr p15, 0, r1, c7, c10, 4 // drain write buffer
+    mcr p15, 0, r0, c7, c6, 1 // invalidate range
+    ldrb r2, [r0], #-0x24 // dmaRequest
+    ldr r1,= dma_state + 0x10
+    cmp r2, #0
+        bxeq lr
+    ldrh r3, [r0, #0x22] // writeOffset
+    ldr r2, [r1] // curSrc
+    ldr r12, [r2], #4
+    mov r3, r3, lsl #29
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    str r2, [r1]
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    add r3, r3, #(1 << 29)
+    mov r3, r3, lsr #29
+    strh r3, [r0, #0x22] // writeOffset
+    ldr r12,= emu_ioRegisters + GBA_REG_OFFS_DMA1CNT_H
+    mov r3, #0
+    strb r3, [r0, #0x24] // dmaRequest = false
+    ldrh r0, [r12] // REG_DMA1CNT_H
+    mcr p15, 0, r3, c7, c10, 4 // drain write buffer
+    tst r0, #(1 << 14)
+    beq 1f
+
+    ldr r3,= vm_emulatedIfImeIe
+    ldr r2, [r3]
+    orr r2, r2, #(1 << 9)
+    str r2, [r3]
+
+1:
+    tst r0, #(1 << 9)
+        bxne lr
+
+    bic r0, r0, #(1 << 15)
+    strh r0, [r12]
+
+    ldr r12, [r1, #-0x10] // dma_state.dmaFlags
+    bic r12, r12, #(1 << 9)
+    str r12, [r1, #-0x10]
+    tst r12, #(3 << 9)
+        bxne lr
+
+    ldr r12,= vm_forcedIrqMask
+    ldr r0, [r12]
+    bic r0, r0, #(1 << 16) // arm7 irq
+    str r0, [r12]
+    bx lr
+
+arm_func dma_dmaSound2Fast
+    ldr r0,= gGbaSoundShared + 0x54
+    mov r1, #0
+    mcr p15, 0, r1, c7, c10, 4 // drain write buffer
+    mcr p15, 0, r0, c7, c6, 1 // invalidate range
+    ldrb r2, [r0], #-0x24 // dmaRequest
+    ldr r1,= dma_state + 0x1C
+    cmp r2, #0
+        bxeq lr
+    ldrh r3, [r0, #0x22] // writeOffset
+    ldr r2, [r1] // curSrc
+    ldr r12, [r2], #4
+    mov r3, r3, lsl #29
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    ldr r12, [r2], #4
+    str r2, [r1]
+    add r3, r3, #(1 << 29)
+    str r12, [r0, r3, lsr #27]
+    add r3, r3, #(1 << 29)
+    mov r3, r3, lsr #29
+    strh r3, [r0, #0x22] // writeOffset
+    ldr r12,= emu_ioRegisters + GBA_REG_OFFS_DMA2CNT_H
+    mov r3, #0
+    strb r3, [r0, #0x24] // dmaRequest = false
+    ldrh r0, [r12] // REG_DMA2CNT_H
+    mcr p15, 0, r3, c7, c10, 4 // drain write buffer
+    tst r0, #(1 << 14)
+    beq 1f
+
+    ldr r3,= vm_emulatedIfImeIe
+    ldr r2, [r3]
+    orr r2, r2, #(1 << 10)
+    str r2, [r3]
+
+1:
+    tst r0, #(1 << 9)
+        bxne lr
+
+    bic r0, r0, #(1 << 15)
+    strh r0, [r12]
+
+    ldr r12, [r1, #-0x1C] // dma_state.dmaFlags
+    bic r12, r12, #(1 << 10)
+    str r12, [r1, #-0x1C]
+    tst r12, #(3 << 9)
+        bxne lr
+
+    ldr r12,= vm_forcedIrqMask
+    ldr r0, [r12]
+    bic r0, r0, #(1 << 16) // arm7 irq
+    str r0, [r12]
+    bx lr
+
 .text
 
 // called from C code

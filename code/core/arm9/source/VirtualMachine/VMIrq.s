@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "VMDtcmDefs.inc"
+#include "VMUndefinedInstructions.inc"
 
 vm_irq_base:
 
@@ -22,6 +23,8 @@ arm_func vm_nestedIrqHandler
 
     // Don't tigger hblank irq on scanlines beyond the gba screen
     ldrh r13, [r13, #6]
+    cmp r13, #260
+    bichs r0, r0, #2 // HBLANK IRQ
     sub r13, r13, #160
     subs r13, r13, #32
     biclo r0, r0, #2 // HBLANK IRQ
@@ -63,6 +66,8 @@ arm_func vm_irq
 
     // Don't tigger hblank irq on scanlines beyond the gba screen
     ldrh r13, [r13, #6]
+    cmp r13, #260
+    bichs r0, r0, #2 // HBLANK IRQ
     sub r13, r13, #160
     subs r13, r13, #32
     biclo r0, r0, #2 // HBLANK IRQ
@@ -116,7 +121,7 @@ arm_func vm_irq
     orrmi lr, lr, #0x40
     str lr, DTCM(vm_cpsr)
 
-    msr spsr, #0x10 // user mode, irqs stay on, arm mode
+    msr spsr, #0x9F // system mode, irqs stay off, arm mode
     mov lr, #(vm_regs_irq + 3)
     add pc, pc, r13, lsl #5
     nop
@@ -124,10 +129,9 @@ old_mode_usr:
     stmdb lr, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
-1:
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
     nop
 old_mode_fiq:
@@ -137,13 +141,13 @@ old_mode_fiq:
     ldmia r13, {r8,r9,r10,r11,r12}^
     nop
     ldmia lr, {r13,lr}^
-    b 1b
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
 old_mode_irq:
     ldmib lr, {lr}^
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
     nop
     nop
@@ -153,9 +157,9 @@ old_mode_svc:
     stmia lr, {r13,lr}^
     nop
     ldmdb lr, {r13,lr}^
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
 old_mode_4:
     nop
@@ -189,9 +193,9 @@ old_mode_abt:
     stmia r13, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
 old_mode_8:
     nop
@@ -225,9 +229,9 @@ old_mode_und:
     stmia r13, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
+    adds pc, pc, #(bios_irq_handler - 8 - .)
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
 old_mode_12:
     nop
@@ -260,6 +264,78 @@ old_mode_sys:
     stmdb lr, {r13,lr}^
     nop
     ldmia lr, {r13,lr}^
-    nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    adds pc, pc, #(bios_irq_handler - 8 - .)
+
+bios_irq_handler:
+    PUSH {R0-R3,R12,LR}
+    MOV R3, #0x4000000
+    ldr r1, [R3,#-4]
+    cmp r1, #0x06800000
+    ldrhs pc,= gotoBiosIrq
+    ldr pc,= 2f
+
+.text
+2:
+    ldr r2,= vm_emulatedIfImeIe
+    ldr r12,= (emu_ioRegisters + 0x200)
+    ldrh r2, [r2]
+    ldrh r12, [r12]
+    mov r1, r2, lsr #15
+    bic r2, r2, #0xC000
+    orr r2, r12, r2, lsl #16
+    // game irq handler
+    @ ldr r2, [r3, #0x200]!
+    add r3, r3, #0x200
+    @ ldrh r1, [r3, #8]
+    // mrs r0, spsr
+    @ push {r0-r3,lr}
+    @ mov r0, #1
+    @ strh r0, [r3, #8]
+    and r1, r2, r2, lsr #16
+    rsb r12, r1, #0
+    and r0, r12, r1
+    clz r12, r0
+    rsb r12, r12, #31
+
+    push {r10-r12}
+    ldr r11,= vm_emulatedIfImeIe
+    ldr r10, [r11]
+    bic r10, r10, r0
+    str r10, [r11]
+
+    ldr r12, [r11, #(vm_emulatedIrqMask - vm_emulatedIfImeIe)]
+    ldr r10, [r11, #(vm_forcedIrqMask - vm_emulatedIfImeIe)]
+    ldr r11, [r11, #(vm_hwIEAddr - vm_emulatedIfImeIe)]
+    bic r0, r0, r12
+    bic r0, r0, r10
+    strh r0, [r11, #4] // ack in DS REG_IF
+    pop {r10-r12}
+
+    msr cpsr_c, #0x10
+    @ strh r0, [r3, #2]
+    @ bic r2, r2, r0
+    @ and r1, r2, #0xFFFFFFFE
+    @ strh r1, [r3]
+    // mrs r3, cpsr
+    @ bic r3, r3, #0xDF
+    @ orr r3, r3, #0x1F
+    // msr cpsr, r3
+    ldr r1,= 0x03001F80
+    ldr r0, [r1, r12, lsl #2]
+    blx r0
+    // mrs r3, cpsr
+    @ bic r3, r3, #0xDF
+    @ orr r3, r3, #0x92
+    // msr cpsr, r3
+    @ pop {r0-r3,lr}
+    @ strh r2, [r3]
+    @ strh r1, [r3, #8]
+    // msr spsr, r0
+loc_138:
+    POP {R0-R3,R12,LR}
+    vmSUBS pc, lr, 4
+
+gotoBiosIrq:
+    adr lr, loc_138
+    msr cpsr_c, #0x10
+    mov pc, r1
