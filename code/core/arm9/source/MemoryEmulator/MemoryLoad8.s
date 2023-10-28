@@ -48,6 +48,10 @@ arm_func memu_load8Bios
     bx lr
 
 arm_func memu_load8Ewram
+    cmp r8, #0x02400000
+    addhs r9, r8, #(0x08000000 - 0x02200000)
+    bhs memu_load8RomHiContinue
+
     bic r9, r8, #0x00FC0000
     ldrb r9, [r9]
     bx lr
@@ -128,8 +132,9 @@ memu_load8RomContinue:
     ldr pc,= load8RomCacheMiss
 
 arm_func memu_load8RomHi
-    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r9, r8, #0x0E000000
+memu_load8RomHiContinue:
+    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))
     b memu_load8RomContinue
 
@@ -143,14 +148,16 @@ arm_func memu_load8Sram
 
 load8RomCacheMiss:
     ldr r11,= dtcmStackEnd
-    mov r10, r13
     // check if we already had a stack
-    sub r12, r11, r13
-    cmp r12, #1024
+    sub r10, r11, r13
+    cmp r10, #1024
+    mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11
-    push {r0-r3,r10,lr}
-    mov r0, r8
+    push {r0-r3,lr}
+    mov r0, r12
     bl sdc_loadRomBlockDirect
     ldrb r9, [r0, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
-    ldmfd sp, {r0-r3,r13,pc}
+    pop {r0-r3,lr}
+    mov r13, r10
+    bx lr

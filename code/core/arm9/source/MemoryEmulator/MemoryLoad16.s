@@ -88,6 +88,10 @@ arm_func memu_load16Bios
     bx lr
 
 arm_func memu_load16Ewram
+    cmp r8, #0x02400000
+    addhs r9, r8, #(0x08000000 - 0x02200000)
+    bhs memu_load16RomHiContinue
+
     bic r9, r8, #0x00FC0000
     ldrh r9, [r9]
     tst r8, #1
@@ -186,14 +190,14 @@ memu_load16RomContinue:
 
 load16RomCacheMiss:
     ldr r11,= dtcmStackEnd
-    mov r10, r13
     // check if we already had a stack
-    sub r12, r11, r13
-    cmp r12, #1024
+    sub r10, r11, r13
+    cmp r10, #1024
+    mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,r10,lr}
-    mov r0, r8
+    mov r0, r12
     bl sdc_loadRomBlockDirect
     ldrh r9, [r0, r9]
     ldmfd sp, {r0-r3,r13,lr}
@@ -203,8 +207,9 @@ load16RomCacheMiss:
     bx lr
 
 arm_func memu_load16RomHi
-    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r9, r8, #0x0E000000
+memu_load16RomHiContinue:
+    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))
     b memu_load16RomContinue
 
