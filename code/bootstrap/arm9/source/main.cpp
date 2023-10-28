@@ -63,6 +63,8 @@ int main(int argc, char* argv[])
 
     mem_setVramAMapping(MEM_VRAM_AB_LCDC);
     mem_setVramBMapping(MEM_VRAM_AB_LCDC);
+    mem_setVramHMapping(MEM_VRAM_H_LCDC);
+    mem_setVramIMapping(MEM_VRAM_I_LCDC);
 
     DC_FlushAll();
     DC_InvalidateAll();

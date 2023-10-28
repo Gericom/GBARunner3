@@ -18,9 +18,9 @@
     .elseif (\index << 1) == GBA_REG_OFFS_BG1CNT
         .short emu_regBgCnt01Store16
     .elseif (\index << 1) == GBA_REG_OFFS_BG2CNT
-        .short emu_regBgCnt23Store16
+        .short emu_regBgCnt2Store16
     .elseif (\index << 1) == GBA_REG_OFFS_BG3CNT
-        .short emu_regBgCnt23Store16
+        .short emu_regBgCnt3Store16
     .elseif (\index << 1) == GBA_REG_OFFS_WININ
         .short emu_regWinInOutStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WINOUT

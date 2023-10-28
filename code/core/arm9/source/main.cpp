@@ -46,6 +46,7 @@ FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
 
+[[gnu::section(".vramhi.bss")]]
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
 static NitroEmulatorOutputStream sIsNitroOutput;
@@ -536,6 +537,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);
     memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
+    memset((void*)((u32)GFX_BG_MAIN + 0x40000), 0, 128 * 1024); // vram B
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     setupJit();

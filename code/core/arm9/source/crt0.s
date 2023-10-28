@@ -38,8 +38,8 @@ _start:
     // mpu region 4: Disabled
     mov r0, #0
     mcr	p15, 0, r0, c6, c4, 0
-    // mpu region 5: LCDC VRAM A, B (256 KB)
-    ldr r0,= ((1 | (17 << 1)) + 0x06800000)
+    // mpu region 5: LCDC VRAM (1 MB)
+    ldr r0,= ((1 | (19 << 1)) + 0x06800000)
     mcr	p15, 0, r0, c6, c5, 0
     // mpu region 6: IWRAM (16 MB)
     ldr r0,= (1 | (23 << 1) + 0x03000000)
@@ -120,6 +120,18 @@ bss_done:
     cmp r0, r1
     bne 1b
 ewram_bss_done:
+
+    // clear vram hi bss
+    ldr r0,= __vramhi_bss_start
+    ldr r1,= __vramhi_bss_end
+    cmp r0, r1
+    beq vramhi_bss_done
+    mov r2, #0
+1:
+    str r2, [r0], #4
+    cmp r0, r1
+    bne 1b
+vramhi_bss_done:
     // bkpt #0
 
     // disable interrupts

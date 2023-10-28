@@ -38,10 +38,16 @@ arm_func emu_regDispCntStore16
     str r10, [r8]
 
     and r9, r9, #(1 << 4)
-    ldrge r10,= 0x5080 //0x5084
-    addge r10, r10, r9, lsl #6
-    strgeh r10, [r8, #0xC]
+    blt 1f
+    ldr r10,= 0x5080 //0x5084
+    add r10, r10, r9, lsl #6
+    ldr r9,= emu_ioRegisters
+    ldrh r9, [r9, #0xC]
+    and r9, r9, #3
+    orr r10, r10, r9
+    strh r10, [r8, #0xC]
 
+1:
     and r12, r12, #7
     sub r12, r12, #3
     sub r11, r11, #3
