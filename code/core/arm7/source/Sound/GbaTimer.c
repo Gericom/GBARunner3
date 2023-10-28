@@ -4,7 +4,7 @@
 #define TICKS_PER_UPDATE    512
 #define TICK_SHIFT          1
 
-static const u32 sPrescaleShiftedTicksPerUpdate[3] =
+static const u32 sPrescaleShiftedTicksPerUpdate[4] =
 {
     TICKS_PER_UPDATE << TICK_SHIFT,
     (TICKS_PER_UPDATE << TICK_SHIFT) >> 6,

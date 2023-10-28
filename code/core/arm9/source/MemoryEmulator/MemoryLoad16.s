@@ -179,9 +179,9 @@ arm_func memu_load16Rom
 memu_load16RomContinue:
     ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
     mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
+    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
     cmp r11, #0
         beq load16RomCacheMiss
-    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
     ldrh r9, [r11, r9]
     tst r8, #1
         bxeq lr
