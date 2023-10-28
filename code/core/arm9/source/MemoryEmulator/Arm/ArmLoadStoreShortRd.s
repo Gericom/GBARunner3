@@ -3,7 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
-#include "../MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 
 .macro memu_armStrhRd rd
     arm_func memu_armStrhR\rd
@@ -51,6 +51,11 @@ generate memu_armStrhRd, 16
 
 .macro memu_armLdrhRd rd
     arm_func memu_armLdrhR\rd
+        .if \rd == 15
+            memu_armReturn
+            .mexit
+        .endif
+
         and r10, r8, #0x0F000000
         cmp r8, #0x10000000
         addlo r9, r13, r10, lsr #22
@@ -73,6 +78,11 @@ generate memu_armLdrhRd, 16
 
 .macro memu_armLdrshRd rd
     arm_func memu_armLdrshR\rd
+        .if \rd == 15
+            memu_armReturn
+            .mexit
+        .endif
+
         tst r8, #1
             bne memu_armLdrsbR\rd
         
@@ -100,6 +110,11 @@ generate memu_armLdrshRd, 16
 
 .macro memu_armLdrsbRd rd
     arm_func memu_armLdrsbR\rd
+        .if \rd == 15
+            memu_armReturn
+            .mexit
+        .endif
+
         and r10, r8, #0x0F000000
         cmp r8, #0x10000000
         addlo r9, r13, r10, lsr #22

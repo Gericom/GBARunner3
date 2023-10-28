@@ -18,7 +18,9 @@
 /
 /----------------------------------------------------------------------------*/
 
-
+#include "common.h"
+#include <libtwl/mem/memSwap.h>
+#include "MemCopy.h"
 #include "ff.h"			/* Declarations of FatFs API */
 #include "diskio.h"		/* Declarations of device I/O functions */
 
@@ -653,12 +655,24 @@ static void st_qword (BYTE* ptr, QWORD val)	/* Store an 8-byte word in little-en
 /* Copy memory to memory */
 static void mem_cpy (void* dst, const void* src, UINT cnt)
 {
+	if (!((u32)src & 3) && !((u32)dst & 3) && !(cnt & 3))
+	{
+		mem_copy32(src, dst, cnt);
+		return;
+	}
+	else if (!((u32)src & 1) && !((u32)dst & 1) && !(cnt & 1))
+	{
+		mem_copy16(src, dst, cnt);
+		return;
+	}
+
 	BYTE *d = (BYTE*)dst;
 	const BYTE *s = (const BYTE*)src;
 
 	if (cnt != 0) {
 		do {
-			*d++ = *s++;
+			mem_swapByte(*s++, d++);
+			// *d++ = *s++;
 		} while (--cnt);
 	}
 }
@@ -667,11 +681,12 @@ static void mem_cpy (void* dst, const void* src, UINT cnt)
 /* Fill memory block */
 static void mem_set (void* dst, int val, UINT cnt)
 {
-	BYTE *d = (BYTE*)dst;
+	memset(dst, val, cnt);
+	// BYTE *d = (BYTE*)dst;
 
-	do {
-		*d++ = (BYTE)val;
-	} while (--cnt);
+	// do {
+	// 	*d++ = (BYTE)val;
+	// } while (--cnt);
 }
 
 

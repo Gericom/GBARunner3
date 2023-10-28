@@ -2,7 +2,7 @@
 .altmacro
 
 #include "AsmMacros.inc"
-#include "../MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
     
 .macro memu_armLdmStmRm_pu p, u
 arm_func memu_armLdmStmRm_\p\u    

@@ -1,4 +1,5 @@
-#include <nds.h>
+#include "common.h"
+#include <libtwl/mem/memExtern.h>
 #include "Environment.h"
 
 u32 Environment::_flags;
@@ -34,7 +35,10 @@ void Environment::Initialize()
             _flags |= ENVIRONMENT_FLAGS_IS_NITRO_EMULATOR;
             _flags |= ENVIRONMENT_FLAGS_JTAG_SEMIHOSTING;
 
-            REG_EXMEMCNT &= ~0xFF;
+            mem_setGbaCartridgeRamWait(EXMEMCNT_SLOT2_RAM_WAIT_10);
+            mem_setGbaCartridgeRomWaits(EXMEMCNT_SLOT2_ROM_WAIT1_10, EXMEMCNT_SLOT2_ROM_WAIT2_6);
+            mem_setGbaCartridgePhi(EXMEMCNT_SLOT2_PHI_LOW);
+            mem_setGbaCartridgeCpu(EXMEMCNT_SLOT2_CPU_ARM9);
 
             u32 agbMemoryAddress = *(vu32*)0x027FFF7C;
             if (*(vu32*)(agbMemoryAddress + 0x100) == 0x44495349) //ISID

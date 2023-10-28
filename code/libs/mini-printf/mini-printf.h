@@ -67,7 +67,7 @@ int mini_pprintf(int (*puts)(char*s, int len, void* buf), void* buf, const char 
 }
 #endif
 
-#define vsnprintf mini_vsnprintf
-#define snprintf mini_snprintf
+// #define vsnprintf mini_vsnprintf
+// #define snprintf mini_snprintf
 
 #endif

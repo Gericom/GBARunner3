@@ -15,6 +15,8 @@
         .short memu_load32Undefined
     .elseif (\index << 2) == GBA_REG_OFFS_BLDY
         .short memu_load32Undefined
+    .elseif (\index << 2) == GBA_REG_OFFS_SOUNDCNT_X
+        .short emu_gbaSoundLoadSoundCntX
     .elseif (\index << 2) == GBA_REG_OFFS_FIFO_A
         .short memu_load32Undefined
     .elseif (\index << 2) == GBA_REG_OFFS_FIFO_B

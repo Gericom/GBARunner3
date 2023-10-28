@@ -1,5 +1,6 @@
 #include "common.h"
 #include "Save.h"
+#include "SaveSwi.h"
 #include "SaveTypeInfo.h"
 #include "SaveEeprom.h"
 
@@ -19,21 +20,20 @@ static const u32 sProgramEepromDwordV126Sig[] = { 0x4647B5F0u, 0xB0ACB480u, 0x04
 
 static u16 readEepromDword(u16 epAdr, u16* dst)
 {
-    const u8* save = (u8*)(0x0E000000 + (epAdr << 3));
     for (int i = 0; i < 8; ++i)
     {
-        ((u8*)dst)[7 - i] = *save++;
+        ((u8*)dst)[7 - i] = sav_readSaveByteFromFileFromUserMode((epAdr << 3) + i);
     }
     return 0;
 }
 
 static u16 programEepromDword(u16 epAdr, const u16* src)
 {
-    u8* save = (u8*)(0x0E000000 + (epAdr << 3));
     for (int i = 0; i < 8; ++i)
     {
-        *save++ = ((u8*)src)[7 - i];
+        sav_writeSaveByteToFileFromUserMode((epAdr << 3) + i, ((u8*)src)[7 - i]);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 

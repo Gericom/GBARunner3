@@ -14,11 +14,12 @@
 arm_func memu_store16
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]
+arm_func memu_store16Undefined
     bx lr
 
 .global memu_itcmStore16Table
 memu_itcmStore16Table:
-    .word memu_store16Bios // 00
+    .word memu_store16Undefined // 00
     .word memu_store16Undefined // 01
     .word memu_store16Ewram // 02
     .word memu_store16Iwram // 03
@@ -34,14 +35,6 @@ memu_itcmStore16Table:
     .word memu_store16Rom // 0D
     .word memu_store16Sram // 0E
     .word memu_store16Sram // 0F
-
-arm_func memu_store16Undefined
-    bx lr
-
-arm_func memu_store16Bios
-    cmp r8, #0x4000
-        bxhs lr
-    bx lr
 
 arm_func memu_store16Ewram
     bic r10, r8, #0x00FC0000
@@ -63,9 +56,15 @@ arm_func memu_store16Io
     bx lr
 
 arm_func memu_store16Pltt
+    ldr r11,= gColorLut
+    bic r12, r9, #0x8000
+    add r11, r11, r12, lsl #1
+    ldrh r11, [r11]
     bic r10, r8, #0x00FF0000
     bic r10, r10, #0x0000FC00
-    strh r9, [r10]
+    ldr r12,= (gShadowPalette - 0x05000000)
+    strh r11, [r10]
+    strh r9, [r12, r10]
     bx lr
 
 arm_func memu_store16Vram012
@@ -107,8 +106,7 @@ arm_func memu_store16Vram345Finish
     bx lr
 
 arm_func memu_store16Oam
-    bic r10, r8, #0x00FF0000
-    bic r10, r10, #0x0000FC00
+    bic r10, r8, #0x400
     strh r9, [r10]
     bx lr
 

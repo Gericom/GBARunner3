@@ -8,7 +8,7 @@ arm_func emu_regVCountLoad16
     cmp r9, #160
         bxlt lr
     cmp r9, #192
-        movlt r9, #159
+        movlt r9, #160
         bxlt lr
     sub r9, r9, #32
     cmp r9, #227

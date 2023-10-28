@@ -2,7 +2,8 @@
 
 .global dtcmStack
 dtcmStack:
-    .space 512
+    .word 0xDEAD57AC // stack protection word
+    .space 1024 - 4
 .global dtcmStackEnd
 dtcmStackEnd:
 

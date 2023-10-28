@@ -13,11 +13,12 @@
 arm_func memu_store8
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]
+arm_func memu_store8Undefined
     bx lr
 
 .global memu_itcmStore8Table
 memu_itcmStore8Table:
-    .word memu_store8Bios // 00
+    .word memu_store8Undefined // 00
     .word memu_store8Undefined // 01
     .word memu_store8Ewram // 02
     .word memu_store8Iwram // 03
@@ -34,14 +35,6 @@ memu_itcmStore8Table:
     .word memu_store8Sram // 0E
     .word memu_store8Sram // 0F
 
-arm_func memu_store8Undefined
-    bx lr
-
-arm_func memu_store8Bios
-    cmp r8, #0x4000
-        bxhs lr
-    bx lr
-
 arm_func memu_store8Ewram
     bic r10, r8, #0x00FC0000
     strb r9, [r10]
@@ -54,9 +47,13 @@ arm_func memu_store8Iwram
     bx lr
 
 arm_func memu_store8Io
-    ldr r12,= emu_ioRegisters
-    ldr r11,= memu_store16IoTable
     sub r10, r8, #0x04000000
+    sub r11, r10, #0x60
+    cmp r11, #0x48
+        blo emu_gbaSoundStore8
+
+    ldr r11,= memu_store16IoTable
+    ldr r12,= emu_ioRegisters
     ldrh r11, [r11, r10]
     tst r8, #1
     ldrh r12, [r12, r10]
@@ -87,10 +84,7 @@ haltcnt:
 
 arm_func memu_store8Pltt
     orr r9, r9, r9, lsl #8
-    bic r10, r8, #0x00FF0000
-    bic r10, r10, #0x0000FC00
-    strh r9, [r10]
-    bx lr
+    b memu_store16Pltt
 
 arm_func memu_store8Vram012
     mov r11, #0x06000000

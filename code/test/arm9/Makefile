@@ -30,7 +30,6 @@ SOURCES		:=	source \
 				../../core/arm9/source/Peripherals \
 				../../core/arm9/source/Peripherals/Graphics \
 				../../core/arm9/source/Peripherals/Interrupts \
-				../../core/arm9/source/Save \
 				../../core/arm9/source/VirtualMachine \
 				../../libs/googlemock/src \
 				../../libs/googletest/src \
@@ -96,7 +95,7 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
-SFILES += MemoryEmuDtcmPool.s DtcmStack.s MemCopy.s
+SFILES += DtcmStack.s MemCopy.s
 CPPFILES += PopCountTable.cpp
  
 #---------------------------------------------------------------------------------

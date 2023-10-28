@@ -16,12 +16,17 @@ arm_func vm_swi
     cmp lr, #0x08000000
         bhs 1f
 #endif
+#ifndef GBAR3_TEST
     ldrb r13, [lr, #-2]
     cmp r13, #0x80
         bhs sav_swiHandler
+#endif
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     1:
 #endif
+
+    mov r13, #0
+    mcr p15, 0, r13, c7, c5, 0
 
     str lr, DTCM(vm_regs_svc + 4)
     ldr lr, DTCM(vm_cpsr)
@@ -107,7 +112,7 @@ old_mode_abt:
     add r13, lr, #(vm_regs_abt - vm_regs_svc)
     stmia r13, {r13,lr}^
     nop
-    ldmdb lr, {r13,lr}^
+    ldmia lr, {r13,lr}^
     nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr

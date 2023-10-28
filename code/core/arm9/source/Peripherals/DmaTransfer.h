@@ -8,6 +8,7 @@ typedef struct
 } dma_channel_t;
 
 #define DMA_FLAG_HBLANK(channel)    (1 << (channel))
+#define DMA_FLAG_SOUND(channel)     (1 << (channel + 8))
 
 typedef struct
 {

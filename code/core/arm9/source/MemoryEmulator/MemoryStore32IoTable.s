@@ -19,39 +19,39 @@
         .short emu_regBldCntBldAlphaStore32 // REG_BLDCNT REG_BLDALPHA
     // these are sound on the gba
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND1CNT_L
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND1CNT_X
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND2CNT_L
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND2CNT_H
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND3CNT_L
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND3CNT_X
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND4CNT_L
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUND4CNT_H
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUNDCNT_L
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUNDCNT_X
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SOUNDBIAS
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_WAVE_RAM0
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_WAVE_RAM1
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_WAVE_RAM2
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_WAVE_RAM3
-        .short emu_ioStore32
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_FIFO_A
-        .short memu_store32Undefined
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_FIFO_B
-        .short memu_store32Undefined
+        .short emu_gbaSoundStore32
     .elseif (\index << 2) == GBA_REG_OFFS_DMA0SAD
         .short emu_dmaInternalMemoryAddressStore32
     .elseif (\index << 2) == GBA_REG_OFFS_DMA0DAD

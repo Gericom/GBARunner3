@@ -26,6 +26,9 @@ ensureJittedCommonHiReg:
     ldr r8, [r13]
 
 ensureJittedCommon:
+    cmp r8, #0x08000000
+        addhs r8, r8, #(0x02200000 - 0x08000000)
+
     ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     ldr sp,= dtcmStackEnd
     tst r8, #1
@@ -46,7 +49,7 @@ ensureJittedCommon:
     movs pc, r8
 
 ensureJittedStaticRom:
-    ldr r11,= gStaticRomJitBits
+    ldr r11,= gJitState // staticRomJitBits
     mov r9, r9, lsr #1
     ldrb r11, [r11, r9, lsr #3]
     and r9, r9, #0x7
@@ -59,11 +62,11 @@ ensureJittedStaticRom:
 ensureJittedIWram:
     mov lr, r11, lsr #24
     cmp lr, #2
-    moveq lr, #0
-    mcreq p15, 0, lr, c7, c10, 4
-    mcreq p15, 0, lr, c7, c5, 0
+        moveq lr, #0
+        mcreq p15, 0, lr, c7, c10, 4
+        mcreq p15, 0, lr, c7, c5, 0
 
-    ldr r11,= gIWramJitBits
+    ldr r11,= (gJitState + 0x20000) // iWramJitBits
     mov r9, r9, lsr #1
     ldrb r11, [r11, r9, lsr #3]
     and r9, r9, #0x7

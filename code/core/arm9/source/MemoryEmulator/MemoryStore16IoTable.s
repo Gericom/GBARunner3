@@ -31,61 +31,61 @@
         .short emu_regBldAlphaStore16
     // these are sound on the gba
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND1CNT_X
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == 0x66
         .short memu_store16Undefined
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND2CNT_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == 0x6A
         .short memu_store16Undefined
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND2CNT_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND3CNT_X
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND4CNT_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUND4CNT_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUNDCNT_X
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SOUNDBIAS
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM0_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM0_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM1_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM1_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM2_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM2_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM3_L
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WAVE_RAM3_H
-        .short emu_ioStore16
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_FIFO_A_L
-        .short memu_store16Undefined
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_FIFO_A_H
-        .short memu_store16Undefined
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_FIFO_B_L
-        .short memu_store16Undefined
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_FIFO_B_H
-        .short memu_store16Undefined
+        .short emu_gbaSoundStore16
     .elseif (\index << 1) == GBA_REG_OFFS_DMA0SAD_L
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_DMA0SAD_H

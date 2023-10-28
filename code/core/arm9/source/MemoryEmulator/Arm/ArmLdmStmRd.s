@@ -3,7 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
-#include "../MemoryEmuDtcm.inc"
+#include "VirtualMachine/VMDtcmDefs.inc"
 
 arm_func memu_armStmRd
     mov r9, r8

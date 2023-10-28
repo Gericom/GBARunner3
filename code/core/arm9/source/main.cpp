@@ -1,11 +1,14 @@
 #include "common.h"
 #include <libtwl/mem/memVram.h>
 #include <libtwl/mem/memNtrWram.h>
+#include <libtwl/mem/memExtern.h>
 #include <libtwl/sys/sysPower.h>
 #include <libtwl/gfx/gfxPalette.h>
 #include <libtwl/gfx/gfx2d.h>
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/rtos/rtosIrq.h>
+#include <libtwl/ipc/ipcFifo.h>
+#include <libtwl/ipc/ipcFifoSystem.h>
 #include <array>
 #include <string.h>
 #include "cp15.h"
@@ -21,15 +24,27 @@
 #include "Save/Save.h"
 #include "SdCache/SdCache.h"
 #include "JitPatcher/JitCommon.h"
+#include "JitPatcher/JitArm.h"
+#include "Peripherals/Sound/GbaSound9.h"
 #include "Patches/HarvestMoonPatches.h"
-#include "GameCode.h"
+#include "Patches/BadMixerPatch.h"
+#include "Application/Settings/AppSettingsService.h"
+#include "SystemIpcCommand.h"
+#include "IpcChannels.h"
+#include "GbaHeader.h"
+#include "MemoryEmulator/MemoryLoadStore.h"
+#include "ColorLut.h"
+#include "MemoryProtectionUnit.h"
+
+#define DEFAULT_ROM_FILE_PATH           "/rom.gba"
+#define BIOS_FILE_PATH                  "/_gba/bios.bin"
+#define SETTINGS_FILE_PATH              "/_gba/gbarunner3.json"
+#define GAME_SETTINGS_FILE_PATH_FORMAT  "/_gba/configs/%c%c%c%c%02X.json"
 
 [[gnu::section(".ewram.bss")]]
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
-[[gnu::section(".ewram.bss")]]
-FIL gSaveFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -85,7 +100,7 @@ static bool mountAgbSemihosting()
 static void loadGbaBios()
 {
     memset(&gFile, 0, sizeof(gFile));
-    f_open(&gFile, "/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+    f_open(&gFile, BIOS_FILE_PATH, FA_OPEN_EXISTING | FA_READ);
     UINT br;
     f_read(&gFile, gGbaBios, 16 * 1024, &br);
     f_close(&gFile);
@@ -156,8 +171,12 @@ static void loadGbaRom(const char* romPath)
     sdc_init();
     f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
 
-    u32 gameCode = *(u32*)0x022000AC;
-    HarvestMoonPatches().TryApplyPatches(gameCode);
+    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
+    HarvestMoonPatches().TryApplyPatches(header->gameCode);
+    if (BadMixerPatch().TryApplyPatch())
+    {
+        gLogger->Log(LogLevel::Debug, "Bad mixer patch applied\n");
+    }
 
     // f_open(&gFile, "/suite.gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();
@@ -181,22 +200,6 @@ static void loadGbaRom(const char* romPath)
     // mksc eu
     // *(vu32*)0x022000C0 = 0xE1890090; // msr cpsr_cf, r0
     // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
-
-    // f_open(&gFile, "/Donkey Kong Country 3 (Europe) (En,Fr,De,Es,It).gba", FA_OPEN_EXISTING | FA_READ);
-    // sdc_init();
-    // f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
-    // *(vu32*)0x022000C4 = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x022000D0 = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x02200100 = 0xE1A00090; // mrs r0, cpsr
-    // *(vu32*)0x02200108 = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x02200118 = 0xE1A00090; // mrs r0, cpsr
-    // *(vu32*)0x02200120 = 0xE1890090; // msr cpsr_cf, r0
-    // *(vu32*)0x0220013C = 0xE1E00090; // mrs r0, spsr
-    // *(vu32*)0x0220020C = 0xE1A00093; // mrs r3, cpsr
-    // *(vu32*)0x02200218 = 0xE1890093; // msr cpsr_cf, r3
-    // *(vu32*)0x0220022C = 0xE1A00093; // mrs r3, cpsr
-    // *(vu32*)0x02200238 = 0xE1890093; // msr cpsr_cf, r3
-    // *(vu32*)0x02200248 = 0xE1C90090; // msr spsr_cf, r0
 
     // f_open(&gFile, "/Sims, The - Bustin' Out (USA, Europe) (En,Fr,De,Es,It,Nl).gba", FA_OPEN_EXISTING | FA_READ);
     // sdc_init();
@@ -284,36 +287,52 @@ static void handleSave(const char* savePath)
 {
     u32 tagRomAddress;
     const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
-    if (saveTypeInfo && saveTypeInfo->patchFunc)
+    
+    if (saveTypeInfo)
     {
         gLogger->Log(LogLevel::Debug, "%s\n", saveTypeInfo->tag);
-        if (!saveTypeInfo->patchFunc(saveTypeInfo, &gFile, tagRomAddress, &sdc_cache[0][0]))
+        if (saveTypeInfo->patchFunc)
         {
-            gLogger->Log(LogLevel::Error, "Save patching failed\n");
-        }
-        
-        memset(&gSaveFile, 0, sizeof(gSaveFile));
-        if (f_open(&gSaveFile, savePath, FA_OPEN_EXISTING | FA_READ) != FR_OK)
-        {
-            if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
+            if (!saveTypeInfo->patchFunc(saveTypeInfo, &gFile, tagRomAddress, &sdc_cache[0][0]))
             {
-                memset(gSaveData, 0xFF, sizeof(gSaveData));
-            }
-            else
-            {
-                memset(gSaveData, 0, sizeof(gSaveData));
+                gLogger->Log(LogLevel::Error, "Save patching failed\n");
             }
         }
-        else
+
+        if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM)
         {
-            UINT read = 0;
-            f_read(&gSaveFile, gSaveData, saveTypeInfo->size, &read);
+            memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
+            memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
+            memu_load8Table[0xE] = (void*)memu_load8Undefined;
+            memu_load8Table[0xF] = (void*)memu_load8Undefined;
+            memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
+            memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
+            memu_load16Table[0xE] = (void*)memu_load16Undefined;
+            memu_load16Table[0xF] = (void*)memu_load16Undefined;
+            memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
+            memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
+            memu_load32Table[0xE] = (void*)memu_load32Undefined;
+            memu_load32Table[0xF] = (void*)memu_load32Undefined;
+        }
+        if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM ||
+            (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
+        {
+            memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
+            memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
+            memu_store8Table[0xE] = (void*)memu_store8Undefined;
+            memu_store8Table[0xF] = (void*)memu_store8Undefined;
+            memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
+            memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
+            memu_store16Table[0xE] = (void*)memu_store16Undefined;
+            memu_store16Table[0xF] = (void*)memu_store16Undefined;
+            memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
+            memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
+            memu_store32Table[0xE] = (void*)memu_store32Undefined;
+            memu_store32Table[0xF] = (void*)memu_store32Undefined;
         }
     }
-    else
-    {
-        memset(gSaveData, 0, sizeof(gSaveData));
-    }
+
+    sav_initializeSave(saveTypeInfo, savePath);
 }
 
 // extern "C" void logOpcode(u32 opcode)
@@ -340,10 +359,122 @@ static bool shouldMountDsiSd(int argc, char* argv[])
     return true;
 }
 
+static void setTopBacklight(bool enabled)
+{
+    ipc_sendWordDirect(
+        ((enabled ? 1 : 0) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        (SYSTEM_IPC_CMD_SET_TOP_BACKLIGHT << IPC_FIFO_MSG_CHANNEL_BITS) |
+        IPC_CHANNEL_SYSTEM);
+    while (ipc_isRecvFifoEmpty());
+    ipc_recvWordDirect();
+}
+
+static void setBottomBacklight(bool enabled)
+{
+    ipc_sendWordDirect(
+        ((enabled ? 1 : 0) << (IPC_FIFO_MSG_CHANNEL_BITS + 4)) |
+        (SYSTEM_IPC_CMD_SET_BOTTOM_BACKLIGHT << IPC_FIFO_MSG_CHANNEL_BITS) |
+        IPC_CHANNEL_SYSTEM);
+    while (ipc_isRecvFifoEmpty());
+    ipc_recvWordDirect();
+}
+
+static void setupGbaScreen()
+{
+    if (gAppSettingsService.GetAppSettings().displaySettings.gbaScreen == GbaScreen::Top)
+    {
+        sys_setMainEngineToTopScreen();
+        setBottomBacklight(false);
+    }
+    else
+    {
+        sys_setMainEngineToBottomScreen();
+        setTopBacklight(false);
+    }
+}
+
+static void setupColorCorrection()
+{
+    if (gAppSettingsService.GetAppSettings().displaySettings.gbaColorCorrection == GbaColorCorrection::None)
+    {
+        clut_disableColorCorrection();
+    }
+}
+
+static void setupGbaScreenBrightness()
+{
+    *(vu16*)0x0400006C = 0x8000 | (16 - gAppSettingsService.GetAppSettings().displaySettings.gbaScreenBrightness);
+}
+
+static void applyGameJitPatches()
+{
+    gLogger->Log(LogLevel::Debug, "Applying game JIT patches...\n");
+
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    for (u32 i = 0; i < runSettings.jitPatchAddressCount; ++i)
+    {
+        u32 jitPatchAddress = runSettings.jitPatchAddresses[i];
+        if (jitPatchAddress >= 0x08000000u && jitPatchAddress < 0x0A000000u)
+        {
+            gLogger->Log(LogLevel::Debug, "0x%08X\n", jitPatchAddress);
+            if (jitPatchAddress < 0x08200000u)
+            {
+                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - 0x08000000u + 0x02200000u));
+            }
+
+            jit_processArmInstruction(static_cast<u32*>(sdc_loadRomBlockForPatching(jitPatchAddress)));
+        }
+    }
+}
+
+static void setupJit()
+{
+    jit_init();
+
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    if (runSettings.jitPatchAddresses && runSettings.jitPatchAddressCount > 0)
+    {
+        // manual jit patches
+        applyGameJitPatches();
+        jit_disable();
+    }
+    else
+    {
+        // jit enabled
+        applyBiosJitPatches();
+    }
+}
+
+static void setupWramInstructionCache()
+{
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    mpu_setRegionICacheEnable(MPU_REGION_6, runSettings.enableWramInstructionCache);
+    mpu_setRegionICacheEnable(MPU_REGION_7, runSettings.enableWramInstructionCache);
+}
+
+static void loadGameSpecificSettings()
+{
+    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
+    auto path = std::make_unique<char[]>(128);
+    mini_snprintf(path.get(), 128, GAME_SETTINGS_FILE_PATH_FORMAT,
+        header->gameCode & 0xFF, (header->gameCode >> 8) & 0xFF,
+        (header->gameCode >> 16) & 0xFF, header->gameCode >> 24,
+        header->softwareVersion);
+
+    if (gAppSettingsService.TryLoadAppSettings(path.get()))
+    {
+        gLogger->Log(LogLevel::Debug, "Loaded game specific settings from %s\n", path.get());
+    }
+}
+
 extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
+    heap_init();
+
     *(vu32*)0x04000000 = 0x10000;
+    *(vu32*)0x04001000 = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
+    GFX_PLTT_BG_SUB[0] = 0;
     *(vu32*)0x0400006C = 0;
 
     mem_setVramBMapping(MEM_VRAM_AB_MAIN_BG_40000);
@@ -360,6 +491,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     Environment::Initialize();
     setupLogger();
 
+    mem_setMainMemoryPriority(EXMEMCNT_MAIN_MEM_PRIO_ARM9);
+
     bool mountResult;
     if (shouldMountDsiSd(argc, argv))
         mountResult = mountDsiSd();
@@ -375,11 +508,12 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     // if (Environment::SupportsAgbSemihosting())
         // mountAgbSemihosting();
 
+    gAppSettingsService.TryLoadAppSettings(SETTINGS_FILE_PATH);
+
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
-    applyBiosJitPatches();
-    const char* romPath = argc > 1 ? argv[1] : "/rom.gba";
+    const char* romPath = argc > 1 ? argv[1] : DEFAULT_ROM_FILE_PATH;
     loadGbaRom(romPath);
     char* romExtension = strrchr(romPath, '.');
     if (romExtension)
@@ -390,6 +524,12 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         romExtension[4] = '\0';
     }
     handleSave(romPath);
+
+    setupGbaScreen();
+    setupColorCorrection();
+    setupGbaScreenBrightness();
+    loadGameSpecificSettings();
+
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
     // Do not clear ewram before we read argv
@@ -398,11 +538,13 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
-    jit_init();
+    setupJit();
     dma_init();
+    gbas_init();
     dc_flushRange((void*)0x02200000, 0x400000);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
+    setupWramInstructionCache();
 
     rtos_setIrqMask(RTOS_IRQ_VBLANK);
     rtos_ackIrqMask(~0u);

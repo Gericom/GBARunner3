@@ -8,6 +8,10 @@
 #include "SaveTypeInfo.h"
 #include "SaveFlash.h"
 
+#define MAKER_ID_MACRONIX           0xC2
+#define DEVICE_ID_MACRONIX_512K     0x1C
+#define DEVICE_ID_MACRONIX_1M       0x09
+
 static const u32 sIdentifyFlashV120Sig[] = { 0xB082B580u, 0x480E466Fu, 0x880A490Du, 0x1C114B0Du };
 static const u32 sIdentifyFlashV123Sig[] = { 0x4A07B510u, 0x49078810u, 0x21034008u, 0x80104308u };
 static const u32 sIdentifyFlash1MV103Sig[] = { 0x4A07B510u, 0x49078810u, 0x21034008u, 0x80104308u };
@@ -36,7 +40,7 @@ static void readFlash(u16 secNo, u32 offset, u8* dst, u32 size)
     u32 saveAddress = (secNo << 12) + offset;
     for (u32 i = 0; i < size; ++i)
     {
-        *dst++ = sav_readSaveByte(saveAddress++);
+        *dst++ = sav_readSaveByteFromFileFromUserMode(saveAddress++);
     }
 }
 
@@ -45,7 +49,7 @@ static u32 verifyFlashSector(u16 secNo, const u8* src)
     u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 saveByte = sav_readSaveByteFromFileFromUserMode(saveAddress++);
         u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
@@ -58,7 +62,7 @@ static u32 verifyFlash(u16 secNo, const u8* src, u32 size)
     u32 saveAddress = secNo << 12;
     for (u32 i = 0; i < size; ++i)
     {
-        u8 saveByte = sav_readSaveByte(saveAddress++);
+        u8 saveByte = sav_readSaveByteFromFileFromUserMode(saveAddress++);
         u8 expectedByte = *src++;
         if (saveByte != expectedByte)
             return 0x0E000000 + ((secNo & 0xF) << 12) + i;
@@ -70,8 +74,9 @@ static u16 eraseFlashChip()
 {
     for (u32 i = 0; i < sizeof(gSaveData); ++i)
     {
-        sav_writeSaveByte(i, 0xFF);
+        sav_writeSaveByteToFileFromUserMode(i, 0xFF);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
@@ -79,8 +84,9 @@ static u16 eraseFlashSector(u16 secNo)
 {
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        sav_writeSaveByte((secNo << 12) + i, 0xFF);
+        sav_writeSaveByteToFileFromUserMode((secNo << 12) + i, 0xFF);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
@@ -88,14 +94,16 @@ static u16 programFlashSector(u16 secNo, const u8* src)
 {
     for (u32 i = 0; i < (1 << 12); ++i)
     {
-        sav_writeSaveByte((secNo << 12) + i, *src++);
+        sav_writeSaveByteToFileFromUserMode((secNo << 12) + i, *src++);
     }
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
 static u16 programFlashByte1M(u16 secNo, u32 offset, u8 data)
 {
-    sav_writeSaveByte((secNo << 12) + offset, data);
+    sav_writeSaveByteToFileFromUserMode((secNo << 12) + offset, data);
+    sav_flushSaveFileFromUserMode();
     return 0;
 }
 
@@ -123,8 +131,8 @@ static void initializeFlash512()
     sFlashType.sector.top = 0;
     sFlashType.agbWait[0] = 0;
     sFlashType.agbWait[1] = 3;
-    mem_swapByte(3, &sFlashType.makerId);
-    mem_swapByte(0, &sFlashType.deviceId);
+    mem_swapByte(MAKER_ID_MACRONIX, &sFlashType.makerId);
+    mem_swapByte(DEVICE_ID_MACRONIX_512K, &sFlashType.deviceId);
 }
 
 static u16 identifyFlash1M()
@@ -156,8 +164,8 @@ static void initializeFlash1M()
     sFlashType.sector.top = 0;
     sFlashType.agbWait[0] = 0;
     sFlashType.agbWait[1] = 3;
-    mem_swapByte(3, &sFlashType.makerId);
-    mem_swapByte(0, &sFlashType.deviceId);
+    mem_swapByte(MAKER_ID_MACRONIX, &sFlashType.makerId);
+    mem_swapByte(DEVICE_ID_MACRONIX_1M, &sFlashType.deviceId);
 }
 
 static bool loadDataV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)

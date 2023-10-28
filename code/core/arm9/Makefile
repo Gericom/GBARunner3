@@ -24,7 +24,12 @@ export TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source \
 				../common \
+				source/Application \
+				source/Application/Settings \
+				source/Application/Settings/Enums \
+				source/Application/Settings/Json \
 				source/Core \
+				source/Core/Heap \
 				source/Emulator \
 				source/Fat \
 				source/JitPatcher \
@@ -36,6 +41,7 @@ SOURCES		:=	source \
 				source/Peripherals \
 				source/Peripherals/Graphics \
 				source/Peripherals/Interrupts \
+				source/Peripherals/Sound \
 				source/Save \
 				source/SdCache \
 				source/VirtualMachine \

@@ -9,20 +9,22 @@
         ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rn < 8
             mov r8, r\rn
+            b vm_armUndefinedAluSPCImm
         .elseif \rn < 15
             stmia r13, {r\rn}^
-            nop
-            ldr r8, [r13]
+            b vm_armUndefinedAluSPCImmHiReg
         .else
             // todo?: this value of pc will not be right for relocated code
             ldr r8, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
             add r8, r8, #8
+            b vm_armUndefinedAluSPCImm
         .endif
-        b vm_armUndefinedAluSPCImm
 .endm
 
 generate vm_armUndefinedAluSPCImmRn, 16
 
+vm_armUndefinedAluSPCImmHiReg:
+    ldr r8, [r13]
 vm_armUndefinedAluSPCImm:
     mov r11, lr, lsl #15
     mov r11, r11, lsr #20
