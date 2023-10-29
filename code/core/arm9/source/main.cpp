@@ -4,15 +4,20 @@
 #include <libtwl/mem/memExtern.h>
 #include <libtwl/sys/sysPower.h>
 #include <libtwl/gfx/gfxPalette.h>
-#include <libtwl/gfx/gfx2d.h>
+#include <libtwl/gfx/gfx.h>
+#include <libtwl/gfx/gfxBackground.h>
+#include <libtwl/gfx/gfxWindow.h>
+#include <libtwl/gfx/gfxOam.h>
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/ipc/ipcFifo.h>
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include <array>
+#include <algorithm>
 #include <string.h>
 #include "cp15.h"
 #include "Fat/ff.h"
+#include "DsDefinitions.h"
 #include "VirtualMachine/VirtualMachine.h"
 #include "Emulator/IoRegisters.h"
 #include "Core/Environment.h"
@@ -379,18 +384,83 @@ static void setBottomBacklight(bool enabled)
     ipc_recvWordDirect();
 }
 
+static void setupCaptureOam()
+{
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    vu16* oamPtr = GFX_OAM_SUB;
+    for (u32 y = 0; y < NDS_LCD_HEIGHT; y += 64)
+    {
+        for (u32 x = 0; x < NDS_LCD_WIDTH; x += 64)
+        {
+            oamPtr[0] =
+                GFX_OAM_ATTR0_SHAPE_64_64 |
+                GFX_OAM_ATTR0_MODE_BITMAP |
+                GFX_OAM_ATTR0_Y(y + displaySettings.centerOffsetY);
+            oamPtr[1] =
+                GFX_OAM_ATTR1_SIZE_64_64 |
+                GFX_OAM_ATTR1_X(x + displaySettings.centerOffsetX);
+            oamPtr[2] =
+                GFX_OAM_ATTR2_BMP_ALPHA(15) |
+                GFX_OAM_ATTR2_VRAM_OFFS(((y >> 3) << 5) + (x >> 3));
+            oamPtr += 4;
+        }
+    }
+}
+
+static void setupCenterAndMask()
+{
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    u32 windowX0 = std::clamp<u32>(displaySettings.centerOffsetX, 0, NDS_LCD_WIDTH - 1);
+    u32 windowY0 = std::clamp<u32>(displaySettings.centerOffsetY, 0, NDS_LCD_HEIGHT - 1);
+    u32 windowX1 = std::clamp<u32>(windowX0 + displaySettings.maskWidth, 1, NDS_LCD_WIDTH);
+    u32 windowY1 = std::clamp<u32>(windowY0 + displaySettings.maskHeight, 1, NDS_LCD_HEIGHT);
+    if (windowX0 == 0 && windowX1 == NDS_LCD_WIDTH)
+    {
+        // use two windows to cover a width of 256
+        gfx_setSubWindow0(0, windowY0, 255, windowY1);
+        gfx_setSubWindow1(255, windowY0, 0, windowY1);
+    }
+    else
+    {
+        gfx_setSubWindow0(windowX0, windowY0, windowX1, windowY1);
+        gfx_setSubWindow1(windowX0, windowY0, windowX1, windowY1);
+    }
+
+    REG_WININ_SUB = ((1 << 3) | (1 << 4)) | (((1 << 3) | (1 << 4)) << 8);
+    REG_WINOUT_SUB = 0;
+    REG_DISPCNT_SUB = 0x40017923;
+    REG_BG3CNT_SUB = 0x4084;
+    gfx_setSubBg3Affine(
+        256, 0, 0, 256,
+        -(displaySettings.centerOffsetX * 256),
+        -(displaySettings.centerOffsetY * 256));
+
+    setupCaptureOam();
+}
+
 static void setupGbaScreen()
 {
-    if (gAppSettingsService.GetAppSettings().displaySettings.gbaScreen == GbaScreen::Top)
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    if (displaySettings.gbaScreen == GbaScreen::Top)
     {
-        sys_setMainEngineToTopScreen();
+        if (displaySettings.enableCenterAndMask)
+            sys_setMainEngineToBottomScreen();
+        else
+            sys_setMainEngineToTopScreen();
         setBottomBacklight(false);
     }
     else
     {
-        sys_setMainEngineToBottomScreen();
+        if (displaySettings.enableCenterAndMask)
+            sys_setMainEngineToTopScreen();
+        else
+            sys_setMainEngineToBottomScreen();
         setTopBacklight(false);
     }
+
+    REG_DISPCAPCNT = 0x00320000;
+    if (displaySettings.enableCenterAndMask)
+        setupCenterAndMask();
 }
 
 static void setupColorCorrection()
@@ -403,7 +473,11 @@ static void setupColorCorrection()
 
 static void setupGbaScreenBrightness()
 {
-    *(vu16*)0x0400006C = 0x8000 | (16 - gAppSettingsService.GetAppSettings().displaySettings.gbaScreenBrightness);
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    if (displaySettings.enableCenterAndMask)
+        REG_MASTER_BRIGHT_SUB = 0x8000 | (16 - displaySettings.gbaScreenBrightness);
+    else
+        REG_MASTER_BRIGHT = 0x8000 | (16 - displaySettings.gbaScreenBrightness);
 }
 
 static void applyGameJitPatches()
@@ -471,11 +545,11 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
     heap_init();
 
-    *(vu32*)0x04000000 = 0x10000;
-    *(vu32*)0x04001000 = 0x10000;
+    REG_DISPCNT = 0x10000;
+    REG_DISPCNT_SUB = 0x10000;
     GFX_PLTT_BG_MAIN[0] = 0x1F;
     GFX_PLTT_BG_SUB[0] = 0;
-    *(vu32*)0x0400006C = 0;
+    REG_MASTER_BRIGHT = 0;
 
     mem_setVramCMapping(MEM_VRAM_C_LCDC);
     mem_setVramDMapping(MEM_VRAM_D_LCDC);

@@ -12,6 +12,11 @@
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN             "gbaScreen"
 #define KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION   "gbaColorCorrection"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS  "gbaScreenBrightness"
+#define KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK "enableCenterAndMask"
+#define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X        "centerOffsetX"
+#define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_Y        "centerOffsetY"
+#define KEY_DISPLAY_SETTINGS_MASK_WIDTH             "maskWidth"
+#define KEY_DISPLAY_SETTINGS_MASK_HEIGHT            "maskHeight"
 
 #define KEY_RUN_SETTINGS                            "runSettings"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
@@ -66,6 +71,17 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
         displaySettings.gbaScreenBrightness = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<int>(),
             DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN, DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX);
     }
+
+    displaySettings.enableCenterAndMask
+        = json[KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK] | static_cast<bool>(displaySettings.enableCenterAndMask);
+    displaySettings.centerOffsetX
+        = json[KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X] | displaySettings.centerOffsetX;
+    displaySettings.centerOffsetY
+        = json[KEY_DISPLAY_SETTINGS_CENTER_OFFSET_Y] | displaySettings.centerOffsetY;
+    displaySettings.maskWidth
+        = json[KEY_DISPLAY_SETTINGS_MASK_WIDTH] | displaySettings.maskWidth;
+    displaySettings.maskHeight
+        = json[KEY_DISPLAY_SETTINGS_MASK_HEIGHT] | displaySettings.maskHeight;
 }
 
 static u32 parseHexString(const char* hexString)
