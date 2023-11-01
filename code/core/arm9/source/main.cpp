@@ -522,8 +522,8 @@ static void setupJit()
 static void setupWramInstructionCache()
 {
     const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
-    mpu_setRegionICacheEnable(MPU_REGION_6, runSettings.enableWramInstructionCache);
-    mpu_setRegionICacheEnable(MPU_REGION_7, runSettings.enableWramInstructionCache);
+    mpu_setRegionInstructionCacheEnable(MPU_REGION_6, runSettings.enableWramInstructionCache);
+    mpu_setRegionInstructionCacheEnable(MPU_REGION_7, runSettings.enableWramInstructionCache);
 }
 
 static void loadGameSpecificSettings()

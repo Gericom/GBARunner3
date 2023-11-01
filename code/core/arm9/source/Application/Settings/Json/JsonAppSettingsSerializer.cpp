@@ -150,16 +150,17 @@ bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSetting
         return false;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
-    u8* fileDataPtr = fileData.get();
 
     u32 bytesRead = 0;
-    if (_settingsFile.Read(fileDataPtr, fileSize, bytesRead) != FR_OK ||
+    if (_settingsFile.Read(fileData.get(), fileSize, bytesRead) != FR_OK ||
         bytesRead != fileSize ||
         _settingsFile.Close() != FR_OK)
     {
         return false;
     }
 
+    // Important: pass the pointer as const to deserializeJson to prevent byte writes to VRAM.
+    const u8* fileDataPtr = fileData.get();
     auto result = deserializeJson(_jsonDocument, fileDataPtr, fileSize);
     if (result != DeserializationError::Ok)
     {
