@@ -184,19 +184,7 @@ ITCM_CODE static u32 translateAddress(u32 address)
 ITCM_CODE static u32 dmaIoBaseToChannel(const void* dmaIoBase)
 {
     u32 regOffset = (u32)dmaIoBase - (u32)emu_ioRegisters;
-    switch (regOffset)
-    {
-        case GBA_REG_OFFS_DMA0SAD:
-            return 0;
-        case GBA_REG_OFFS_DMA1SAD:
-            return 1;
-        case GBA_REG_OFFS_DMA2SAD:
-            return 2;
-        case GBA_REG_OFFS_DMA3SAD:
-            return 3;
-    }
-    // not possible
-    return 0;
+    return (regOffset - GBA_REG_OFFS_DMA0SAD) / (GBA_REG_OFFS_DMA1SAD - GBA_REG_OFFS_DMA0SAD);
 }
 
 static void dma_immTransfer16RomSrc(u32 src, u32 dst, u32 byteCount)
@@ -318,9 +306,8 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
     dma_transferRegister = ((u32*)dsDst)[count - 1];
 }
 
-ITCM_CODE static void dmaStop(void* dmaIoBase)
+ITCM_CODE static void dmaStop(int channel, void* dmaIoBase)
 {
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
     dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
     dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
@@ -331,13 +318,12 @@ ITCM_CODE static void dmaStop(void* dmaIoBase)
     }
 }
 
-ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartHBlank(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
     if (src >= 0x08000000)
         return;
     *(u16*)(dmaIoBase + 0xA) = value;
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
     vm_forcedIrqMask |= 1 << 1; // hblank irq
     gfx_setHBlankIrqEnabled(true);
@@ -428,7 +414,7 @@ ITCM_CODE void dma_dmaSound2(void)
     dmaSound(2);
 }
 
-ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
+ITCM_CODE static void dmaStartSound(int channel, void* dmaIoBase, u32 value)
 {
     *(u16*)(dmaIoBase + 0xA) = value;
     dma_state.dmaFlags |= DMA_FLAG_SOUND(channel);
@@ -439,12 +425,11 @@ ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
     dc_drainWriteBuffer();
 }
 
-ITCM_CODE static void dmaStartSpecial(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartSpecial(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
     if (src >= 0x08000000)
         return;
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     switch (channel)
     {
         case 0:
@@ -458,7 +443,7 @@ ITCM_CODE static void dmaStartSpecial(void* dmaIoBase, u32 value)
     }
 }
 
-ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStart(int channel, void* dmaIoBase, u32 value)
 {
     *(u16*)(dmaIoBase + 0xA) = value & ~0x8000;
     if (value & (1 << 11))
@@ -470,10 +455,10 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
         case 1: // vblank
             return;
         case 2: // hblank
-            dmaStartHBlank(dmaIoBase, value);
+            dmaStartHBlank(channel, dmaIoBase, value);
             return;
         case 3: // special
-            dmaStartSpecial(dmaIoBase, value);
+            dmaStartSpecial(channel, dmaIoBase, value);
             return;
     }
     u32 count = *(u16*)(dmaIoBase + 8);
@@ -481,21 +466,24 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
         count = 0x10000;
     u32 src = *(u32*)dmaIoBase;
     u32 dst = *(u32*)(dmaIoBase + 4);
-    int srcStep = getSrcStep(value);
-    int dstStep = getDstStep(value);
-    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    if (value & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
+    }
+    if (channel == 3)
     {
         vm_enableNestedIrqs();
     }
+    int srcStep = getSrcStep(value);
+    int dstStep = getDstStep(value);
     if (value & (1 << 10))
         dma_immTransfer32(src, dst, count, srcStep, dstStep);
     else
         dma_immTransfer16(src, dst, count, srcStep, dstStep);
-    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    if (channel == 3)
     {
         vm_disableNestedIrqs();
     }
-    // todo: irq
 }
 
 ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
@@ -504,6 +492,7 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
     hic_unmapRomBlock();
 #endif
     ic_invalidateAll();
+    int channel = dmaIoBaseToChannel(dmaIoBase);
     u32 oldCnt = *(u16*)(dmaIoBase + 0xA);
     if (!((oldCnt ^ value) & 0x8000))
     {
@@ -514,11 +503,11 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
     {
         // dma was stopped
         *(u16*)(dmaIoBase + 0xA) = value;
-        dmaStop(dmaIoBase);
+        dmaStop(channel, dmaIoBase);
     }
     else
     {
         // dma was started
-        dmaStart(dmaIoBase, value);
+        dmaStart(channel, dmaIoBase, value);
     }
 }
