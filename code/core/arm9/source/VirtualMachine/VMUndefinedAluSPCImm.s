@@ -15,7 +15,7 @@
             b vm_armUndefinedAluSPCImmHiReg
         .else
             // todo?: this value of pc will not be right for relocated code
-            ldr r8, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+            ldr r8, [r13, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
             add r8, r8, #8
             b vm_armUndefinedAluSPCImm
         .endif
