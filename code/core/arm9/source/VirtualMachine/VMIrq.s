@@ -8,46 +8,6 @@ vm_irq_base:
 
 #define DTCM(x) (vm_irq_base - 0xB8 + (x))
 
-/// @brief Irq handler to be used when only emulation irqs should be handled,
-///        and no irqs should be passed through to the VM. Should be branched
-///        to directly from the hardware irq vector.
-/// @param lr The return address + 4.
-arm_func vm_nestedIrqHandler
-    str r0, DTCM(vm_irqSavedR0)
-
-    mov r13, #0x04000000
-    ldr r0, [r13, #0x214]
-    str lr, DTCM(vm_irqSavedLR)
-    str r0, [r13, #0x214]
-
-    // Don't tigger hblank irq on scanlines beyond the gba screen
-    ldrh r13, [r13, #6]
-    sub r13, r13, #160
-    subs r13, r13, #32
-    biclo r0, r0, #2 // HBLANK IRQ
-
-    ldr r13, DTCM(vm_hwIrqMask)
-    ldr lr, DTCM(vm_emulatedIfImeIe)
-    and r13, r13, r0 // bits to add to the emulated IF
-    orr r13, lr, r13
-    ldr lr, DTCM(vm_forcedIrqMask)
-    str r13, DTCM(vm_emulatedIfImeIe)
-    
-    ands r0, r0, lr
-    beq 1f
-
-    tst r0, #(1 << 16) // ARM7 IRQ
-        blne emu_arm7Irq
-    tst r0, #2 // HBLANK IRQ
-        blne emu_hblankIrq
-    tst r0, #1 // VBLANK IRQ
-        blne emu_vblankIrq
-
-1:
-    ldr lr, DTCM(vm_irqSavedLR)
-    ldr r0, DTCM(vm_irqSavedR0)
-    subs pc, lr, #4
-
 /// @brief Main irq handler that handles both emulation irqs and passed
 ///        through irqs to the VM. Should be branched to directly from
 ///        the hardware irq vector.
@@ -57,15 +17,16 @@ arm_func vm_irq
     // here emulator irq tasks can be performed
 
     mov r13, #0x04000000
-    ldr r0, [r13, #0x214]
     str lr, DTCM(vm_irqSavedLR)
+    ldr r0, [r13, #0x214]
+    ldrh lr, [r13, #6]
     str r0, [r13, #0x214]
 
     // Don't tigger hblank irq on scanlines beyond the gba screen
-    ldrh r13, [r13, #6]
-    sub r13, r13, #160
-    subs r13, r13, #32
-    biclo r0, r0, #2 // HBLANK IRQ
+    cmp lr, #260
+    sublo lr, lr, #160
+    rsblos lr, lr, #31
+    bichs r0, r0, #2 // HBLANK IRQ
 
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
@@ -84,14 +45,16 @@ arm_func vm_irq
     tst r0, #1 // VBLANK IRQ
         blne emu_vblankIrq
 
-1:
     ldr r13, DTCM(vm_emulatedIfImeIe)
+1:
     ldr r0, DTCM(vm_irqSavedR0)
     // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IE, M = IME, F = IF)
     //M0FFF FFFF FFFF FFF0
     tst r13, r13, lsl #17 // IF & IE
     ldr r13, DTCM(vm_irqSavedLR)
     ldr lr, DTCM(vm_cpsr)
+.global vm_irqReturnForNestedIrq
+vm_irqReturnForNestedIrq:
     sublss pc, r13, #4 // IME = 0 or (IF & IE == 0)
 
     teq lr, lr, lsl #25 // C = I flag, N = F flag
