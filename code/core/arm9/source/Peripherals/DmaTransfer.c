@@ -436,7 +436,7 @@ ITCM_CODE static void dmaStartSpecial(int channel, void* dmaIoBase, u32 value)
             break;
         case 1:
         case 2:
-            dmaStartSound(dmaIoBase, value, channel);
+            dmaStartSound(channel, dmaIoBase, value);
             break;
         case 3:
             break;
