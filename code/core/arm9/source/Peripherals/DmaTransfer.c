@@ -24,6 +24,19 @@ extern void dma_immTransferSafe32BadSrc(u32 dst, u32 count, int dstStep);
 extern u32 dma_transferRegister;
 extern s8 dma_stepTable[4];
 
+static inline void updateHBlankIrqForChannelStop(void)
+{
+    if (!(dma_state.dmaFlags & DMA_FLAG_HBLANK_MASK))
+    {
+        vm_forcedIrqMask &= ~(1 << 1);
+        u32 gbaDispStat = *(u16*)&emu_ioRegisters[4];
+        if (!(gbaDispStat & (1 << 4)))
+        {
+            gfx_setHBlankIrqEnabled(false);
+        }
+    }
+}
+
 ITCM_CODE static void dmaDummy(void)
 {
 }
@@ -60,6 +73,13 @@ ITCM_CODE static void dmaTransfer(int channel, bool dma32)
         // reload
         dst = *(u32*)((u32)dmaIoBase + 4);
         dma_state.channels[channel].curDst = dst;
+    }
+    if (!(control & (1 << 9)))
+    {
+        dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
+        dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
+        updateHBlankIrqForChannelStop();
+        *(u16*)((u32)dmaIoBase + 0xA) &= ~0x8000;
     }
     if (dma32)
         dma_immTransfer32(src, dst, count, srcStep, dstStep);
@@ -307,16 +327,8 @@ ITCM_CODE static void dmaStop(void* dmaIoBase)
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
     dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
     dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
-    if (!(dma_state.dmaFlags & 0xF))
-    {
-        vm_forcedIrqMask &= ~(1 << 1);
-        u32 gbaDispStat = *(u16*)&emu_ioRegisters[4];
-        if (!(gbaDispStat & (1 << 4)))
-        {
-            gfx_setHBlankIrqEnabled(false);
-        }
-    }
-    if (!(dma_state.dmaFlags & 0x600))
+    updateHBlankIrqForChannelStop();
+    if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
     {
         vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
     }
@@ -401,7 +413,7 @@ ITCM_CODE static void dmaSound(u32 channel)
     if (!(control & (1 << 9)))
     {
         dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
-        if (!(dma_state.dmaFlags & 0x600))
+        if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
         {
             vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
         }
