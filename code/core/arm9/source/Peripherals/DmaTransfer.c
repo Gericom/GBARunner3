@@ -74,6 +74,10 @@ ITCM_CODE static void dmaTransfer(int channel, bool dma32)
         dst = *(u32*)((u32)dmaIoBase + 4);
         dma_state.channels[channel].curDst = dst;
     }
+    if (control & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
+    }
     if (!(control & (1 << 9)))
     {
         dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
