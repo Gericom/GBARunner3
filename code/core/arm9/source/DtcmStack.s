@@ -1,16 +1,18 @@
 .section ".dtcm", "aw"
 
+#include "DtcmStackDefs.inc"
+
 .global dtcmStack
 dtcmStack:
     .word 0xDEAD57AC // stack protection word
-    .space 1024 - 4 - 32
+    .space DTCM_STACK_SIZE - 4
 .global dtcmStackEnd
 dtcmStackEnd:
 
 .global dtcmIrqStack
 dtcmIrqStack:
     .word 0xDEAD57AC // stack protection word
-    .space 128 - 4 + 32
+    .space DTCM_IRQ_STACK_SIZE - 4
 .global dtcmIrqStackEnd
 dtcmIrqStackEnd:
 
