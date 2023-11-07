@@ -321,7 +321,7 @@ ITCM_CODE static void dmaStop(int channel, void* dmaIoBase)
 ITCM_CODE static void dmaStartHBlank(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
-    if (src >= 0x08000000)
+    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
         return;
     *(u16*)(dmaIoBase + 0xA) = value;
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
@@ -428,7 +428,7 @@ ITCM_CODE static void dmaStartSound(int channel, void* dmaIoBase, u32 value)
 ITCM_CODE static void dmaStartSpecial(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
-    if (src >= 0x08000000)
+    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
         return;
     switch (channel)
     {
@@ -465,6 +465,11 @@ ITCM_CODE static void dmaStart(int channel, void* dmaIoBase, u32 value)
     if (count == 0)
         count = 0x10000;
     u32 src = *(u32*)dmaIoBase;
+    if (src >= 0x02200000 && src < 0x02400000)
+    {
+        // assume this is a pc-relative rom address
+        src = src + 0x08000000 - 0x02200000;
+    }
     u32 dst = *(u32*)(dmaIoBase + 4);
     if (value & (1 << 14))
     {
