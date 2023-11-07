@@ -21,11 +21,11 @@ u32 jit_getJitBitsOffset(const void* ptr)
         jitBitsOffset = offsetof(jit_state_t, staticRomJitBits);
         offset = (u32)ptr - 0x02200000;
     }
-    else if ((u32)ptr >= 0x03000000 && (u32)ptr < 0x03008000)
+    else if ((u32)ptr >= 0x03000000 && (u32)ptr < 0x04000000)
     {
         // IWRAM
         jitBitsOffset = offsetof(jit_state_t, iWramJitBits);
-        offset = (u32)ptr - 0x03000000;
+        offset = (u32)ptr & 0x7FFF;
     }
     else if ((u32)ptr >= (u32)sdc_cache && (u32)ptr < (u32)sdc_cache[SDC_BLOCK_COUNT])
     {

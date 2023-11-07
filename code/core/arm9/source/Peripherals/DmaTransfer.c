@@ -24,6 +24,19 @@ extern void dma_immTransferSafe32BadSrc(u32 dst, u32 count, int dstStep);
 extern u32 dma_transferRegister;
 extern s8 dma_stepTable[4];
 
+static inline void updateHBlankIrqForChannelStop(void)
+{
+    if (!(dma_state.dmaFlags & DMA_FLAG_HBLANK_MASK))
+    {
+        vm_forcedIrqMask &= ~(1 << 1);
+        u32 gbaDispStat = *(u16*)&emu_ioRegisters[4];
+        if (!(gbaDispStat & (1 << 4)))
+        {
+            gfx_setHBlankIrqEnabled(false);
+        }
+    }
+}
+
 ITCM_CODE static void dmaDummy(void)
 {
 }
@@ -60,6 +73,17 @@ ITCM_CODE static void dmaTransfer(int channel, bool dma32)
         // reload
         dst = *(u32*)((u32)dmaIoBase + 4);
         dma_state.channels[channel].curDst = dst;
+    }
+    if (control & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
+    }
+    if (!(control & (1 << 9)))
+    {
+        dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
+        dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
+        updateHBlankIrqForChannelStop();
+        *(u16*)((u32)dmaIoBase + 0xA) &= ~0x8000;
     }
     if (dma32)
         dma_immTransfer32(src, dst, count, srcStep, dstStep);
@@ -133,29 +157,26 @@ ITCM_CODE static u32 translateAddress(u32 address)
         case 6:
         {
             address &= ~0x00FE0000;
-            if (address >= 0x06018000)
-                address &= ~0x8000;
-            
-            u32 dispCnt = emu_ioRegisters[GBA_REG_OFFS_DISPCNT];
-            u32 objVramStart;
-            if ((dispCnt & 7) < 3)
-                objVramStart = 0x06010000;
-            else
-                objVramStart = 0x06014000;
+            if (!(address & 0x10000))
+            {
+                break;
+            }
 
-            if (address >= objVramStart)
-                address += 0x3F0000;
+            address &= ~0x8000;
+            if (address & 0x4000)
+            {
+                address += 0x003F0000;
+            }
+            else
+            {
+                u32 dispCnt = emu_ioRegisters[GBA_REG_OFFS_DISPCNT];
+                if ((dispCnt & 7) < 3)
+                {
+                    address += 0x003F0000;
+                }
+            }
             break;
         }
-        case 8:
-        case 9:
-        case 0xA:
-        case 0xB:
-        case 0xC:
-        case 0xD:
-            address &= ~0x06000000;
-            address += 0x02200000 - 0x08000000;
-            break;
     }
     return address;
 }
@@ -163,19 +184,7 @@ ITCM_CODE static u32 translateAddress(u32 address)
 ITCM_CODE static u32 dmaIoBaseToChannel(const void* dmaIoBase)
 {
     u32 regOffset = (u32)dmaIoBase - (u32)emu_ioRegisters;
-    switch (regOffset)
-    {
-        case GBA_REG_OFFS_DMA0SAD:
-            return 0;
-        case GBA_REG_OFFS_DMA1SAD:
-            return 1;
-        case GBA_REG_OFFS_DMA2SAD:
-            return 2;
-        case GBA_REG_OFFS_DMA3SAD:
-            return 3;
-    }
-    // not possible
-    return 0;
+    return (regOffset - GBA_REG_OFFS_DMA0SAD) / (GBA_REG_OFFS_DMA1SAD - GBA_REG_OFFS_DMA0SAD);
 }
 
 static void dma_immTransfer16RomSrc(u32 src, u32 dst, u32 byteCount)
@@ -226,39 +235,37 @@ ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 count, int srcStep, int d
 {
     src &= ~1;
     dst &= ~1;
-    u32 srcRegion = src >> 24;
-    if (srcRegion < 2)
+    if (src < 0x02000000)
     {
         dma_immTransferSafe16BadSrc(dst, count, dstStep);
         return;
     }
+    u32 srcRegion = src >> 24;
     u32 srcEnd = src + (count << 1);
     u32 srcEndRegion = srcEnd >> 24;
     u32 dstRegion = dst >> 24;
-    u32 dstEnd = dst + (count << 1);
-    u32 dstEndRegion = dstEnd >> 24;
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcStep <= 0 || dstStep <= 0 ||
+    u32 dsDst = translateAddress(dst);
+    u32 dsDstEnd = translateAddress(dst + ((count - 1) << 1) * dstStep);
+    if (srcStep <= 0 || dsDstEnd != dsDst + ((count - 1) << 1) ||
         !fastDmaSourceAllowed(srcRegion) || !fastDmaDestinationAllowed(dstRegion) ||
-        srcRegion != srcEndRegion || dstRegion != dstEndRegion || difference < 32)
+        srcRegion != srcEndRegion || difference < 32)
     {
         dma_immTransferSafe16(src, dst, count, srcStep, dstStep);
         return;
     }
-    dst = translateAddress(dst);
-    if (srcRegion >= 8)
+    if (src >= 0x08000000)
     {
-        dma_immTransfer16RomSrc(src, dst, count << 1);
+        dma_immTransfer16RomSrc(src, dsDst, count << 1);
     }
     else
     {
-        // todo: check for bg vram -> obj vram transition
         src = translateAddress(src);
-        mem_copy16((void*)src, (void*)dst, count << 1);
+        mem_copy16((void*)src, (void*)dsDst, count << 1);
     }
-    u32 last = ((u16*)dst)[count - 1];
+    u32 last = ((u16*)dsDst)[count - 1];
     dma_transferRegister = last | (last << 16);
 }
 
@@ -266,69 +273,57 @@ ITCM_CODE void dma_immTransfer32(u32 src, u32 dst, u32 count, int srcStep, int d
 {
     src &= ~3;
     dst &= ~3;
-    u32 srcRegion = src >> 24;
-    if (srcRegion < 2)
+    if (src < 0x02000000)
     {
         dma_immTransferSafe32BadSrc(dst, count, dstStep);
         return;
     }
+    u32 srcRegion = src >> 24;
     u32 srcEnd = src + (count << 2);
     u32 srcEndRegion = srcEnd >> 24;
     u32 dstRegion = dst >> 24;
-    u32 dstEnd = dst + (count << 2);
-    u32 dstEndRegion = dstEnd >> 24;
     int difference = dst - src;
     if (difference < 0)
         difference = -difference;
-    if (srcStep <= 0 || dstStep <= 0 ||
+    u32 dsDst = translateAddress(dst);
+    u32 dsDstEnd = translateAddress(dst + ((count - 1) << 2) * dstStep);
+    if (srcStep <= 0 || dsDstEnd != dsDst + ((count - 1) << 2) ||
         !fastDmaSourceAllowed(srcRegion) || !fastDmaDestinationAllowed(dstRegion) ||
-        srcRegion != srcEndRegion || dstRegion != dstEndRegion || difference < 32)
+        srcRegion != srcEndRegion || difference < 32)
     {
         dma_immTransferSafe32(src, dst, count, srcStep, dstStep);
         return;
     }
-    dst = translateAddress(dst);
-    if (srcRegion >= 8)
+    if (src >= 0x08000000)
     {
-        dma_immTransfer32RomSrc(src, dst, count << 2);
+        dma_immTransfer32RomSrc(src, dsDst, count << 2);
     }
     else
     {
-        // todo: check for bg vram -> obj vram transition
         src = translateAddress(src);
-        mem_copy32((void*)src, (void*)dst, count << 2);
+        mem_copy32((void*)src, (void*)dsDst, count << 2);
     }
-    dma_transferRegister = ((u32*)dst)[count - 1];
+    dma_transferRegister = ((u32*)dsDst)[count - 1];
 }
 
-ITCM_CODE static void dmaStop(void* dmaIoBase)
+ITCM_CODE static void dmaStop(int channel, void* dmaIoBase)
 {
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
     dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
     dma_state.channels[channel].dmaFunction = (void*)dmaDummy;
-    if (!(dma_state.dmaFlags & 0xF))
-    {
-        vm_forcedIrqMask &= ~(1 << 1);
-        u32 gbaDispStat = *(u16*)&emu_ioRegisters[4];
-        if (!(gbaDispStat & (1 << 4)))
-        {
-            gfx_setHBlankIrqEnabled(false);
-        }
-    }
-    if (!(dma_state.dmaFlags & 0x600))
+    updateHBlankIrqForChannelStop();
+    if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
     {
         vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
     }
 }
 
-ITCM_CODE static void dmaStartHBlank(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartHBlank(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
-    if (src >= 0x08000000)
+    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
         return;
     *(u16*)(dmaIoBase + 0xA) = value;
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
     vm_forcedIrqMask |= 1 << 1; // hblank irq
     gfx_setHBlankIrqEnabled(true);
@@ -401,7 +396,7 @@ ITCM_CODE static void dmaSound(u32 channel)
     if (!(control & (1 << 9)))
     {
         dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
-        if (!(dma_state.dmaFlags & 0x600))
+        if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
         {
             vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
         }
@@ -419,7 +414,7 @@ ITCM_CODE void dma_dmaSound2(void)
     dmaSound(2);
 }
 
-ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
+ITCM_CODE static void dmaStartSound(int channel, void* dmaIoBase, u32 value)
 {
     *(u16*)(dmaIoBase + 0xA) = value;
     dma_state.dmaFlags |= DMA_FLAG_SOUND(channel);
@@ -430,26 +425,25 @@ ITCM_CODE static void dmaStartSound(void* dmaIoBase, u32 value, int channel)
     dc_drainWriteBuffer();
 }
 
-ITCM_CODE static void dmaStartSpecial(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartSpecial(int channel, void* dmaIoBase, u32 value)
 {
     u32 src = *(u32*)dmaIoBase;
-    if (src >= 0x08000000)
+    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
         return;
-    int channel = dmaIoBaseToChannel(dmaIoBase);
     switch (channel)
     {
         case 0:
             break;
         case 1:
         case 2:
-            dmaStartSound(dmaIoBase, value, channel);
+            dmaStartSound(channel, dmaIoBase, value);
             break;
         case 3:
             break;
     }
 }
 
-ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStart(int channel, void* dmaIoBase, u32 value)
 {
     *(u16*)(dmaIoBase + 0xA) = value & ~0x8000;
     if (value & (1 << 11))
@@ -461,32 +455,40 @@ ITCM_CODE static void dmaStart(void* dmaIoBase, u32 value)
         case 1: // vblank
             return;
         case 2: // hblank
-            dmaStartHBlank(dmaIoBase, value);
+            dmaStartHBlank(channel, dmaIoBase, value);
             return;
         case 3: // special
-            dmaStartSpecial(dmaIoBase, value);
+            dmaStartSpecial(channel, dmaIoBase, value);
             return;
     }
     u32 count = *(u16*)(dmaIoBase + 8);
     if (count == 0)
         count = 0x10000;
     u32 src = *(u32*)dmaIoBase;
+    if (src >= 0x02200000 && src < 0x02400000)
+    {
+        // assume this is a pc-relative rom address
+        src = src + 0x08000000 - 0x02200000;
+    }
     u32 dst = *(u32*)(dmaIoBase + 4);
-    int srcStep = getSrcStep(value);
-    int dstStep = getDstStep(value);
-    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    if (value & (1 << 14))
+    {
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
+    }
+    if (channel == 3)
     {
         vm_enableNestedIrqs();
     }
+    int srcStep = getSrcStep(value);
+    int dstStep = getDstStep(value);
     if (value & (1 << 10))
         dma_immTransfer32(src, dst, count, srcStep, dstStep);
     else
         dma_immTransfer16(src, dst, count, srcStep, dstStep);
-    if (dmaIoBase == &emu_ioRegisters[GBA_REG_OFFS_DMA3SAD])
+    if (channel == 3)
     {
         vm_disableNestedIrqs();
     }
-    // todo: irq
 }
 
 ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
@@ -495,6 +497,7 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
     hic_unmapRomBlock();
 #endif
     ic_invalidateAll();
+    int channel = dmaIoBaseToChannel(dmaIoBase);
     u32 oldCnt = *(u16*)(dmaIoBase + 0xA);
     if (!((oldCnt ^ value) & 0x8000))
     {
@@ -505,11 +508,11 @@ ITCM_CODE void dma_CntHStore16(void* dmaIoBase, u32 value)
     {
         // dma was stopped
         *(u16*)(dmaIoBase + 0xA) = value;
-        dmaStop(dmaIoBase);
+        dmaStop(channel, dmaIoBase);
     }
     else
     {
         // dma was started
-        dmaStart(dmaIoBase, value);
+        dmaStart(channel, dmaIoBase, value);
     }
 }

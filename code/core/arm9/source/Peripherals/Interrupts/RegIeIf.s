@@ -23,10 +23,10 @@ arm_func emu_regIfStore16
     ldr r11,= vm_emulatedIfImeIe
     bic r9, r9, #0xC000
     ldr r10, [r11]
+    ldr r12, [r11, #(vm_emulatedIrqMask - vm_emulatedIfImeIe)]
     bic r10, r10, r9
     str r10, [r11]
 
-    ldr r12, [r11, #(vm_emulatedIrqMask - vm_emulatedIfImeIe)]
     ldr r10, [r11, #(vm_forcedIrqMask - vm_emulatedIfImeIe)]
     ldr r11, [r11, #(vm_hwIEAddr - vm_emulatedIfImeIe)]
     bic r9, r9, r12
@@ -46,9 +46,9 @@ arm_func emu_regIeIfLoad32
     ldr r10, [r11]
     mov r10, r10, lsl #18
     bic r9, r9, r12
+    ldr r11,= (emu_ioRegisters + 0x200)
     orr r9, r9, r10, lsr #18
 
-    ldr r11,= (emu_ioRegisters + 0x200)
     ldrh r12, [r11]
 
     orr r9, r12, r9, lsl #16

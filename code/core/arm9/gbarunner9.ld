@@ -184,14 +184,16 @@ SECTIONS
 		. = 0xB8;
 		KEEP (VMIrq.o(.itcm))
 		KEEP (PrefetchAbort.o(.itcm))
+		KEEP (GbaSoundAsm.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
-		. = 0x460;
+		. = 0x450;
 		KEEP (VMMode.o(.itcm))
-		. = 0x7C4;
+		. = 0x7B4;
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		KEEP (IoFallback.o(.itcm))
+		KEEP (RegWinInOut.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		*(.itcm)

@@ -23,48 +23,16 @@ _start:
     // setup itcm to cover the first 32KB of memory
     mov r0, #0xC
     mcr p15, 0, r0, c9, c1, 1
-    // mpu region 0: ITCM, DTCM, uncached mmem, IO, GBA slot (4 GB)
-    ldr r0,= ((1 | (31 << 1)) + 0x00000000)
-    mcr	p15, 0, r0, c6, c0, 0
-    // mpu region 1: Cached Main Memory (4 MB)
-    ldr r0,= ((1 | (21 << 1)) + 0x02000000)
-    mcr	p15, 0, r0, c6, c1, 0
-    // mpu region 2: VRAM (8 MB)
-    ldr r0,= ((1 | (22 << 1)) + 0x06000000)
-    mcr	p15, 0, r0, c6, c2, 0
-    // mpu region 3: Cached Extended Main Memory (4 MB)
-    ldr r0,= ((1 | (21 << 1)) + 0x02400000)
-    mcr	p15, 0, r0, c6, c3, 0
-    // mpu region 4: Disabled
-    mov r0, #0
-    mcr	p15, 0, r0, c6, c4, 0
-    // mpu region 5: LCDC VRAM (1 MB)
-    ldr r0,= ((1 | (19 << 1)) + 0x06800000)
-    mcr	p15, 0, r0, c6, c5, 0
-    // mpu region 6: IWRAM (16 MB)
-    ldr r0,= (1 | (23 << 1) + 0x03000000)
-    mcr	p15, 0, r0, c6, c6, 0
-    @ // mpu region 6: IWRAM (32 kB)
-    @ ldr r0,= (1 | (14 << 1) + 0x03000000)
-    @ mcr	p15, 0, r0, c6, c6, 0
-    // mpu region 7: GBA EWRAM (256 KB)
-    ldr r0,= (1 | (17 << 1) | 0x02000000)
-    mcr	p15, 0, r0, c6, c7, 0
-    // data permissions
-    ldr r0,= 0x33201121
-    mcr p15, 0, r0, c5, c0, 2
-    // code permissions
-    ldr r0,= 0x33330221
-    mcr p15, 0, r0, c5, c0, 3
-    // dcache
-    ldr r0,= 0b00101010
-    mcr p15, 0, r0, c2, c0, 0
-    // icache
-    ldr r0,= 0b11110010
-    mcr p15, 0, r0, c2, c0, 1
-    // write buffer
-    ldr r0,= 0b00101100
-    mcr p15, 0, r0, c3, c0, 0
+
+    // iwram to arm 9
+    ldr r0,= 0x04000247
+    mov r1, #0
+    strb r1, [r0]
+
+    ldr sp,= 0x03008000
+    push {r12}
+    bl setupMemoryProtection
+    pop {r12}
 
     // turn back on itcm, dtcm, cache and mpu
     // and use low vectors and armv4t backwards compatibility
@@ -144,6 +112,10 @@ vramhi_bss_done:
     push {r11, r12}
     bl __libc_init_array
     pop {r0, r1}
+
+    // idk why this is needed
+    nop
+
     b gbaRunnerMain
 
 .pool

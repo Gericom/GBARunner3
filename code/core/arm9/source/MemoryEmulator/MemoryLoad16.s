@@ -4,6 +4,7 @@
 #include "VirtualMachine/VMDtcmDefs.inc"
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
+#include "DtcmStackDefs.inc"
 
 /// @brief Loads a 16-bit value from the given GBA memory address.
 ///        When unaligned rotation is applied.
@@ -192,7 +193,7 @@ load16RomCacheMiss:
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r10, r11, r13
-    cmp r10, #1024
+    cmp r10, #DTCM_STACK_SIZE
     mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11

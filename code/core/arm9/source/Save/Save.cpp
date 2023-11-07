@@ -5,6 +5,7 @@
 #include "MemFastSearch.h"
 #include "SaveSwi.h"
 #include "SaveTypeInfo.h"
+#include "VirtualMachine/VMNestedIrq.h"
 #include "Save.h"
 
 [[gnu::section(".ewram.bss")]]
@@ -110,6 +111,7 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
 
 extern "C" u8 sav_readSaveByteFromFile(u32 saveAddress)
 {
+    vm_enableNestedIrqs();
     u8 saveByte;
     if (Environment::IsIsNitroEmulator())
     {
@@ -123,11 +125,13 @@ extern "C" u8 sav_readSaveByteFromFile(u32 saveAddress)
         UINT bytesRead = 0;
         f_read(&gSaveFile, &saveByte, 1, &bytesRead);
     }
+    vm_disableNestedIrqs();
     return saveByte;
 }
 
 extern "C" void sav_writeSaveByteToFile(u32 saveAddress, u8 data)
 {
+    vm_enableNestedIrqs();
     if (Environment::IsIsNitroEmulator())
     {
         // save buffer in extended memory
@@ -140,9 +144,15 @@ extern "C" void sav_writeSaveByteToFile(u32 saveAddress, u8 data)
         UINT bytesWritten = 0;
         f_write(&gSaveFile, &data, 1, &bytesWritten);
     }
+    vm_disableNestedIrqs();
 }
 
 extern "C" void sav_flushSaveFile(void)
 {
-    f_sync(&gSaveFile);
+    vm_enableNestedIrqs();
+    if (!Environment::IsIsNitroEmulator())
+    {
+        f_sync(&gSaveFile);
+    }
+    vm_disableNestedIrqs();
 }

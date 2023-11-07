@@ -12,6 +12,11 @@
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN             "gbaScreen"
 #define KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION   "gbaColorCorrection"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS  "gbaScreenBrightness"
+#define KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK "enableCenterAndMask"
+#define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X        "centerOffsetX"
+#define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_Y        "centerOffsetY"
+#define KEY_DISPLAY_SETTINGS_MASK_WIDTH             "maskWidth"
+#define KEY_DISPLAY_SETTINGS_MASK_HEIGHT            "maskHeight"
 
 #define KEY_RUN_SETTINGS                            "runSettings"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
@@ -66,6 +71,17 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
         displaySettings.gbaScreenBrightness = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<int>(),
             DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN, DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX);
     }
+
+    displaySettings.enableCenterAndMask
+        = json[KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK] | static_cast<bool>(displaySettings.enableCenterAndMask);
+    displaySettings.centerOffsetX
+        = json[KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X] | displaySettings.centerOffsetX;
+    displaySettings.centerOffsetY
+        = json[KEY_DISPLAY_SETTINGS_CENTER_OFFSET_Y] | displaySettings.centerOffsetY;
+    displaySettings.maskWidth
+        = json[KEY_DISPLAY_SETTINGS_MASK_WIDTH] | displaySettings.maskWidth;
+    displaySettings.maskHeight
+        = json[KEY_DISPLAY_SETTINGS_MASK_HEIGHT] | displaySettings.maskHeight;
 }
 
 static u32 parseHexString(const char* hexString)
@@ -134,16 +150,17 @@ bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSetting
         return false;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
-    u8* fileDataPtr = fileData.get();
 
     u32 bytesRead = 0;
-    if (_settingsFile.Read(fileDataPtr, fileSize, bytesRead) != FR_OK ||
+    if (_settingsFile.Read(fileData.get(), fileSize, bytesRead) != FR_OK ||
         bytesRead != fileSize ||
         _settingsFile.Close() != FR_OK)
     {
         return false;
     }
 
+    // Important: pass the pointer as const to deserializeJson to prevent byte writes to VRAM.
+    const u8* fileDataPtr = fileData.get();
     auto result = deserializeJson(_jsonDocument, fileDataPtr, fileSize);
     if (result != DeserializationError::Ok)
     {

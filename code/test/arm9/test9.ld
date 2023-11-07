@@ -198,9 +198,9 @@ SECTIONS
 		KEEP (VMIrq.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
-		. = 0x460;
+		. = 0x450;
 		KEEP (VMMode.o(.itcm))
-		. = 0x7C4;
+		. = 0x7B4;
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		KEEP (IoFallback.o(.itcm))

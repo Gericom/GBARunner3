@@ -36,9 +36,9 @@ ensureJittedCommon:
     sub r9, r8, #0x02200000
     cmp r9, #0x00200000
     blo ensureJittedStaticRom
-    sub r9, r8, #0x03000000
-    cmp r9, #0x8000
-    blo ensureJittedIWram
+    mov r9, r8, lsr #24
+    cmp r9, #3
+    beq ensureJittedIWram
 1:
     push {r0-r3}
     mov r0, r8
@@ -67,7 +67,8 @@ ensureJittedIWram:
         mcreq p15, 0, lr, c7, c5, 0
 
     ldr r11,= (gJitState + 0x20000) // iWramJitBits
-    mov r9, r9, lsr #1
+    mov r9, r8, lsl #17
+    mov r9, r9, lsr #18
     ldrb r11, [r11, r9, lsr #3]
     and r9, r9, #0x7
     rsb r9, r9, #32
