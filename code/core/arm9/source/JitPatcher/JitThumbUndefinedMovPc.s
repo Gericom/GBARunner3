@@ -8,14 +8,15 @@
     arm_func jit_thumbUndefinedMovPcR\rm
         .if \rm < 8
             orr r8, r\rm, #1
+            b jit_thumbEnsureJitted
         .elseif \rm < 15
             stmdb sp, {r\rm}^
             b jit_thumbUndefinedMovPcRmCommonHiReg
         .else
             // pc
             add r8, r11, #5
+            b jit_thumbEnsureJitted
         .endif
-        b jit_thumbEnsureJitted
 .endm
 
 generate jit_thumbUndefinedMovPcRm, 16
