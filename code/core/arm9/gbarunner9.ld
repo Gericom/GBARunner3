@@ -24,7 +24,7 @@ PHDRS
 	dtcm    PT_LOAD FLAGS(7);
 }
 
-__heap_end = ORIGIN(vrama) + LENGTH(vrama);
+__heap_end = ORIGIN(ewram) + LENGTH(ewram);
 
 SECTIONS
 {
@@ -212,6 +212,7 @@ SECTIONS
 
 	__ewram_bss_end = . ;
 	__ewram_bss_end__ = . ;
+	__heap_start = . ;
 
 	.vramhi.bss (NOLOAD):
 	{
@@ -237,8 +238,6 @@ SECTIONS
 
 	__bss_end = . ;
 	__bss_end__ = . ;
-
-	__heap_start = . ;
 
 	_end = . ;
 	__end__ = . ;

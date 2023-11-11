@@ -159,9 +159,7 @@ bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSetting
         return false;
     }
 
-    // Important: pass the pointer as const to deserializeJson to prevent byte writes to VRAM.
-    const u8* fileDataPtr = fileData.get();
-    auto result = deserializeJson(_jsonDocument, fileDataPtr, fileSize);
+    auto result = deserializeJson(_jsonDocument, fileData.get(), fileSize);
     if (result != DeserializationError::Ok)
     {
         gLogger->Log(LogLevel::Debug, "Json deserialization error: %d\n", result);
