@@ -18,7 +18,7 @@ extern "C" void setupMemoryProtection()
     // mpu region 2: GBA VRAM
     MemoryProtectionRegionBuilder(0x06000000, MPU_REGION_SIZE_8MB)
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_PRIV_READ_WRITE)
-        .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
+        .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_PRIV_READ_WRITE)
         .Bufferable()
         .ApplyToRegion(MPU_REGION_2);
 
@@ -30,8 +30,13 @@ extern "C" void setupMemoryProtection()
         .WithInstructionCache()
         .ApplyToRegion(MPU_REGION_3);
 
-    // mpu region 4: Unused
-    mpu_setRegionBaseAndSize(MPU_REGION_4, 0);
+    // mpu region 4: OBJ VRAM (DS)
+    MemoryProtectionRegionBuilder(0x06400000, MPU_REGION_SIZE_32KB)
+        .WithDataAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
+        .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
+        .WithInstructionCache()
+        .Bufferable()
+        .ApplyToRegion(MPU_REGION_4);
 
     // mpu region 5: LCDC VRAM A and B
     MemoryProtectionRegionBuilder(0x06800000, MPU_REGION_SIZE_1MB)
