@@ -3,6 +3,7 @@
 #include <libtwl/mem/memNtrWram.h>
 #include <libtwl/mem/memExtern.h>
 #include <libtwl/sys/sysPower.h>
+#include <libtwl/gfx/gfx3d.h>
 #include <libtwl/gfx/gfxPalette.h>
 #include <libtwl/gfx/gfx.h>
 #include <libtwl/gfx/gfxBackground.h>
@@ -562,6 +563,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     mem_setVramHMapping(MEM_VRAM_H_LCDC);
     mem_setVramIMapping(MEM_VRAM_I_LCDC);
     sys_set3DGeometryEnginePower(true); // enable geometry engine to generate gx fifo irq
+    REG_GXSTAT = 0; // gx fifo irqs must be off
 
     Environment::Initialize();
     setupLogger();
