@@ -38,14 +38,30 @@ static inline void updateHBlankIrqForChannelStop(void)
     }
 }
 
+static inline void updateArm7IrqForChannelStop(void)
+{
+    if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
+    {
+        vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
+    }
+}
+
+static inline void triggerDmaIrqIfEnabled(int channel, u32 control)
+{
+    if (control & GBA_DMA_CONTROL_IRQ)
+    {
+        vm_emulatedIfImeIe |= 1 << (8 + channel);
+    }
+}
+
 static inline int getSrcStep(u32 control)
 {
-    return dma_stepTable[(control >> GBA_DMA_CONTROL_SRC_STEP_SHIFT) & 3];
+    return dma_stepTable[(control >> GBA_DMA_CONTROL_SRC_STEP_SHIFT) & GBA_DMA_CONTROL_SRC_STEP_MASK];
 }
 
 static inline int getDstStep(u32 control)
 {
-    return dma_stepTable[(control >> GBA_DMA_CONTROL_DST_STEP_SHIFT) & 3];
+    return dma_stepTable[(control >> GBA_DMA_CONTROL_DST_STEP_SHIFT) & GBA_DMA_CONTROL_DST_STEP_MASK];
 }
 
 ITCM_CODE void dma_dmaTransfer(int channel)
@@ -65,7 +81,7 @@ ITCM_CODE void dma_dmaTransfer(int channel)
     dma_state.channels[channel].curSrc += srcStep * byteCount;
     int dstStep = getDstStep(control);
     u32 dst;
-    if (((control >> GBA_DMA_CONTROL_DST_STEP_SHIFT) & 3) != 3)
+    if (((control >> GBA_DMA_CONTROL_DST_STEP_SHIFT) & GBA_DMA_CONTROL_DST_STEP_MASK) != GBA_DMA_CONTROL_DST_STEP_RELOAD)
     {
         dst = dma_state.channels[channel].curDst;
         dma_state.channels[channel].curDst += dstStep * byteCount;
@@ -76,14 +92,16 @@ ITCM_CODE void dma_dmaTransfer(int channel)
         dst = dmaIoBase->dst;
         dma_state.channels[channel].curDst = dst;
     }
+    if (src >= 0x08000000 && src < 0x0E000000)
+    {
+        // rom always forces increment
+        srcStep = 1;
+    }
     if (control & GBA_DMA_CONTROL_32BIT)
         dma_immTransfer32(src, dst, byteCount, srcStep, dstStep);
     else
         dma_immTransfer16(src, dst, byteCount, srcStep, dstStep);
-    if (control & GBA_DMA_CONTROL_IRQ)
-    {
-        vm_emulatedIfImeIe |= 1 << (8 + channel);
-    }
+    triggerDmaIrqIfEnabled(channel, control);
     if (!(control & GBA_DMA_CONTROL_REPEAT))
     {
         dmaIoBase->control = control & ~GBA_DMA_CONTROL_ENABLED;
@@ -254,10 +272,7 @@ ITCM_CODE static void dmaStop(int channel, GbaDmaChannel* dmaIoBase)
     dma_state.dmaFlags &= ~DMA_FLAG_HBLANK(channel);
     dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
     updateHBlankIrqForChannelStop();
-    if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
-    {
-        vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
-    }
+    updateArm7IrqForChannelStop();
 }
 
 ITCM_CODE static void dmaStartHBlank(int channel, GbaDmaChannel* dmaIoBase, u32 value)
@@ -295,18 +310,12 @@ ITCM_CODE void dma_dmaSound(u32 channel)
     directChannel->dmaRequest = false;
     dc_drainWriteBuffer();
 
-    if (control & GBA_DMA_CONTROL_IRQ)
-    {
-        vm_emulatedIfImeIe |= 1 << (8 + channel);
-    }
+    triggerDmaIrqIfEnabled(channel, control);
     if (!(control & GBA_DMA_CONTROL_REPEAT))
     {
+        dmaIoBase->control = control & ~GBA_DMA_CONTROL_ENABLED;
         dma_state.dmaFlags &= ~DMA_FLAG_SOUND(channel);
-        if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
-        {
-            vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
-        }
-        dmaIoBase->control &= ~GBA_DMA_CONTROL_ENABLED;
+        updateArm7IrqForChannelStop();
     }
 }
 
@@ -339,24 +348,8 @@ ITCM_CODE static void dmaStartSpecial(int channel, GbaDmaChannel* dmaIoBase, u32
     }
 }
 
-ITCM_CODE static void dmaStart(int channel, GbaDmaChannel* dmaIoBase, u32 value)
+ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u32 control)
 {
-    dmaIoBase->control = value & ~GBA_DMA_CONTROL_ENABLED;
-    if (value & GBA_DMA_CONTROL_ROM_DREQ)
-        return; // rom dreq
-    switch ((value >> 12) & 3)
-    {
-        case 0:
-            break;
-        case 1: // vblank
-            return;
-        case 2: // hblank
-            dmaStartHBlank(channel, dmaIoBase, value);
-            return;
-        case 3: // special
-            dmaStartSpecial(channel, dmaIoBase, value);
-            return;
-    }
     u32 count = dmaIoBase->count;
     if (count == 0)
         count = 0x10000;
@@ -367,23 +360,55 @@ ITCM_CODE static void dmaStart(int channel, GbaDmaChannel* dmaIoBase, u32 value)
         src = src + 0x08000000 - 0x02200000;
     }
     u32 dst = dmaIoBase->dst;
-    if (value & GBA_DMA_CONTROL_IRQ)
-    {
-        vm_emulatedIfImeIe |= 1 << (8 + channel);
-    }
+    triggerDmaIrqIfEnabled(channel, control);
     if (channel == 3)
     {
         vm_enableNestedIrqs();
     }
-    int srcStep = getSrcStep(value);
-    int dstStep = getDstStep(value);
-    if (value & GBA_DMA_CONTROL_32BIT)
+    int srcStep = getSrcStep(control);
+    if (src >= 0x08000000 && src < 0x0E000000)
+    {
+        // rom always forces increment
+        srcStep = 1;
+    }
+    int dstStep = getDstStep(control);
+    if (control & GBA_DMA_CONTROL_32BIT)
         dma_immTransfer32(src, dst, count << 2, srcStep, dstStep);
     else
         dma_immTransfer16(src, dst, count << 1, srcStep, dstStep);
     if (channel == 3)
     {
         vm_disableNestedIrqs();
+    }
+}
+
+ITCM_CODE static void dmaStart(int channel, GbaDmaChannel* dmaIoBase, u32 control)
+{
+    dmaIoBase->control = control & ~GBA_DMA_CONTROL_ENABLED;
+    if (control & GBA_DMA_CONTROL_ROM_DREQ)
+        return; // rom dreq
+    switch ((control >> GBA_DMA_CONTROL_MODE_SHIFT) & GBA_DMA_CONTROL_MODE_MASK)
+    {
+        case GBA_DMA_CONTROL_MODE_IMMEDIATE:
+        {
+            dmaStartImmediate(channel, dmaIoBase, control);
+            break;
+        }
+        case GBA_DMA_CONTROL_MODE_VBLANK:
+        {
+            // todo
+            break;
+        }
+        case GBA_DMA_CONTROL_MODE_HBLANK:
+        {
+            dmaStartHBlank(channel, dmaIoBase, control);
+            break;
+        }
+        case GBA_DMA_CONTROL_MODE_SPECIAL:
+        {
+            dmaStartSpecial(channel, dmaIoBase, control);
+            break;
+        }
     }
 }
 
