@@ -35,8 +35,8 @@ emu_regBgCnt2Store16Continue:
     cmp r11, #3
     blt 1f
     and r11, r11, #(1 << 4)
-    ldr r12,= 0x5080
-    add r12, r12, r11, lsl #6
+    ldr r12,= 0x5080 // mode 3 and 5: 0x5084, mode 4: 0x5080
+    add r12, r12, r11, lsl #6 // mode 4 and 5
     and r9, r9, #3
     orr r9, r12, r9
 1:

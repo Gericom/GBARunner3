@@ -89,19 +89,18 @@ arm_func memu_store16Vram345Finish
     strh r9, [r11]
     bxhs lr
 
-    ldr r12,= 0x88888889
-    add r11, r11, #0x40000
+    ldr r12,= 4370 // mode 5: 6554
+    // mode 4 and 5
     cmp r10, #(0xA000 << 15)
         subhs r10, r10, #(0xA000 << 15)
         addhs r11, r11, #0x6000
-    // rlo and rhi are equal on purpose
-    // on the arm9 only the hi part will be written
-    umull r12, r12, r10, r12
-    @ orr r9, r9, #0x8000
-    @ mov r12, r12, lsr #23
-    @ mov r12, r12, lsl #5
-    mov r12, r12, lsr #22
-    mov r12, r12, lsl #4
+
+    mov r10, r10, lsr #19 // mode 3 and 5: lsr #20, mode 4: lsr #19
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    // orr r9, r9, #0x8000 // mode 3 and 5
+    // add r12, r12, r12, lsl #1 // mode 5
+    mov r12, r12, lsl #4 // mode 3: lsl #5, mode 4: lsl #4, mode 5: lsl #6
     strh r9, [r11, r12]
     bx lr
 

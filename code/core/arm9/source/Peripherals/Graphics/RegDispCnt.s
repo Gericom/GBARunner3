@@ -39,8 +39,8 @@ arm_func emu_regDispCntStore16
 
     and r9, r9, #(1 << 4)
     blt 1f
-    ldr r10,= 0x5080 //0x5084
-    add r10, r10, r9, lsl #6
+    ldr r10,= 0x5080 // mode 3 and 5: 0x5084, mode 4: 0x5080
+    add r10, r10, r9, lsl #6 // mode 4 and 5
     ldr r9,= emu_ioRegisters
     ldrh r9, [r9, #0xC]
     and r9, r9, #3
