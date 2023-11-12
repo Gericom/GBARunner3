@@ -6,11 +6,10 @@
 
 // #define TRACE_THUMB_UNDEFINED
 
-[[gnu::noreturn, gnu::noinline]]
-static void thumbJitNotImplemented()
+[[gnu::noreturn]]
+static inline void thumbJitNotImplemented()
 {
     asm volatile ("bkpt #0");
-    while (1);
 }
 
 void jit_processThumbBlock(u16* ptr)

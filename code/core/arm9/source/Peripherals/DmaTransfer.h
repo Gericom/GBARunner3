@@ -4,7 +4,6 @@ typedef struct
 {
     u32 curSrc;
     u32 curDst;
-    void* dmaFunction;
 } dma_channel_t;
 
 #define DMA_FLAG_HBLANK(channel)    (1 << (channel))
