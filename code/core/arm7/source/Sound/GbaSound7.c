@@ -8,51 +8,52 @@
 
 gbas_shared_t* gSoundSharedData;
 static gbat_t sTimers[2];
+static gbas_direct_channel7_t sDirectChannels[2];
 
 static bool sPaused;
 
-static void updateDirectChannel(gbas_direct_channel_t* channel, const gbat_t* timer)
+static s8 updateDirectChannel(gbas_direct_channel_t* channel, gbas_direct_channel7_t* channel7, u32 timerOverflows)
 {
     //more than 2 implies a samplerate higher than 64kHz
-    if (timer->curNrOverflows > 10)
-        return;
-    for (u32 i = 0; i < timer->curNrOverflows; ++i)
+    if (timerOverflows == 0 || timerOverflows > 10)
+    {
+        return (s8)channel7->curPlaySamples;
+    }
+
+    u32 samples;
+    for (u32 i = 0; i < timerOverflows; ++i)
     {
         u32 readOffset = channel->readOffset;
-        int fifoCount = channel->writeOffset - readOffset;
-        if (fifoCount < 0)
-            fifoCount += 8;
+        u32 fifoCount = (channel->writeOffset - readOffset) & 7;
         if (fifoCount <= 3 && !channel->dmaRequest)
         {
             channel->dmaRequest = true;
             ipc_triggerArm7Irq();
         }
-        if (channel->curPlaySampleCount == 0)
+        if (channel7->curPlaySampleCount != 0)
         {
-            if (fifoCount >= 1)
-            {
-                channel->curPlaySamples = channel->fifo[readOffset];
-                channel->curPlaySampleCount = 3;
-                channel->readOffset = (readOffset + 1) & 7;
-            }
+            channel7->curPlaySamples >>= 8;
+            channel7->curPlaySampleCount--;
+            samples = channel7->curPlaySamples;
         }
-        else
+        else if (fifoCount >= 1)
         {
-            channel->curPlaySamples >>= 8;
-            channel->curPlaySampleCount--;
-        }        
+            channel7->curPlaySamples = channel->fifo[readOffset];
+            channel7->curPlaySampleCount = 3;
+            channel->readOffset = (readOffset + 1) & 7;
+            samples = channel7->curPlaySamples;
+        }
     }
+
+    return (s8)samples;
 }
 
-static int applyBias(int sample)
+static inline s16 clampSample(int inSample)
 {
-    //todo: use real bias
-    sample += 0x200;
-    if (sample >= 0x400)
-        sample = 0x3FF;
-    else if (sample < 0)
-        sample = 0;
-    return (sample - 0x200) << 6;
+    int outSample = inSample << 23;
+    if (inSample != (outSample >> 23))
+        outSample = 0x7FFFFFFF ^ (inSample >> 31);
+    return outSample >> 16;
 }
 
 void gbas_init(gbas_shared_t* sharedData)
@@ -62,6 +63,10 @@ void gbas_init(gbas_shared_t* sharedData)
     gbat_initTimer(&sTimers[1]);
     gbs_init();
     sPaused = false; //true;
+    sDirectChannels[0].curPlaySampleCount = 0;
+    sDirectChannels[0].curPlaySamples = 0;
+    sDirectChannels[1].curPlaySampleCount = 0;
+    sDirectChannels[1].curPlaySamples = 0;
 }
 
 void gbas_setTimerReload(u32 timer, u16 reload)
@@ -80,47 +85,48 @@ void gbas_setTimerControl(u32 timer, u16 control)
 
 void gbas_updateMixer(s16* outLeft, s16* outRight)
 {
-    int left = 0, right = 0;
+    s16 finalLeft = 0;
+    s16 finalRight = 0;
 
     if (!sPaused)
     {
-        gbat_updateTimer(&sTimers[0]);
-        gbat_updateTimer(&sTimers[1]);
+        u32 timer0Overflows = gbat_updateTimer(&sTimers[0]);
+        u32 timer1Overflows = gbat_updateTimer(&sTimers[1]);
         
         //master enable
         if (gSoundSharedData->masterEnable)
         {
             u32 soundCntH = gSoundSharedData->soundCntH;
-            updateDirectChannel(&gSoundSharedData->directChannels[0],
-                &sTimers[(soundCntH & GBA_SOUNDCNT_H_DIRECT_A_TIMER_1) ? 1 : 0]);
-            updateDirectChannel(&gSoundSharedData->directChannels[1],
-                &sTimers[(soundCntH & GBA_SOUNDCNT_H_DIRECT_B_TIMER_1) ? 1 : 0]);
+            int sampA = updateDirectChannel(&gSoundSharedData->directChannels[0],
+                &sDirectChannels[0],
+                (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_TIMER_1) ? timer1Overflows : timer0Overflows);
+            int sampB = updateDirectChannel(&gSoundSharedData->directChannels[1],
+                &sDirectChannels[1],
+                (soundCntH & GBA_SOUNDCNT_H_DIRECT_B_TIMER_1) ? timer1Overflows : timer0Overflows);
 
-            // dmga_sample(sDmgSamp);
+            if (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_VOLUME_FULL)
+                sampA <<= 1;
 
-            // left = sDmgSamp[0];
-            // right = sDmgSamp[1];
-
-            int sampA = (s8)gSoundSharedData->directChannels[0].curPlaySamples << 2;
-            if (!(soundCntH & GBA_SOUNDCNT_H_DIRECT_A_VOLUME_FULL))
-                sampA = sampA >> 1;
-
+            int left = 0;
+            int right = 0;
             if (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_ENABLE_LEFT)
                 left += sampA;
             if (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_ENABLE_RIGHT)
                 right += sampA;
 
-            int sampB = (s8)gSoundSharedData->directChannels[1].curPlaySamples << 2;
-            if (!(soundCntH & GBA_SOUNDCNT_H_DIRECT_B_VOLUME_FULL))
-                sampB = sampB >> 1;
+            if (soundCntH & GBA_SOUNDCNT_H_DIRECT_B_VOLUME_FULL)
+                sampB <<= 1;
 
             if (soundCntH & GBA_SOUNDCNT_H_DIRECT_B_ENABLE_LEFT)
                 left += sampB;
             if (soundCntH & GBA_SOUNDCNT_H_DIRECT_B_ENABLE_RIGHT)
                 right += sampB;
+
+            finalLeft = clampSample(left);
+            finalRight = clampSample(right);
         }
     }
 
-    *outLeft = applyBias(left);
-    *outRight = applyBias(right);
+    *outLeft = finalLeft;
+    *outRight = finalRight;
 }

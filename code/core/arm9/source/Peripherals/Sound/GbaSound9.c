@@ -29,17 +29,16 @@ static void resetFifo(gbas_direct_channel_t* channel)
 {
     channel->readOffset = 0;
     channel->writeOffset = 0;
-    channel->curPlaySampleCount = 0;
-    channel->curPlaySamples = 0;
 }
 
 static void writeFifo32(gbas_direct_channel_t* channel, u32 val, u32 mask)
 {
-    u32 old = channel->fifo[channel->writeOffset];
+    u32 writeOffset = channel->writeOffset;
+    u32 old = channel->fifo[writeOffset];
     old &= ~mask;
     old |= val & mask;
-    channel->fifo[channel->writeOffset] = old;
-    channel->writeOffset = (channel->writeOffset + 1) & 7;
+    channel->fifo[writeOffset] = old;
+    channel->writeOffset = (writeOffset + 1) & 7;
 }
 
 static void writeGbAudioReg(u32 reg, u32 val)
@@ -85,22 +84,29 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
     address -= 0x04000000;
     if (address >= GBA_REG_OFFS_FIFO_A && address <= (GBA_REG_OFFS_FIFO_B + 3))
     {
-        u32 mask;
-        if(length == 1)
-            mask = 0xFF;
-        else if(length == 2)
-            mask = 0xFFFF;
-        else
-            mask = 0xFFFFFFFF;
-        mask <<= (address & 3) * 8;
-        value <<= (address & 3) * 8;
+        gbas_direct_channel_t* channel;
         if (address & 4)
         {
-            writeFifo32(&gGbaSoundShared.directChannels[1], value, mask);
+            channel = &gGbaSoundShared.directChannels[1];
         }
         else
         {
-            writeFifo32(&gGbaSoundShared.directChannels[0], value, mask);
+            channel = &gGbaSoundShared.directChannels[0];
+        }
+        if (__builtin_expect(length == 4, true))
+        {
+            writeFifo32(channel, value, 0xFFFFFFFF);
+        }
+        else
+        {
+            u32 mask;
+            if (length == 1)
+                mask = 0xFF;
+            else
+                mask = 0xFFFF;
+            mask <<= (address & 3) * 8;
+            value <<= (address & 3) * 8;
+            writeFifo32(channel, value, mask);
         }
     }
     else if (address >= GBA_REG_OFFS_SOUND1CNT_L && address < GBA_REG_OFFS_DMA0SAD)
