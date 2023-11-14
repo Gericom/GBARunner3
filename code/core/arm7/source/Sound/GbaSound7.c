@@ -21,7 +21,7 @@ static s8 updateDirectChannel(gbas_direct_channel_t* channel, gbas_direct_channe
     }
 
     u32 samples;
-    for (u32 i = 0; i < timerOverflows; ++i)
+    for (u32 i = timerOverflows; i > 0; --i)
     {
         u32 readOffset = channel->readOffset;
         u32 fifoCount = (channel->writeOffset - readOffset) & 7;
@@ -34,15 +34,14 @@ static s8 updateDirectChannel(gbas_direct_channel_t* channel, gbas_direct_channe
         {
             channel7->curPlaySamples >>= 8;
             channel7->curPlaySampleCount--;
-            samples = channel7->curPlaySamples;
         }
-        else if (fifoCount >= 1)
+        else if (__builtin_expect(fifoCount >= 1, true))
         {
             channel7->curPlaySamples = channel->fifo[readOffset];
             channel7->curPlaySampleCount = 3;
             channel->readOffset = (readOffset + 1) & 7;
-            samples = channel7->curPlaySamples;
         }
+        samples = channel7->curPlaySamples;
     }
 
     return (s8)samples;
