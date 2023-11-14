@@ -149,12 +149,10 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
             if (address == GBA_REG_OFFS_SOUNDCNT_H)
             {
                 emu_ioRegisters[address] = value;
-                ((u8*)&gGbaSoundShared.soundCntH)[0] = value;
             }
             else if (address == (GBA_REG_OFFS_SOUNDCNT_H + 1))
             {
                 emu_ioRegisters[address] = value & 0x77;
-                ((u8*)&gGbaSoundShared.soundCntH)[1] = value & 0x77;
 
                 if (value & (GBA_SOUNDCNT_H_DIRECT_A_RESET >> 8))
                 {

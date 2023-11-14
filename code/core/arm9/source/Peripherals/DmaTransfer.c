@@ -291,12 +291,24 @@ ITCM_CODE static void dmaStartHBlank(int channel, GbaDmaChannel* dmaIoBase, u32 
 ITCM_CODE void dma_dmaSound(u32 channel)
 {
     dc_drainWriteBuffer();
-    gbas_direct_channel_t* directChannel = &gGbaSoundShared.directChannels[channel - 1];
+
+    gbas_direct_channel_t* directChannel;
+    GbaDmaChannel* dmaIoBase;
+    if (channel == 1)
+    {
+        directChannel = &gGbaSoundShared.directChannels[0];
+        dmaIoBase = (GbaDmaChannel*)&emu_ioRegisters[GBA_REG_OFFS_DMA1SAD];
+    }
+    else
+    {
+        directChannel = &gGbaSoundShared.directChannels[1];
+        dmaIoBase = (GbaDmaChannel*)&emu_ioRegisters[GBA_REG_OFFS_DMA2SAD];
+    }
+
     dc_invalidateLine(&directChannel->dmaRequest);
     if (!directChannel->dmaRequest)
         return;
 
-    GbaDmaChannel* dmaIoBase = (GbaDmaChannel*)&emu_ioRegisters[GBA_REG_OFFS_DMA0SAD + channel * 0xC];
     u32 control = dmaIoBase->control;
     u32 src = dma_state.channels[channel].curSrc;
     int srcStep = getSrcStep(control);

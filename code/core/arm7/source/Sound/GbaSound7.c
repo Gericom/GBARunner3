@@ -9,40 +9,40 @@
 gbas_shared_t* gSoundSharedData;
 static gbat_t sTimers[2];
 static gbas_direct_channel7_t sDirectChannels[2];
-
+static u16 sSoundCntH;
 static bool sPaused;
 
 static s8 updateDirectChannel(gbas_direct_channel_t* channel, gbas_direct_channel7_t* channel7, u32 timerOverflows)
 {
-    //more than 2 implies a samplerate higher than 64kHz
+    u32 samples = channel7->curPlaySamples;
+    // no overflows, or too many overflows
     if (timerOverflows == 0 || timerOverflows > 10)
     {
-        return (s8)channel7->curPlaySamples;
+        return (s8)samples;
     }
 
-    u32 samples;
     for (u32 i = timerOverflows; i > 0; --i)
     {
         u32 readOffset = channel->readOffset;
-        u32 fifoCount = (channel->writeOffset - readOffset) & 7;
-        if (fifoCount <= 3 && !channel->dmaRequest)
+        u32 fifoCount = (channel->writeOffset - readOffset);
+        if (!(fifoCount & 4) && !channel->dmaRequest)
         {
             channel->dmaRequest = true;
             ipc_triggerArm7Irq();
         }
         if (channel7->curPlaySampleCount != 0)
         {
-            channel7->curPlaySamples >>= 8;
+            samples >>= 8;
             channel7->curPlaySampleCount--;
         }
-        else if (__builtin_expect(fifoCount >= 1, true))
+        else if (__builtin_expect((fifoCount & 7) != 0, true))
         {
-            channel7->curPlaySamples = channel->fifo[readOffset];
+            samples = channel->fifo[readOffset];
             channel7->curPlaySampleCount = 3;
             channel->readOffset = (readOffset + 1) & 7;
         }
-        samples = channel7->curPlaySamples;
     }
+    channel7->curPlaySamples = samples;
 
     return (s8)samples;
 }
@@ -82,6 +82,16 @@ void gbas_setTimerControl(u32 timer, u16 control)
     }
 }
 
+void gbas_setSoundCntHLo(u8 value)
+{
+    ((u8*)&sSoundCntH)[0] = value;
+}
+
+void gbas_setSoundCntHHi(u8 value)
+{
+    ((u8*)&sSoundCntH)[1] = value & 0x77;
+}
+
 void gbas_updateMixer(s16* outLeft, s16* outRight)
 {
     s16 finalLeft = 0;
@@ -95,7 +105,7 @@ void gbas_updateMixer(s16* outLeft, s16* outRight)
         //master enable
         if (gSoundSharedData->masterEnable)
         {
-            u32 soundCntH = gSoundSharedData->soundCntH;
+            u32 soundCntH = sSoundCntH;
             int sampA = updateDirectChannel(&gSoundSharedData->directChannels[0],
                 &sDirectChannels[0],
                 (soundCntH & GBA_SOUNDCNT_H_DIRECT_A_TIMER_1) ? timer1Overflows : timer0Overflows);
