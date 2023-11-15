@@ -40,6 +40,7 @@
 #include "GbaHeader.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
 #include "ColorLut.h"
+#include "MemoryProtectionConfiguration.h"
 #include "MemoryProtectionUnit.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
@@ -523,8 +524,15 @@ static void setupJit()
 static void setupWramInstructionCache()
 {
     const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
-    mpu_setRegionInstructionCacheEnable(MPU_REGION_6, runSettings.enableWramInstructionCache);
-    mpu_setRegionInstructionCacheEnable(MPU_REGION_7, runSettings.enableWramInstructionCache);
+    mpu_setRegionInstructionCacheEnable(MPU_REGION_GBA_IWRAM, runSettings.enableWramInstructionCache);
+    mpu_setRegionInstructionCacheEnable(MPU_REGION_GBA_EWRAM, runSettings.enableWramInstructionCache);
+}
+
+static void setupEWramDataCache()
+{
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    mpu_setRegionDataCacheEnable(MPU_REGION_GBA_EWRAM, runSettings.enableEWramDataCache);
+    mpu_setRegionDataBufferability(MPU_REGION_GBA_EWRAM, false);
 }
 
 static void loadGameSpecificSettings()
@@ -599,11 +607,11 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         romExtension[4] = '\0';
     }
     handleSave(romPath);
+    loadGameSpecificSettings();
 
     setupGbaScreen();
     setupColorCorrection();
     setupGbaScreenBrightness();
-    loadGameSpecificSettings();
 
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // while (((*(vu16*)0x04000130) & 1) == 1);
@@ -620,6 +628,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
     setupWramInstructionCache();
+    setupEWramDataCache();
 
     rtos_setIrqMask(RTOS_IRQ_VBLANK);
     rtos_ackIrqMask(~0u);

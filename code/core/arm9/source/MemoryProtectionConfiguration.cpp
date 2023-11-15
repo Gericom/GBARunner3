@@ -52,12 +52,12 @@ extern "C" void setupMemoryProtection()
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_READ_WRITE)
         .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_READ_WRITE)
         .WithInstructionCache()
-        .ApplyToRegion(MPU_REGION_6);
+        .ApplyToRegion(MPU_REGION_GBA_IWRAM);
 
     // mpu region 7: GBA EWRAM
     MemoryProtectionRegionBuilder(0x02000000, MPU_REGION_SIZE_256KB)
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_READ_WRITE)
         .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_READ_WRITE)
         .WithInstructionCache()
-        .ApplyToRegion(MPU_REGION_7);
+        .ApplyToRegion(MPU_REGION_GBA_EWRAM);
 }

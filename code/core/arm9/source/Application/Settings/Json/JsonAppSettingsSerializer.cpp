@@ -21,13 +21,13 @@
 #define KEY_RUN_SETTINGS                            "runSettings"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
 #define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE         "enableWramICache"
+#define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE        "enableEWramDCache"
 
 #define ENUM_STRING_GBA_SCREEN_TOP                  "top"
 #define ENUM_STRING_GBA_SCREEN_BOTTOM               "bottom"
 
 #define ENUM_STRING_GBA_COLOR_CORRECTION_NONE       "none"
 #define ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001    "agb001"
-
 
 static bool tryParseGbaScreen(const char* gbaScreenString, GbaScreen& gbaScreen)
 {
@@ -59,6 +59,11 @@ static bool tryParseGbaColorCorrection(const char* gbaColorCorrectionString, Gba
     return true;
 }
 
+static void readBoolSetting(const JsonVariantConst& jsonValue, bool16& setting)
+{
+    setting = jsonValue | static_cast<bool>(setting);
+}
+
 static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& displaySettings)
 {
     if (json.isNull())
@@ -72,8 +77,7 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
             DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN, DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX);
     }
 
-    displaySettings.enableCenterAndMask
-        = json[KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK] | static_cast<bool>(displaySettings.enableCenterAndMask);
+    readBoolSetting(json[KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK], displaySettings.enableCenterAndMask);
     displaySettings.centerOffsetX
         = json[KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X] | displaySettings.centerOffsetX;
     displaySettings.centerOffsetY
@@ -130,8 +134,8 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
         return;
 
     tryParseJitPatchAddresses(json[KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES], runSettings);
-    runSettings.enableWramInstructionCache
-        = json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE] | static_cast<bool>(runSettings.enableWramInstructionCache);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE], runSettings.enableWramInstructionCache);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE], runSettings.enableEWramDataCache);
 }
 
 static void readJson(const JsonDocument& json, AppSettings& appSettings)

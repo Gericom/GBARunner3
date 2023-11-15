@@ -1,6 +1,9 @@
 #pragma once
 #include "MemoryProtectionUnit.h"
 
+#define MPU_REGION_GBA_IWRAM    MPU_REGION_6
+#define MPU_REGION_GBA_EWRAM    MPU_REGION_7
+
 /// @brief Helper class for building memory protection regions.
 class MemoryProtectionRegionBuilder
 {
