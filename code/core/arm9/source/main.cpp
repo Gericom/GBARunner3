@@ -49,6 +49,15 @@ FIL gFile;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
+/// @brief Opcodes returned by bios reads.
+u32 memu_biosOpcodes[4]
+{
+    0xE25EF004, // MEMU_BIOS_OPCODE_ID_IRQ_ENTRY
+    0xE129F000, // MEMU_BIOS_OPCODE_ID_RESET
+    0xE55EC002, // MEMU_BIOS_OPCODE_ID_IRQ_EXIT
+    0xE3A02004  // MEMU_BIOS_OPCODE_ID_SWI_EXIT
+};
+
 static NitroEmulatorOutputStream sIsNitroOutput;
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
 static NullLogger sNullLogger;
@@ -198,10 +207,10 @@ static void handleSave(const char* savePath)
 
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM)
         {
-            memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
-            memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
-            memu_load8Table[0xE] = (void*)memu_load8Undefined;
-            memu_load8Table[0xF] = (void*)memu_load8Undefined;
+            memu_itcmLoad8Table[0xE] = (void*)memu_load16Undefined;
+            memu_itcmLoad8Table[0xF] = (void*)memu_load16Undefined;
+            memu_load8Table[0xE] = (void*)memu_load16Undefined;
+            memu_load8Table[0xF] = (void*)memu_load16Undefined;
             memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
             memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
             memu_load16Table[0xE] = (void*)memu_load16Undefined;

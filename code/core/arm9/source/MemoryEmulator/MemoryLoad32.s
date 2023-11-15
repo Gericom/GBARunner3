@@ -106,9 +106,13 @@ undefinedFromRom32Thumb:
 arm_func memu_load32Bios
     cmp r8, #0x4000
         bhs memu_load32Undefined
-    ldr r9,= 0xE3A02004
-    mov r11, r8, lsl #3
-    mov r9, r9, ror r11
+arm_func memu_load32BiosContinue
+    ldr r9,= memu_biosOpcodeId
+    ldr r10,= memu_biosOpcodes
+    ldrb r9, [r9]
+    and r12, r8, #3
+    add r10, r10, r12
+    ldr r9, [r10, r9, lsl #2]
     bx lr
 
 arm_func memu_load32Ewram

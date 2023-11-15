@@ -124,7 +124,7 @@ generate memu_armLdrRd, 16
         cmp r8, #0x10000000
         addlo r10, r13, r10, lsr #22
         ldrlo r10, [r10, #-0x104] // memu_load8Table
-        ldrhs r10,= memu_load8Undefined
+        ldrhs r10,= memu_load16Undefined
         blx r10
 
         .if \rd < 8

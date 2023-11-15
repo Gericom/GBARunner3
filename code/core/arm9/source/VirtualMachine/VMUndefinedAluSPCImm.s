@@ -16,7 +16,7 @@
         .else
             // todo?: this value of pc will not be right for relocated code
             ldr r8, [r13, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
-            add r8, r8, #8
+            add r8, r8, #4
             b vm_armUndefinedAluSPCImm
         .endif
 .endm
@@ -26,6 +26,18 @@ generate vm_armUndefinedAluSPCImmRn, 16
 vm_armUndefinedAluSPCImmHiReg:
     ldr r8, [r13]
 vm_armUndefinedAluSPCImm:
+#ifndef GBAR3_TEST
+    // set the correct bios opcode when returning from swi or irq
+    ldr r9,= (gGbaBios + 0x18C)
+    ldr r11, [r13, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+    subs r11, r11, r9
+    moveq r11, #MEMU_BIOS_OPCODE_ID_SWI_EXIT
+    streq r11, [r13, #(memu_biosOpcodeId - vm_undefinedRegTmp)]
+    cmp r11, #(0x13C - 0x188)
+    moveq r11, #MEMU_BIOS_OPCODE_ID_IRQ_EXIT
+    streq r11, [r13, #(memu_biosOpcodeId - vm_undefinedRegTmp)]
+#endif
+
     mov r11, lr, lsl #15
     mov r11, r11, lsr #20
     orr r11, r11, #0xE2000000

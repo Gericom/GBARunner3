@@ -33,7 +33,7 @@
 .org dma_stepTable - VM_DTCM_BASE
     .byte 1, -1, 0, 1
 
-.org vm_regs_und+4 - VM_DTCM_BASE
-    .word 0
+.org memu_biosOpcodeId - VM_DTCM_BASE
+    .word MEMU_BIOS_OPCODE_ID_RESET
 
 .end

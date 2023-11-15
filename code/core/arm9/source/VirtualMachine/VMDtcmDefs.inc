@@ -145,4 +145,13 @@ vm_regs_und:
     .word 0 // sp
     .word 0 // lr
 
+#define MEMU_BIOS_OPCODE_ID_IRQ_ENTRY   0
+#define MEMU_BIOS_OPCODE_ID_RESET       1
+#define MEMU_BIOS_OPCODE_ID_IRQ_EXIT    2
+#define MEMU_BIOS_OPCODE_ID_SWI_EXIT    3
+
+.global memu_biosOpcodeId
+memu_biosOpcodeId:
+    .word 0
+
 .previous
