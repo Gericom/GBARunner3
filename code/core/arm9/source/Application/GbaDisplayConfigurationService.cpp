@@ -103,9 +103,15 @@ void GbaDisplayConfigurationService::SetupColorCorrection(const DisplaySettings&
 void GbaDisplayConfigurationService::SetupGbaScreenBrightness(const DisplaySettings& displaySettings)
 {
     if (displaySettings.enableCenterAndMask)
+    {
+        REG_MASTER_BRIGHT = 0x8000 | 16;
         REG_MASTER_BRIGHT_SUB = 0x8000 | (16 - displaySettings.gbaScreenBrightness);
+    }
     else
+    {
         REG_MASTER_BRIGHT = 0x8000 | (16 - displaySettings.gbaScreenBrightness);
+        REG_MASTER_BRIGHT_SUB = 0x8000 | 16;
+    }
 }
 
 void GbaDisplayConfigurationService::ApplyDisplaySettings(const DisplaySettings& displaySettings)
