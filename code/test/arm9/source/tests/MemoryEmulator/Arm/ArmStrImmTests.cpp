@@ -31,6 +31,28 @@ TEST_P(ArmStrImmRd, UsesCorrectRdValue)
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[rd]));
 }
 
+TEST_P(ArmStrImmRd, UsesCorrectRdValueRnHi)
+{
+    // Arrange
+    context_t inContext = gRandomContext;
+    context_t outContext;
+    memu_stubStoredAddresses32[0] = 0;
+    memu_stubStoredValues32[0] = 0;
+    memu_stubStore32Count = 0;
+    const int rd = GetParam();
+    inContext.r[rd] = 0xAABBCCDD;
+    inContext.r[8] = 0x0F000050;
+
+    // Act
+    test_runArmInstruction(0xE5880000u | (rd << 12), &inContext, &outContext);
+
+    // Assert
+    EXPECT_CONTEXT_EQ(outContext, inContext);
+    EXPECT_THAT(memu_stubStore32Count, Eq(1));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x0F000050));
+    EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[rd]));
+}
+
 INSTANTIATE_TEST_SUITE_P(, ArmStrImmRd, Range(0, 15), PrintToStringParamName());
 
 class ArmStrImmRn : public testing::TestWithParam<int> { };
