@@ -39,9 +39,7 @@ static void soundThreadMain(void* arg)
     while (true)
     {
         u16 playbackSampleCount = tmr_getCounter(SOUND_TIMER_SAMPLE_COUNTER);
-        int difference = playbackSampleCount - (u16)(sSamplePosition / 4);
-        if (difference < 0)
-            difference += 0x10000;
+        int difference = (u16)(playbackSampleCount - (u16)(sSamplePosition / 4));
         difference *= 4;
         while (difference-- > 0)
         {

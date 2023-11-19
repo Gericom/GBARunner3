@@ -4,11 +4,10 @@
 #include "MemoryEmulator/MemoryLoadStore.h"
 #include "JitArm.h"
 
-[[gnu::noreturn, gnu::noinline]]
+[[gnu::noreturn]]
 static void armJitNotImplemented()
 {
     asm volatile ("bkpt #0");
-    while (1);
 }
 
 bool jit_processArmInstruction(u32* ptr)

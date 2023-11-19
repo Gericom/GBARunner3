@@ -21,21 +21,20 @@ void gbat_initTimer(gbat_t* timer)
     timer->counter = 0;
 }
 
-void gbat_updateTimer(gbat_t* timer)
+u32 gbat_updateTimer(gbat_t* timer)
 {
     u32 control = timer->control;
     if (!(control & GBAT_CONTROL_ENABLED))
     {        
         timer->isStarted = false;
-        timer->curNrOverflows = 0;
-        return;
+        return 0;
     }
 
     if (!timer->isStarted)
     {
         timer->counter = timer->reload << TICK_SHIFT;
         timer->isStarted = true;
-        timer->curNrOverflows = 0;
+        return 0;
     }
     else
     {
@@ -52,6 +51,6 @@ void gbat_updateTimer(gbat_t* timer)
             ++overflows;
         }
         timer->counter = counter;
-        timer->curNrOverflows = overflows;
+        return overflows;
     }
 }

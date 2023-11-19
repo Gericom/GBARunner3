@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 void gbat_initTimer(gbat_t* timer);
-void gbat_updateTimer(gbat_t* timer);
+u32 gbat_updateTimer(gbat_t* timer);
 
 #ifdef __cplusplus
 }

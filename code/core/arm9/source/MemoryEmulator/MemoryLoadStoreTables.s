@@ -44,7 +44,7 @@ memu_load16Table:
 .global memu_load8Table
 memu_load8Table:
     .word memu_load8Bios // 00
-    .word memu_load8Undefined // 01
+    .word memu_load16Undefined // 01
     .word memu_load8Ewram // 02
     .word memu_load8Iwram // 03
     .word memu_load8Io // 04

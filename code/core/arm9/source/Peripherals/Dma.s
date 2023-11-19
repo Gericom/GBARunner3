@@ -68,7 +68,7 @@ arm_func emu_dmaCntHStore16
 // called from C code
 // r0 = src
 // r1 = dst
-// r2 = count (number of halfwords)
+// r2 = byte count
 // r3 = src step (in halfwords)
 arm_func dma_immTransferSafe16
     push {r4,r5,r8-r11,lr}
@@ -83,14 +83,14 @@ arm_func dma_immTransferSafe16
     bic r8, r1, #1
     bl memu_store16
     add r1, r1, r4, lsl #1
-    subs r2, r2, #1
+    subs r2, r2, #2
     bne 1b
     pop {r4,r5,r8-r11,pc}
 
 // called from C code
 // r0 = src
 // r1 = dst
-// r2 = count (number of words)
+// r2 = byte count
 // r3 = src step (in words)
 arm_func dma_immTransferSafe32
     push {r4,r5,r8-r11,lr}
@@ -104,7 +104,7 @@ arm_func dma_immTransferSafe32
     bic r8, r1, #3
     bl memu_store32
     add r1, r1, r4, lsl #2
-    subs r2, r2, #1
+    subs r2, r2, #4
     bne 1b
     pop {r4,r5,r8-r11,pc}
 
@@ -112,7 +112,7 @@ arm_func dma_immTransferSafe32
 
 // called from C code
 // r0 = dst
-// r1 = count (number of halfwords)
+// r1 = byte count
 // r2 = dst step (in halfwords)
 arm_func dma_immTransferSafe16BadSrc
     push {r8-r11,lr}
@@ -122,13 +122,13 @@ arm_func dma_immTransferSafe16BadSrc
     ldrh r9, [r3]
     bl memu_store16
     add r8, r8, r2, lsl #1
-    subs r1, r1, #1
+    subs r1, r1, #2
     bne 1b
     pop {r8-r11,pc}
 
 // called from C code
 // r0 = dst
-// r1 = count (number of words)
+// r1 = byte count
 // r2 = dst step (in words)
 arm_func dma_immTransferSafe32BadSrc
     push {r8-r11,lr}
@@ -138,6 +138,6 @@ arm_func dma_immTransferSafe32BadSrc
     ldr r9, [r3]
     bl memu_store32
     add r8, r8, r2, lsl #2
-    subs r1, r1, #1
+    subs r1, r1, #4
     bne 1b
     pop {r8-r11,pc}

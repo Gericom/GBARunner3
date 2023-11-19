@@ -13,4 +13,7 @@ public:
 
     /// @brief Specifies whether the instruction cache should be enabled on iwram and ewram.
     bool16 enableWramInstructionCache = true;
+
+    /// @brief Specifies whether the data cache should be enabled on ewram.
+    bool16 enableEWramDataCache = true;
 };

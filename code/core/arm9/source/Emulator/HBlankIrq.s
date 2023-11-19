@@ -18,19 +18,20 @@ arm_func emu_hblankIrq
 
     ldr sp,= dtcmIrqStackEnd
     push {r0-r3,r4,r5,r12,lr}
+#ifndef GBAR3_TEST
     ldr r5,= dma_state
     ldr r4, [r5] // dmaFlags
     tst r4, #1
-    ldrne r3, [r5, #(4 + 0 * 3 * 4 + 8)]
-    blxne r3
+        movne r0, #0
+        blne dma_dmaTransfer
     tst r4, #2
-    ldrne r3, [r5, #(4 + 1 * 3 * 4 + 8)]
-    blxne r3
+        movne r0, #1
+        blne dma_dmaTransfer
     tst r4, #4
-    ldrne r3, [r5, #(4 + 2 * 3 * 4 + 8)]
-    blxne r3
+        movne r0, #2
+        blne dma_dmaTransfer
     tst r4, #8
-    ldrne r3, [r5, #(4 + 3 * 3 * 4 + 8)]
-    blxne r3
+        movne r0, #3
+        blne dma_dmaTransfer
+#endif
     pop {r0-r3,r4,r5,r12,pc}
-    

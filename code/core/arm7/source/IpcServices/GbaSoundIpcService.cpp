@@ -3,6 +3,7 @@
 #include "Sound/GbSound.h"
 #include "Sound/GbaSound7.h"
 #include "Sound/SoundThread.h"
+#include "GbaIoRegOffsets.h"
 #include "GbaSoundIpcService.h"
 
 void GbaSoundIpcService::OnMessageReceived(u32 data)
@@ -37,6 +38,14 @@ void GbaSoundIpcService::OnMessageReceived(u32 data)
             u32 reg = (data >> 3) & 0xFF;
             u32 value = (data >> 11) & 0xFF;
             gbs_writeReg(reg, value);
+            if (reg == GBA_REG_OFFS_SOUNDCNT_H)
+            {
+                gbas_setSoundCntHLo(value);
+            }
+            else if (reg == GBA_REG_OFFS_SOUNDCNT_H + 1)
+            {
+                gbas_setSoundCntHHi(value);
+            }
             break;
         }
         case GBA_SOUND_IPC_CMD_GB_REG_WRITE_16:
@@ -45,6 +54,11 @@ void GbaSoundIpcService::OnMessageReceived(u32 data)
             u32 value = (data >> 11) & 0xFFFF;
             gbs_writeReg(reg, value & 0xFF);
             gbs_writeReg(reg + 1, value >> 8);
+            if (reg == GBA_REG_OFFS_SOUNDCNT_H)
+            {
+                gbas_setSoundCntHLo(value & 0xFF);
+                gbas_setSoundCntHHi(value >> 8);
+            }
             break;
         }
     }

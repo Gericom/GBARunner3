@@ -3,16 +3,6 @@
 
 #include "AsmMacros.inc"
 
-arm_func ic_invalidateAll
-    mov r0, #0
-    mcr p15, 0, r0, c7, c5, 0
-    bx lr
-
-arm_func dc_drainWriteBuffer
-    mov r0, #0
-    mcr p15, 0, r0, c7, c10, 4
-    bx lr
-
 arm_func dc_flushRange
     mov r12, #0
     add r1, r1, r0

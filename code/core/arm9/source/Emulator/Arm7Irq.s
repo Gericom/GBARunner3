@@ -10,8 +10,10 @@ arm_func emu_arm7Irq
     ldr r12,= dma_state
     ldr r4, [r12] // dmaFlags
     tst r4, #(1 << 9)
-    blne dma_dmaSound1
+        movne r0, #1
+        blne dma_dmaSound
     tst r4, #(1 << 10)
-    blne dma_dmaSound2
+        movne r0, #2
+        blne dma_dmaSound
 #endif
     pop {r0-r3,r4,r12,pc}

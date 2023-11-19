@@ -79,9 +79,12 @@ undefinedFromRom16:
 arm_func memu_load16Bios
     cmp r8, #0x4000
         bhs memu_load16Undefined
-    ldr r9,= 0xE3A02004
+    ldr r9,= memu_biosOpcodeId
+    ldr r10,= memu_biosOpcodes
+    ldrb r9, [r9]
     tst r8, #2
-        moveq r9, r9, lsl #16
+    ldr r9, [r10, r9, lsl #2]
+    moveq r9, r9, lsl #16
     mov r9, r9, lsr #16
     tst r8, #1
         bxeq lr

@@ -29,7 +29,7 @@ arm_func emu_gbaSoundLoadSoundCntX
     mov r11, #0
     mcr p15, 0, r11, c7, c10, 4 // drain write buffer
     mcr p15, 0, r10, c7, c6, 1 // invalidate range
-    ldrh r9, [r10, #2]
+    ldrh r9, [r10]
     tst r9, #0xFF00
         moveq r9, #0 // when master enable off
         andne r9, r9, #0xF // when master enable on

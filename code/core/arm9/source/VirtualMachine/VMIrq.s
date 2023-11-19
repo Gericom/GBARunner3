@@ -67,6 +67,7 @@ vm_irqReturnForNestedIrq:
     // timer irqs for example
     ldr r13, DTCM(vm_forcedIrqMask)
     mov r0, #0x04000000
+    strb r0, DTCM(memu_biosOpcodeId) // store MEMU_BIOS_OPCODE_ID_IRQ_ENTRY
     str r13, [r0, #0x210]
     ldr r0, DTCM(vm_irqSavedR0)
 
