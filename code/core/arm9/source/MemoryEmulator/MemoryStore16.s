@@ -3,10 +3,10 @@
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
 
-/// @brief Stores a 16-bit value to the given 16-bit aligned GBA memory address.
+/// @brief Stores a 16-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
-/// @param r8 The address to store to. The address must be 16-bit aligned.
-///           This register is preserved.
+/// @param r8 The address to store to. This register is preserved,
+///           except for IO writes which will clear the bottom bit.
 /// @param r9 The value to store. Must be 16 bit masked: 0x0000XXXX. Trashed.
 /// @param r10-r12 Trashed.
 /// @param r13 Preserved.
@@ -48,6 +48,7 @@ arm_func memu_store16Iwram
     bx lr
 
 arm_func memu_store16Io
+    bic r8, r8, #1
     ldr r11,= memu_store16IoTable
     sub r10, r8, #0x04000000
     ldrh r11, [r11, r10]
@@ -113,9 +114,9 @@ arm_func memu_store16Rom
     bx lr
 
 arm_func memu_store16Sram
-    // todo: unaligned store should be ignored
-    ldr r10,= gSaveData
-    mov r11, r8, lsl #16
-    strb r9, [r10, r11, lsr #16]!
-    strb r9, [r10, #1]
+    tst r8, #1
+        ldreq r10,= gSaveData
+        moveq r11, r8, lsl #17
+        streqb r9, [r10, r11, lsr #17]!
+        streqb r9, [r10, #1]
     bx lr

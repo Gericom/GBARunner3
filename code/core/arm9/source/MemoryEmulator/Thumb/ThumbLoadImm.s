@@ -9,11 +9,10 @@
         and r8, r11, #0x7C0
         add r8, r10, r8, lsr #4
 
-        and r10, r8, #0x0F000000
+        add r9, r9, r8, lsr #23
+        ldrh r10, [r9, #THUMB_LOAD32_TABLE_OFFSET] // memu_load32Table
         cmp r8, #0x10000000
-            addlo r9, r9, r10, lsr #22
-        ldr r10, [r9, #1] // memu_load32Table
-        // interlock
+            ldrhs r10,= memu_load32Undefined
         blx r10
 
         mov r\rd, r9
@@ -26,12 +25,11 @@ generate memu_thumbLdrImmRd, 8
     arm_func memu_thumbLdrhImmR\rd
         and r8, r11, #0x7C0
         add r8, r10, r8, lsr #5
-        
-        and r10, r8, #0x0F000000
+
+        add r9, r9, r8, lsr #23
+        ldrh r10, [r9, #THUMB_LOAD16_TABLE_OFFSET] // memu_load16Table
         cmp r8, #0x10000000
-            addlo r9, r9, r10, lsr #22
-        ldr r10, [r9, #0x41] // memu_load16Table
-        // interlock
+            ldrhs r10,= memu_load16Undefined
         blx r10
 
         mov r\rd, r9
@@ -44,12 +42,11 @@ generate memu_thumbLdrhImmRd, 8
     arm_func memu_thumbLdrbImmR\rd
         and r8, r11, #0x7C0
         add r8, r10, r8, lsr #6
-       
-        and r10, r8, #0x0F000000
+
+        add r9, r9, r8, lsr #23
+        ldrh r10, [r9, #THUMB_LOAD8_TABLE_OFFSET] // memu_load8Table
         cmp r8, #0x10000000
-            addlo r9, r9, r10, lsr #22
-        ldr r10, [r9, #0x81] // memu_load8Table
-        // interlock
+            ldrhs r10,= memu_load8Undefined
         blx r10
 
         and r\rd, r9, #0xFF

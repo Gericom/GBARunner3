@@ -8,42 +8,30 @@
 .macro memu_armStrhRd rd
     arm_func memu_armStrhR\rd
         .if \rd < 8
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE16_TABLE_OFFSET] // memu_store16Table
+
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
-            mov r9, r9, lsl #16
-            mov r9, r9, lsr #16
-
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x84] // memu_store16Table
-
-            bic r8, r8, #1
+            and r9, r9, r13, lsr #16 // r9 &= 0xFFFF
         .elseif \rd < 15
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE16_TABLE_OFFSET] // memu_store16Table
+
             stmnedb r13, {r\rd}^
             nop
             ldrneh r9, [r13, #-4]
-
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x84] // memu_store16Table
-
-            bic r8, r8, #1
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
-            bic r8, r8, #1
             add r9, r9, #4 // pc + 12
-            mov r9, r9, lsl #16
 
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x84] // memu_store16Table
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE16_TABLE_OFFSET] // memu_store16Table
 
-            mov r9, r9, lsr #16
+            and r9, r9, r13, lsr #16 // r9 &= 0xFFFF
         .endif
-        blxlo r10
+        cmp r8, #0x10000000
+            blxlo r10
         memu_armReturn
 .endm
 
@@ -56,11 +44,10 @@ generate memu_armStrhRd, 16
             .mexit
         .endif
 
-        and r10, r8, #0x0F000000
+        add r9, r13, r8, lsr #23
+        ldrh r10, [r9, #ARM_LOAD16_TABLE_OFFSET] // memu_load16Table
         cmp r8, #0x10000000
-        addlo r9, r13, r10, lsr #22
-        ldrlo r10, [r9, #-0x144] // memu_load16Table
-        ldrhs r10,= memu_load16Undefined
+            ldrhs r10,= memu_load16Undefined
         blx r10
 
         .if \rd < 8
@@ -86,11 +73,10 @@ generate memu_armLdrhRd, 16
         tst r8, #1
             bne memu_armLdrsbR\rd
         
-        and r10, r8, #0x0F000000
+        add r9, r13, r8, lsr #23
+        ldrh r10, [r9, #ARM_LOAD16_TABLE_OFFSET] // memu_load16Table
         cmp r8, #0x10000000
-        addlo r9, r13, r10, lsr #22
-        ldrlo r10, [r9, #-0x144] // memu_load16Table
-        ldrhs r10,= memu_load16Undefined
+            ldrhs r10,= memu_load16Undefined
         blx r10
 
         mov r9, r9, lsl #16
@@ -115,11 +101,10 @@ generate memu_armLdrshRd, 16
             .mexit
         .endif
 
-        and r10, r8, #0x0F000000
+        add r9, r13, r8, lsr #23
+        ldrh r10, [r9, #ARM_LOAD8_TABLE_OFFSET] // memu_load8Table
         cmp r8, #0x10000000
-        addlo r9, r13, r10, lsr #22
-        ldrlo r10, [r9, #-0x104] // memu_load8Table
-        ldrhs r10,= memu_load16Undefined
+            ldrhs r10,= memu_load8Undefined
         blx r10
 
         mov r9, r9, lsl #24

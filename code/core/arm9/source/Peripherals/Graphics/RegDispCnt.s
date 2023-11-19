@@ -70,27 +70,27 @@ tiledBitmapSwitch:
     strb r12, [r11]
 
     ldmia r9!, {r10, r11, r12}
-    str r11, [r10], #0x40
+    strh r11, [r10], #0x20
     str r11, [r12]
     ldmia r9!, {r11, r12}
-    str r11, [r10], #0x40
+    strh r11, [r10], #0x20
     str r11, [r12]
     ldmia r9!, {r11, r12}
-    str r11, [r10], #0x40
+    strh r11, [r10], #0x20
     str r11, [r12]
     ldmia r9!, {r11, r12}
-    str r11, [r10], #0x40
+    strh r11, [r10], #0x20
     str r11, [r12]
     ldmia r9!, {r11, r12}
-    str r11, [r10], #0x40
+    strh r11, [r10], #0x20
     str r11, [r12]
     ldmia r9!, {r11, r12}
-    str r11, [r10]
+    strh r11, [r10]
     str r11, [r12]
     bx lr
 
 bitmapToTiledTable:
-    .word memu_load32Table + (6 * 4)
+    .word memu_load32Table + (6 * 2)
     .word memu_load32Vram012
     .word memu_itcmLoad32Table + (6 * 4)
     .word memu_load16Vram012
@@ -105,7 +105,7 @@ bitmapToTiledTable:
     .word memu_itcmStore8Table + (6 * 4)
 
 tiledToBitmapTable:
-    .word memu_load32Table + (6 * 4)
+    .word memu_load32Table + (6 * 2)
     .word memu_load32Vram345
     .word memu_itcmLoad32Table + (6 * 4)
     .word memu_load16Vram345

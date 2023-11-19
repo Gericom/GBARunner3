@@ -19,7 +19,7 @@ TEST_P(ThumbStrbRegRd, UsesCorrectRdValue)
     memu_stubStoredValue8 = 0;
     const int rd = GetParam();
     inContext.r[rd] = 0xA5;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
     inContext.r[2] = 4;
 
     // Act
@@ -27,7 +27,7 @@ TEST_P(ThumbStrbRegRd, UsesCorrectRdValue)
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000054));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000054));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[rd]));
 }
 
@@ -45,14 +45,14 @@ TEST_P(ThumbStrbRegRn, UsesCorrectRnValue)
     const int rn = GetParam();
     inContext.r[0] = 0xA5;
     inContext.r[2] = 4;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x00231050;
 
     // Act
     test_runThumbInstruction(THUMB_STRB_REG(THUMB_R0, rn, THUMB_R2), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050 + inContext.r[2]));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x00231050 + inContext.r[2]));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 
@@ -70,14 +70,14 @@ TEST_P(ThumbStrbRegRm, UsesCorrectRmValue)
     const int rm = GetParam();
     inContext.r[0] = 0xA5;
     inContext.r[1] = 4;
-    inContext.r[rm] = 0x10000050;
+    inContext.r[rm] = 0x00231050;
 
     // Act
     test_runThumbInstruction(THUMB_STRB_REG(THUMB_R0, THUMB_R1, rm), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050 + inContext.r[1]));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x00231050 + inContext.r[1]));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 
@@ -91,7 +91,7 @@ TEST(ThumbStrbReg, ValueMasked)
     memu_stubStoredAddress8 = 0;
     memu_stubStoredValue8 = 0;
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
     inContext.r[2] = 4;
 
     // Act
@@ -99,6 +99,6 @@ TEST(ThumbStrbReg, ValueMasked)
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000054));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000054));
     EXPECT_THAT(memu_stubStoredValue8, Eq(0xDD));
 }

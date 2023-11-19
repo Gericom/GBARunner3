@@ -32,9 +32,11 @@
             .if (\p == 1) && (\w == 0)
                 // hi reg, pre, no writeback
                 add r8, r8, r9 // add the offset
+                sub r9, r8, r9
             .elseif (\p == 1) && (\w == 1)
                 // hi reg, pre, writeback
                 add r8, r8, r9 // add the offset
+                sub r9, r8, r9
                 str r8, [r13, #-4]
                 ldmdb r13, {r\rn}^
                 nop

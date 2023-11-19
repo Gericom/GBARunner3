@@ -20,7 +20,7 @@ TEST_P(ThumbStrRegRd, UsesCorrectRdValue)
     memu_stubStore32Count = 0;
     const int rd = GetParam();
     inContext.r[rd] = 0xAABBCCDD;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
     inContext.r[2] = 4;
 
     // Act
@@ -29,7 +29,7 @@ TEST_P(ThumbStrRegRd, UsesCorrectRdValue)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000054));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x0F000054));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[rd]));
 }
 
@@ -48,7 +48,7 @@ TEST_P(ThumbStrRegRn, UsesCorrectRnValue)
     const int rn = GetParam();
     inContext.r[0] = 0xAABBCCDD;
     inContext.r[2] = 4;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x00231050;
 
     // Act
     test_runThumbInstruction(THUMB_STR_REG(THUMB_R0, rn, THUMB_R2), &inContext, &outContext);
@@ -56,7 +56,7 @@ TEST_P(ThumbStrRegRn, UsesCorrectRnValue)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050 + inContext.r[2]));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x00231050 + inContext.r[2]));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 
@@ -75,7 +75,7 @@ TEST_P(ThumbStrRegRm, UsesCorrectRmValue)
     const int rm = GetParam();
     inContext.r[0] = 0xAABBCCDD;
     inContext.r[1] = 4;
-    inContext.r[rm] = 0x10000050;
+    inContext.r[rm] = 0x00231050;
 
     // Act
     test_runThumbInstruction(THUMB_STR_REG(THUMB_R0, THUMB_R1, rm), &inContext, &outContext);
@@ -83,7 +83,7 @@ TEST_P(ThumbStrRegRm, UsesCorrectRmValue)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050 + inContext.r[1]));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x00231050 + inContext.r[1]));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 
@@ -91,7 +91,7 @@ INSTANTIATE_TEST_SUITE_P(, ThumbStrRegRm, Range(0, 8), PrintToStringParamName())
 
 class ThumbStrRegAlignment : public testing::TestWithParam<int> { };
 
-TEST_P(ThumbStrRegAlignment, AddressForceAligned)
+TEST_P(ThumbStrRegAlignment, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -101,7 +101,7 @@ TEST_P(ThumbStrRegAlignment, AddressForceAligned)
     memu_stubStore32Count = 0;
     const int alignOffset = GetParam();
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
     inContext.r[2] = alignOffset;
 
     // Act
@@ -110,7 +110,7 @@ TEST_P(ThumbStrRegAlignment, AddressForceAligned)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x0F000050 + alignOffset));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(0xAABBCCDD));
 }
 

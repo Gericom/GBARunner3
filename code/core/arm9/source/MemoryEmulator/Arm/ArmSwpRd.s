@@ -58,7 +58,6 @@ generate memu_armSwpRd, 16
             // pc is not allowed
         .endif
 
-        bic r8, r8, #3
         bl memu_store8
         
         memu_armReturn

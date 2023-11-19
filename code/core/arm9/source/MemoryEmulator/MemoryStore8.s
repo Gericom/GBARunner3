@@ -112,6 +112,6 @@ arm_func memu_store8Rom
 
 arm_func memu_store8Sram
     ldr r10,= gSaveData
-    mov r11, r8, lsl #16
-    strb r9, [r10, r11, lsr #16]
+    mov r11, r8, lsl #17
+    strb r9, [r10, r11, lsr #17]
     bx lr

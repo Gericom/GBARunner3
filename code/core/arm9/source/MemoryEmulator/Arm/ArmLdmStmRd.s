@@ -8,7 +8,6 @@
 arm_func memu_armStmRd
     mov r9, r8
     add r8, r8, r10
-    bic r8, r8, #3
 
     rsb r10, lr, #0
     and r10, r10, lr
