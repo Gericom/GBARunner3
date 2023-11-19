@@ -222,8 +222,8 @@ memu_load32RomHiContinue:
 
 arm_func memu_load32Sram
     ldr r10,= gSaveData
-    mov r11, r8, lsl #16
-    ldrb r9, [r10, r11, lsr #16]
+    mov r11, r8, lsl #17
+    ldrb r9, [r10, r11, lsr #17]
     orr r9, r9, lsl #8
     orr r9, r9, lsl #16
     bx lr

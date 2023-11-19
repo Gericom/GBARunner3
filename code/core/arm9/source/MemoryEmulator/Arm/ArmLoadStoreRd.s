@@ -8,23 +8,19 @@
 .macro memu_armStrRd rd
     arm_func memu_armStrR\rd
         .if \rd < 8
-            movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
-            
             add r10, r13, r8, lsr #23
             ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
-            bic r8, r8, #3
+            movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
         .elseif \rd < 15
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
+
             stmnedb r13, {r\rd}^
             nop
             ldrne r9, [r13, #-4]
-
-            add r10, r13, r8, lsr #23
-            ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
-            bic r8, r8, #3
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
-            bic r8, r8, #3
 
             add r10, r13, r8, lsr #23
             ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table

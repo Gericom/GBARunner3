@@ -91,7 +91,7 @@ INSTANTIATE_TEST_SUITE_P(, ThumbStrRegRm, Range(0, 8), PrintToStringParamName())
 
 class ThumbStrRegAlignment : public testing::TestWithParam<int> { };
 
-TEST_P(ThumbStrRegAlignment, AddressForceAligned)
+TEST_P(ThumbStrRegAlignment, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -110,7 +110,7 @@ TEST_P(ThumbStrRegAlignment, AddressForceAligned)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x0F000050));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x0F000050 + alignOffset));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(0xAABBCCDD));
 }
 

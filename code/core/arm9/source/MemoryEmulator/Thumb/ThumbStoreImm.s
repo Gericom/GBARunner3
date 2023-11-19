@@ -8,7 +8,6 @@
     arm_func memu_thumbStrImmR\rd
         and r8, r11, #0x7C0
         add r8, r10, r8, lsr #4
-        bic r8, r8, #3
 
         add r9, r9, r8, lsr #23
         ldrh r10, [r9, #THUMB_STORE32_TABLE_OFFSET] // memu_store32Table
@@ -25,7 +24,6 @@ generate memu_thumbStrImmRd, 8
     arm_func memu_thumbStrhImmR\rd
         and r8, r11, #0x7C0
         add r8, r10, r8, lsr #5
-        bic r8, r8, #1
 
         add r10, r9, r8, lsr #23
         ldrh r10, [r10, #THUMB_STORE16_TABLE_OFFSET] // memu_store16Table

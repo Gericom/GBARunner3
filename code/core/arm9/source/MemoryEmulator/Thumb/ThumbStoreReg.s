@@ -6,7 +6,6 @@
 
 .macro memu_thumbStrRegRd rd
     arm_func memu_thumbStrRegR\rd
-        bic r8, r8, #3
         add r9, r9, r8, lsr #23
         ldrh r10, [r9, #THUMB_STORE32_TABLE_OFFSET] // memu_store32Table
         mov r9, r\rd
@@ -19,7 +18,6 @@ generate memu_thumbStrRegRd, 8
 
 .macro memu_thumbStrhRegRd rd
     arm_func memu_thumbStrhRegR\rd
-        bic r8, r8, #1
         add r10, r9, r8, lsr #23
         ldrh r10, [r10, #THUMB_STORE16_TABLE_OFFSET] // memu_store16Table
         and r9, r\rd, r9, lsr #16

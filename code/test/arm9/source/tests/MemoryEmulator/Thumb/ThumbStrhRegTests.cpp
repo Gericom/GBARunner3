@@ -83,7 +83,7 @@ TEST_P(ThumbStrhRegRm, UsesCorrectRmValue)
 
 INSTANTIATE_TEST_SUITE_P(, ThumbStrhRegRm, Range(0, 8), PrintToStringParamName());
 
-TEST(ThumbStrhReg, AddressForceAligned)
+TEST(ThumbStrhReg, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -99,7 +99,7 @@ TEST(ThumbStrhReg, AddressForceAligned)
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000052));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000053));
     EXPECT_THAT(memu_stubStoredValue16, Eq(0xAABB));
 }
 

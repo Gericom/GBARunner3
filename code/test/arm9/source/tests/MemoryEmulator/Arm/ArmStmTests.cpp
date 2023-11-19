@@ -81,7 +81,7 @@ TEST(ArmStmiaTests, StoresNewRnForWritebackWithRnInRlistNotFirstReg)
     EXPECT_THAT(outContext.r[1], Eq(0x1000005C));
 }
 
-TEST(ArmStmiaTests, ForceAligns)
+TEST(ArmStmiaTests, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -97,7 +97,7 @@ TEST(ArmStmiaTests, ForceAligns)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000053));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 
@@ -116,7 +116,7 @@ TEST(ArmStmiaTests, ForceAlignNotAppliedToWriteback)
 
     // Assert
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000053));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
     EXPECT_THAT(outContext.r[1], Eq(0x10000057));
 }
@@ -231,7 +231,7 @@ TEST_P(ArmStmibRn, UsesCorrectRnValue)
 
 INSTANTIATE_TEST_SUITE_P(, ArmStmibRn, Range(0, 15), PrintToStringParamName());
 
-TEST(ArmStmibTests, ForceAligns)
+TEST(ArmStmibTests, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -247,7 +247,7 @@ TEST(ArmStmibTests, ForceAligns)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000054));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000057));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 
@@ -361,7 +361,7 @@ TEST_P(ArmStmdaRn, UsesCorrectRnValue)
 
 INSTANTIATE_TEST_SUITE_P(, ArmStmdaRn, Range(0, 15), PrintToStringParamName());
 
-TEST(ArmStmdaTests, ForceAligns)
+TEST(ArmStmdaTests, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -377,7 +377,7 @@ TEST(ArmStmdaTests, ForceAligns)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x10000053));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 
@@ -491,7 +491,7 @@ TEST_P(ArmStmdbRn, UsesCorrectRnValue)
 
 INSTANTIATE_TEST_SUITE_P(, ArmStmdbRn, Range(0, 15), PrintToStringParamName());
 
-TEST(ArmStmdbTests, ForceAligns)
+TEST(ArmStmdbTests, AlignmentHandledByBackend)
 {
     // Arrange
     context_t inContext = gRandomContext;
@@ -507,7 +507,7 @@ TEST(ArmStmdbTests, ForceAligns)
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
     EXPECT_THAT(memu_stubStore32Count, Eq(1));
-    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x1000004C));
+    EXPECT_THAT(memu_stubStoredAddresses32[0], Eq(0x1000004F));
     EXPECT_THAT(memu_stubStoredValues32[0], Eq(inContext.r[0]));
 }
 

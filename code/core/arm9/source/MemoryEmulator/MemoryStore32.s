@@ -3,10 +3,10 @@
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
 
-/// @brief Stores a 32-bit value to the given 32-bit aligned GBA memory address.
+/// @brief Stores a 32-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
-/// @param r8 The address to store to. The address must be 32-bit aligned.
-///           This register is preserved.
+/// @param r8 The address to store to. This register is preserved,
+///           except for IO writes which will clear the bottom 2 bits.
 /// @param r9 The value to store. Trashed.
 /// @param r10-r12 Trashed.
 /// @param r13 Preserved.
@@ -48,6 +48,7 @@ arm_func memu_store32Iwram
     bx lr
 
 arm_func memu_store32Io
+    bic r8, r8, #3
     ldr r11,= memu_store32IoTable
     sub r10, r8, #0x04000000
     mov r12, r10, lsr #1
@@ -66,6 +67,7 @@ arm_func memu_store32Pltt
     ldrh r11, [r11]
     bic r10, r8, #0x00FF0000
     bic r10, r10, #0x0000FC00
+    bic r10, r10, #3
     strh r12, [r10]
     ldr r12,= (gShadowPalette - 0x05000000)
     strh r11, [r10, #2]
@@ -100,11 +102,11 @@ arm_func memu_store32Rom
     bx lr
 
 arm_func memu_store32Sram
-    // todo: unaligned store should be ignored
-    ldr r10,= gSaveData
-    mov r11, r8, lsl #16
-    strb r9, [r10, r11, lsr #16]!
-    strb r9, [r10, #1]
-    strb r9, [r10, #2]
-    strb r9, [r10, #3]
+    tst r8, #3
+        ldreq r10,= gSaveData
+        moveq r11, r8, lsl #17
+        streqb r9, [r10, r11, lsr #17]!
+        streqb r9, [r10, #1]
+        streqb r9, [r10, #2]
+        streqb r9, [r10, #3]
     bx lr

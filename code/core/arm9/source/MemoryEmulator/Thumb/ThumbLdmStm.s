@@ -6,8 +6,8 @@
 
 .macro memu_thumbLdmiaRn rn
     arm_func memu_thumbLdmiaR\rn
-        and r13, r11, #0xFF
         ldr r12,= gPopCountTable
+        and r13, r11, #0xFF
         ldrb r12, [r12, r13]
 
         bic r8, r\rn, #3
@@ -39,8 +39,6 @@ arm_func memu_thumbLdmiaCommon
         and r13, r11, #0xFF
         ldrb r12, [r12, r13]
 
-        bic r8, r\rn, #3
-
         rsb r11, r13, #0
         and r11, r11, r13
         cmp r11, #(1 << \rn)
@@ -48,9 +46,10 @@ arm_func memu_thumbLdmiaCommon
         and r11, r\rn, #3
         orr r13, r11, lsl #16
 
+        sub r8, r\rn, #4
+
         addne r\rn, r\rn, r12, lsl #2
 
-        sub r8, r8, #4
 
         .macro memu_thumbStmiaR\rn\()_storeReg reg
             tst r13, #(1 << \reg)
@@ -62,6 +61,7 @@ arm_func memu_thumbLdmiaCommon
         generate memu_thumbStmiaR\rn\()_storeReg, 8
 
         add r8, r8, #4
+        bic r8, r8, #3
         orr r\rn, r8, r13, lsr #16
         memu_thumbReturn
 .endm
