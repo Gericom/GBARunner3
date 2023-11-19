@@ -28,7 +28,7 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checkcorearm9 checkarm7 checkarm9 GBARunner3.nds
+all: checkcorearm9 checkarm7 checkarm9 $(TARGET).nds
 
 #---------------------------------------------------------------------------------
 checkcorearm9:
@@ -44,20 +44,20 @@ checkarm9:
 	$(MAKE) -C arm9
 
 #---------------------------------------------------------------------------------
-GBARunner3.nds	: $(NITRO_FILES) ../core/arm7/GBARunner3.elf arm9/GBARunner3.elf
-	ndstool	-c GBARunner3.nds -7 ../core/arm7/GBARunner3.elf -9 arm9/GBARunner3.elf \
+$(TARGET).nds	: $(NITRO_FILES) ../core/arm7/$(TARGET).elf arm9/$(TARGET).elf
+	ndstool	-c $(TARGET).nds -7 ../core/arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
 	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
 	$(_ADDFILES)
 ifdef GBAR3_ISNITRO
-	dlditool FatInNitroFS.dldi GBARunner3.nds
+	dlditool FatInNitroFS.dldi $(TARGET).nds
 endif
 
 #---------------------------------------------------------------------------------
-../core/arm7/GBARunner3.elf:
+../core/arm7/$(TARGET).elf:
 	$(MAKE) -C ../core/arm7
 	
 #---------------------------------------------------------------------------------
-arm9/GBARunner3.elf:
+arm9/$(TARGET).elf:
 	$(MAKE) -C arm9
 
 #---------------------------------------------------------------------------------
@@ -65,5 +65,5 @@ clean:
 	$(MAKE) -C ../core/arm9 clean
 	$(MAKE) -C arm9 clean
 	$(MAKE) -C ../core/arm7 clean
-	rm -f GBARunner3.nds GBARunner3.arm7 GBARunner3.arm9
+	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
 	rm -f arm9/data/gbarunner9.bin
