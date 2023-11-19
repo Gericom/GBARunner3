@@ -18,7 +18,7 @@ TEST_P(ThumbStrhImmOffset, CorrectOffsetComputed)
     memu_stubStoredAddress16 = 0;
     memu_stubStoredValue16 = 0;
     inContext.r[0] = 0xAABB;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
     const int offset = GetParam();
 
     // Act
@@ -26,7 +26,7 @@ TEST_P(ThumbStrhImmOffset, CorrectOffsetComputed)
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x10000050 + offset));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000050 + offset));
     EXPECT_THAT(memu_stubStoredValue16, Eq(0xAABB));
 }
 
@@ -43,14 +43,14 @@ TEST_P(ThumbStrhImmRd, UsesCorrectRdValue)
     memu_stubStoredValue16 = 0;
     const int rd = GetParam();
     inContext.r[rd] = 0xAABB;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
 
     // Act
     test_runThumbInstruction(THUMB_STRH_IMM(rd, THUMB_R1, 0), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue16, Eq((u16)inContext.r[rd]));
 }
 
@@ -67,14 +67,14 @@ TEST_P(ThumbStrhImmRn, UsesCorrectRnValue)
     memu_stubStoredValue16 = 0;
     const int rn = GetParam();
     inContext.r[0] = 0xAABB;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x0F000050;
 
     // Act
     test_runThumbInstruction(THUMB_STRH_IMM(THUMB_R0, rn, 0), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue16, Eq((u16)inContext.r[0]));
 }
 
@@ -88,14 +88,14 @@ TEST(ThumbStrhImm, AddressForceAligned)
     memu_stubStoredAddress16 = 0;
     memu_stubStoredValue16 = 0;
     inContext.r[0] = 0xAABB;
-    inContext.r[1] = 0x10000051;
+    inContext.r[1] = 0x0F000051;
 
     // Act
     test_runThumbInstruction(THUMB_STRH_IMM(THUMB_R0, THUMB_R1, 0), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue16, Eq(0xAABB));
 }
 
@@ -107,13 +107,13 @@ TEST(ThumbStrhImm, ValueMasked)
     memu_stubStoredAddress16 = 0;
     memu_stubStoredValue16 = 0;
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
 
     // Act
     test_runThumbInstruction(THUMB_STRH_IMM(THUMB_R0, THUMB_R1, 0), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddress16, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue16, Eq(0xCCDD));
 }

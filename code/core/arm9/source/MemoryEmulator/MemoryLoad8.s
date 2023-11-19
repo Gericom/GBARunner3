@@ -16,12 +16,12 @@
 arm_func memu_load8
     cmp r8, #0x10000000
         ldrlo pc, [pc, r8, lsr #22]
-    b memu_load16Undefined
+    b memu_load8Undefined
 
 .global memu_itcmLoad8Table
 memu_itcmLoad8Table:
     .word memu_load8Bios // 00
-    .word memu_load16Undefined // 01
+    .word memu_load8Undefined // 01
     .word memu_load8Ewram // 02
     .word memu_load8Iwram // 03
     .word memu_load8Io // 04
@@ -39,7 +39,7 @@ memu_itcmLoad8Table:
 
 arm_func memu_load8Bios
     cmp r8, #0x4000
-        bhs memu_load16Undefined
+        bhs memu_load8Undefined
     b memu_load32BiosContinue
 
 arm_func memu_load8Ewram
@@ -71,7 +71,7 @@ load8IoHi:
     cmp r9, #0x300
         moveq r9, #0
         bxeq lr
-    b memu_load16Undefined
+    b memu_load8Undefined
 
 load8IoUnaligned:
     str lr, unalignedReturn

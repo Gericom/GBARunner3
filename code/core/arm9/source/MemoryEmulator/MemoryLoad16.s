@@ -43,6 +43,7 @@ arm_func memu_load16UndefinedZero
     bx lr
 
 arm_func memu_load16Undefined
+arm_func memu_load8Undefined
     ldr r10,= memu_inst_addr
     msr cpsr_c, #0xD7
     ldr r13,= memu_inst_addr

@@ -1,4 +1,6 @@
 #include "common.h"
+#include <libtwl/rtos/rtosIrq.h>
+#include <libtwl/gfx/gfx3d.h>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "../ContextTest.h"
@@ -20,10 +22,17 @@ TEST(VMIrqTests, IrqsEnabledWithPendingIrqJumpsToIrqVector)
         (void*)VMIrqTests_IrqVector
     };
     context_t context = gRandomContext;
+    REG_GXSTAT = 0;
+    rtos_ackIrqMask(RTOS_IRQ_GX_FIFO);
+    rtos_setIrqMask(RTOS_IRQ_GX_FIFO);
+    REG_IME = 1;
 
     // Act
     bool result = vm.Run(&context);
 
     // Assert
     EXPECT_THAT(result, Eq(true));
+
+    REG_IME = 0;
+    rtos_setIrqMask(0);
 }

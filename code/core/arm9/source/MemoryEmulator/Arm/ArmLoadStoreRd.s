@@ -4,42 +4,35 @@
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
+
 .macro memu_armStrRd rd
     arm_func memu_armStrR\rd
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
             
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0xC4] // memu_store32Table
-            
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
             bic r8, r8, #3
         .elseif \rd < 15
             stmnedb r13, {r\rd}^
             nop
             ldrne r9, [r13, #-4]
 
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0xC4] // memu_store32Table
-
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
             bic r8, r8, #3
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             bic r8, r8, #3
 
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0xC4] // memu_store32Table
-
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
             add r9, r9, #4 // pc + 12
         .endif
 
-        blxlo r10
+        cmp r8, #0x10000000
+            blxlo r10
 
         memu_armReturn
 .endm
@@ -51,35 +44,30 @@ generate memu_armStrRd, 16
         .if \rd < 8
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
 
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x44] // memu_store8Table
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE8_TABLE_OFFSET] // memu_store8Table
 
             and r9, r9, #0xFF
         .elseif \rd < 15
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE8_TABLE_OFFSET] // memu_store8Table
+
             stmnedb r13, {r\rd}^
             nop
             ldrneb r9, [r13, #-4]
-
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x44] // memu_store8Table
-            // interlock
         .else
             mov r9, #memu_inst_addr
             ldr r9, [r9]
             add r9, r9, #4 // pc + 12
 
-            and r10, r8, #0x0F000000
-            cmp r8, #0x10000000
-            addlo r10, r13, r10, lsr #22
-            ldrlo r10, [r10, #-0x44] // memu_store8Table
-
+            add r10, r13, r8, lsr #23
+            ldrh r10, [r10, #ARM_STORE8_TABLE_OFFSET] // memu_store8Table
             and r9, r9, #0xFF
         .endif
-        blxlo r10
+
+        cmp r8, #0x10000000
+            blxlo r10
+
         memu_armReturn
 .endm
 
@@ -87,11 +75,10 @@ generate memu_armStrbRd, 16
 
 .macro memu_armLdrRd rd
     arm_func memu_armLdrR\rd
-        and r10, r8, #0x0F000000
+        add r10, r13, r8, lsr #23
+        ldrh r10, [r10, #ARM_LOAD32_TABLE_OFFSET] // memu_load32Table
         cmp r8, #0x10000000
-        addlo r10, r13, r10, lsr #22
-        ldrlo r10, [r10, #-0x184] // memu_load32Table
-        ldrhs r10,= memu_load32Undefined
+            ldrhs r10,= memu_load32Undefined
         blx r10
 
         .if \rd < 8
@@ -120,11 +107,10 @@ generate memu_armLdrRd, 16
             .mexit
         .endif
 
-        and r10, r8, #0x0F000000
+        add r10, r13, r8, lsr #23
+        ldrh r10, [r10, #ARM_LOAD8_TABLE_OFFSET] // memu_load8Table
         cmp r8, #0x10000000
-        addlo r10, r13, r10, lsr #22
-        ldrlo r10, [r10, #-0x104] // memu_load8Table
-        ldrhs r10,= memu_load16Undefined
+            ldrhs r10,= memu_load8Undefined
         blx r10
 
         .if \rd < 8

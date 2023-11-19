@@ -174,7 +174,7 @@ SECTIONS
 		KEEP (ThumbDtcm.o(.dtcm))
 		. = 0x1000;
 		KEEP (MemoryLoadStoreTables.o(.dtcm))
-		. = 0x1180;
+		. = 0x10C0;
 		KEEP (ArmDtcm.o(.dtcm))
 		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
 		*(.dtcm.*)

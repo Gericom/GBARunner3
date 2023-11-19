@@ -1,4 +1,4 @@
-.text
+.section ".itcm", "ax"
 #include "AsmMacros.inc"
 
 .global memu_stubStoredAddress8

@@ -207,10 +207,10 @@ static void handleSave(const char* savePath)
 
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM)
         {
-            memu_itcmLoad8Table[0xE] = (void*)memu_load16Undefined;
-            memu_itcmLoad8Table[0xF] = (void*)memu_load16Undefined;
-            memu_load8Table[0xE] = (void*)memu_load16Undefined;
-            memu_load8Table[0xF] = (void*)memu_load16Undefined;
+            memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
+            memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
+            memu_load8Table[0xE] = (void*)memu_load8Undefined;
+            memu_load8Table[0xF] = (void*)memu_load8Undefined;
             memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
             memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
             memu_load16Table[0xE] = (void*)memu_load16Undefined;

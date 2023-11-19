@@ -18,14 +18,14 @@ TEST_P(ArmStrbImmRd, UsesCorrectRdValue)
     memu_stubStoredValue8 = 0;
     const int rd = GetParam();
     inContext.r[rd] = 0xAABBCCDD;
-    inContext.r[1] = 0x10000050;
+    inContext.r[1] = 0x0F000050;
 
     // Act
     test_runArmInstruction(0xE5C10000u | (rd << 12), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[rd]));
 }
 
@@ -42,14 +42,14 @@ TEST_P(ArmStrbImmRn, CorrectOffsetComputed)
     memu_stubStoredValue8 = 0;
     const int rn = GetParam();
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x0F000050;
 
     // Act
     test_runArmInstruction(0xE5C00000u | 0xABC | (rn << 16), &inContext, &outContext);
 
     // Assert
     EXPECT_CONTEXT_EQ(outContext, inContext);
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050 + 0xABC));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000050 + 0xABC));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 
@@ -66,14 +66,14 @@ TEST_P(ArmStrbImmPreWritebackRn, PerformsWriteback)
     memu_stubStoredValue8 = 0;
     const int rn = GetParam();
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x0F000050;
 
     // Act
     test_runArmInstruction(0xE5E00000u | 0xABC | (rn << 16), &inContext, &outContext);
 
     // Assert
-    EXPECT_THAT(outContext.r[rn], Eq(0x10000050 + 0xABC));
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050 + 0xABC));
+    EXPECT_THAT(outContext.r[rn], Eq(0x0F000050 + 0xABC));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000050 + 0xABC));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 
@@ -90,14 +90,14 @@ TEST_P(ArmStrbImmPostRn, PerformsWriteback)
     memu_stubStoredValue8 = 0;
     const int rn = GetParam();
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x0F000050;
 
     // Act
     test_runArmInstruction(0xE4C00000u | 0xABC | (rn << 16), &inContext, &outContext);
 
     // Assert
-    EXPECT_THAT(outContext.r[rn], Eq(0x10000050 + 0xABC));
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050));
+    EXPECT_THAT(outContext.r[rn], Eq(0x0F000050 + 0xABC));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 
@@ -114,14 +114,14 @@ TEST_P(ArmStrbtImmPostRn, PerformsWriteback)
     memu_stubStoredValue8 = 0;
     const int rn = GetParam();
     inContext.r[0] = 0xAABBCCDD;
-    inContext.r[rn] = 0x10000050;
+    inContext.r[rn] = 0x0F000050;
 
     // Act
     test_runArmInstruction(0xE4E00000u | 0xABC | (rn << 16), &inContext, &outContext);
 
     // Assert
-    EXPECT_THAT(outContext.r[rn], Eq(0x10000050 + 0xABC));
-    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x10000050));
+    EXPECT_THAT(outContext.r[rn], Eq(0x0F000050 + 0xABC));
+    EXPECT_THAT(memu_stubStoredAddress8, Eq(0x0F000050));
     EXPECT_THAT(memu_stubStoredValue8, Eq((u8)inContext.r[0]));
 }
 

@@ -16,11 +16,10 @@
         bic r10, r10, #3
         add r8, r10, r8, lsl #2
 
-        and r10, r8, #0x0F000000
+        add r9, r9, r8, lsr #23
+        ldrh r10, [r9, #THUMB_LOAD32_TABLE_OFFSET] // memu_load32Table
         cmp r8, #0x10000000
-            addlo r9, r9, r10, lsr #22
-        ldr r10, [r9, #1] // memu_load32Table
-        // interlock
+            ldrhs r10,= memu_load32Undefined
         blx r10
 
         mov r\rd, r9
