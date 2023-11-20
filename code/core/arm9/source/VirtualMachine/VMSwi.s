@@ -47,36 +47,35 @@ arm_func vm_swi
 old_mode_usr:
     add r13, lr, #((vm_regs_sys + 5 * 4) - vm_regs_svc)
     stmia r13, {r13,lr}^
-    nop
     ldmia lr, {r13,lr}^
-    nop
-1:
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
+    nop
+    nop
     nop
 old_mode_fiq:
     add r13, lr, #(vm_regs_sys - vm_regs_svc)
     stmdb r13, {r8,r9,r10,r11,r12,r13,lr}^
-    nop
     ldmia r13, {r8,r9,r10,r11,r12}^
-    nop
     ldmia lr, {r13,lr}^
-    b 1b
+    ldr lr, DTCM(vm_swiVector)
+    movs pc, lr
+    nop
     nop
 old_mode_irq:
     stmdb lr, {r13,lr}^
-    nop
     ldmia lr, {r13,lr}^
-    nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
+    nop
+    nop
     nop
     nop
 old_mode_svc:
     ldmib lr, {lr}^
-    nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
+    nop
     nop
     nop
     nop
@@ -111,11 +110,11 @@ old_mode_6:
 old_mode_abt:
     add r13, lr, #(vm_regs_abt - vm_regs_svc)
     stmia r13, {r13,lr}^
-    nop
     ldmia lr, {r13,lr}^
-    nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
+    nop
+    nop
     nop
 old_mode_8:
     nop
@@ -147,11 +146,11 @@ old_mode_10:
 old_mode_und:
     add r13, lr, #(vm_regs_und - vm_regs_svc)
     stmia r13, {r13,lr}^
-    nop
     ldmia lr, {r13,lr}^
-    nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr
+    nop
+    nop
     nop
 old_mode_12:
     nop
@@ -183,8 +182,6 @@ old_mode_14:
 old_mode_sys:
     add r13, lr, #((vm_regs_sys + 5 * 4) - vm_regs_svc)
     stmia r13, {r13,lr}^
-    nop
     ldmia lr, {r13,lr}^
-    nop
     ldr lr, DTCM(vm_swiVector)
     movs pc, lr

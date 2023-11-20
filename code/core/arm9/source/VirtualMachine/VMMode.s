@@ -36,45 +36,32 @@ arm_func vm_modeSwitchOldEqualsNew
             .if \old == 0xF
                 mov lr, #(vm_regs_sys + 3)
                 stmia lr, {r8,r9,r10,r11,r12,sp,lr}^
-                nop
                 ldmdb lr, {r8,r9,r10,r11,r12,sp,lr}^
-                nop
             .else
                 mov lr, #(vm_regs_\old + 3)
                 stmia lr, {sp,lr}^
-                nop
                 add lr, lr, #(vm_regs_sys - vm_regs_\old)
                 stmia lr, {r8,r9,r10,r11,r12}^
-                nop
                 ldmdb lr, {r8,r9,r10,r11,r12,sp,lr}^
-                nop
             .endif
         .elseif \old == 1
             mov lr, #(vm_regs_sys + 3)
             stmdb lr, {r8,r9,r10,r11,r12,sp,lr}^
-            nop
             .if \new == 0xF
                 ldmia lr, {r8,r9,r10,r11,r12,sp,lr}^
-                nop
             .else
                 ldmia lr, {r8,r9,r10,r11,r12}^
-                nop
                 add lr, lr, #(vm_regs_\new - vm_regs_sys)
                 ldmia lr, {sp,lr}^
-                nop
             .endif
         .elseif ((\old == 0xF) && (\new == 2)) || ((\old == 2) && (\new == 3)) || ((\old == 3) && (\new == 7)) || ((\old == 7) && (\new == 11))
             mov lr, #(vm_regs_\new + 3)
             stmdb lr, {sp,lr}^
-            nop
             ldmia lr, {sp,lr}^
-            nop
         .elseif ((\new == 0xF) && (\old == 2)) || ((\new == 2) && (\old == 3)) || ((\new == 3) && (\old == 7)) || ((\new == 7) && (\old == 11))
             mov lr, #(vm_regs_\old + 3)
             stmia lr, {sp,lr}^
-            nop
             ldmdb lr, {sp,lr}^
-            nop
         .else
             .if (\old == 0xF)
                 mov lr, #(vm_regs_sys + (5 * 4) + 3)
@@ -82,7 +69,6 @@ arm_func vm_modeSwitchOldEqualsNew
                 mov lr, #(vm_regs_\old + 3)
             .endif
             stmia lr, {sp,lr}^
-            nop
             .if (\old == 0xF)
                 add lr, lr, #(vm_regs_\new - (vm_regs_sys + (5 * 4)))
             .elseif (\new == 0xF)
@@ -91,7 +77,6 @@ arm_func vm_modeSwitchOldEqualsNew
                 add lr, lr, #(vm_regs_\new - vm_regs_\old)
             .endif
             ldmia lr, {sp,lr}^
-            nop
         .endif
         bx sp
 .endm

@@ -31,8 +31,8 @@ arm_func memu_armStmRd
 
     .macro memu_armStmRd_storeHiReg reg
         tst r13, #(1 << (\reg + 15))
-        stmeqdb r13, {r\reg}^
         bne 1f
+        stmdb r13, {r\reg}^
         ldr r9, [r13, #-4]
         add r8, r8, #4
         bl memu_store32
@@ -74,7 +74,6 @@ arm_func memu_armLdmRd
         bl memu_load32
         str r9, [r13, #-4]
         ldmdb r13, {r\reg}^
-        nop
         add r8, r8, #4
     1:
     .endm

@@ -37,12 +37,11 @@ memu_armLoadStoreRlo 1
             orr r9, r9, #9
             strh r9, 1f
             stmdb r13, {r\rm}^
-            nop
             ldr r9, [r13, #-4]
             .if \u == 0
                 mov r12, #0
             .else
-                // interlock
+                nop
             .endif
         .else
             // pc is not allowed

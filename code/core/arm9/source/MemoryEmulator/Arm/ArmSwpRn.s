@@ -9,7 +9,6 @@
             mov r8, r\rn
         .elseif \rn < 15
             stmdb r13, {r\rn}^
-            nop
             ldr r8, [r13, #-4]
         .else
             // pc is not allowed

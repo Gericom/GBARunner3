@@ -14,7 +14,6 @@ arm_func jit_armUndefinedBL
     mov r12, lr, lsl #8
     str r11, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
     ldmia r13, {lr}^ // set return address in lr
-    nop
     ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     ldr sp,= dtcmStackEnd
     add r8, r11, r12, asr #6

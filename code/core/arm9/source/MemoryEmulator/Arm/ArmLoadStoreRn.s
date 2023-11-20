@@ -26,7 +26,6 @@
             .endif
         .elseif \rn < 15
             stmdb r13, {r\rn}^
-            nop
             ldr r8, [r13, #-4]
             cmp r10, #(\rn << 12)
             .if (\p == 1) && (\w == 0)
@@ -39,13 +38,11 @@
                 sub r9, r8, r9
                 str r8, [r13, #-4]
                 ldmdb r13, {r\rn}^
-                nop
             .elseif \p == 0
                 // hi reg, post
                 add r9, r8, r9
                 str r9, [r13, #-4]
                 ldmdb r13, {r\rn}^
-                nop
                 mov r9, r8 // save old value of Rn in case of aliasing
             .endif
         .else

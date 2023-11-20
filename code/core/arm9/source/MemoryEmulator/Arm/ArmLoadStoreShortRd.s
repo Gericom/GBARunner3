@@ -18,7 +18,6 @@
             ldrh r10, [r10, #ARM_STORE16_TABLE_OFFSET] // memu_store16Table
 
             stmnedb r13, {r\rd}^
-            nop
             ldrneh r9, [r13, #-4]
         .else
             mov r9, #memu_inst_addr

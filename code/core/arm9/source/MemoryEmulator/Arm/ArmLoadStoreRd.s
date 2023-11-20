@@ -16,7 +16,6 @@
             ldrh r10, [r10, #ARM_STORE32_TABLE_OFFSET] // memu_store32Table
 
             stmnedb r13, {r\rd}^
-            nop
             ldrne r9, [r13, #-4]
         .else
             mov r9, #memu_inst_addr
@@ -49,7 +48,6 @@ generate memu_armStrRd, 16
             ldrh r10, [r10, #ARM_STORE8_TABLE_OFFSET] // memu_store8Table
 
             stmnedb r13, {r\rd}^
-            nop
             ldrneb r9, [r13, #-4]
         .else
             mov r9, #memu_inst_addr

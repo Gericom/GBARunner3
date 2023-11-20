@@ -13,7 +13,6 @@
             .endif
         .elseif \rm < 15
             stmdb r13, {r\rm}^
-            nop
             ldr r9, [r13, #-4]
             .if \u == 0
                 rsb r9, r9, #0

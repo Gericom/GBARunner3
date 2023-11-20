@@ -12,7 +12,6 @@ arm_func vm_armUndefinedNoAsmHandler
     add r11, r11, #4
     str r11, [sp, #0x3C]
     stmia sp, {r0-lr}^
-    nop
     sub r1, r11, #8
 
     mov r0, lr
@@ -24,6 +23,5 @@ arm_func vm_armUndefinedNoAsmHandler
     movs r8, r0, lsr #1
         orrcs r10, r10, #0x20 // thumb bit
     ldmia sp, {r0-lr}^
-    nop
     msr spsr, r10
     movs pc, r8, lsl #1

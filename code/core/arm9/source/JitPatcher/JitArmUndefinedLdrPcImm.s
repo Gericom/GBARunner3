@@ -12,7 +12,6 @@
             mov r8, r\rn
         .elseif \rn < 15
             stmia r13, {r\rn}^
-            nop
             ldr r8, [r13]
         .else
             // pc

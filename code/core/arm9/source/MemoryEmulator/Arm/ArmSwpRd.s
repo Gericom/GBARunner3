@@ -21,7 +21,6 @@
             ldr r10, [r13, #-4] // value of rm
             str r9, [r13, #-4]
             ldmdb r13, {r\rd}^
-            nop
             mov r9, r10
         .else
             // pc is not allowed
@@ -53,7 +52,6 @@ generate memu_armSwpRd, 16
             ldrb r9, [r13, #-4] // value of rm
             str r10, [r13, #-4]
             ldmdb r13, {r\rd}^
-            nop
         .else
             // pc is not allowed
         .endif

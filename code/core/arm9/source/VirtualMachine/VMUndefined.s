@@ -47,7 +47,6 @@ arm_func vm_undefinedThumb
 
 arm_func vm_undefinedThumbNotInTable
     stmia sp, {r0-r7,sp,lr}^
-    nop
     mov r1, r11 // instruction address
     mov r0, lr  // instruction
     mov r2, sp  // registers
