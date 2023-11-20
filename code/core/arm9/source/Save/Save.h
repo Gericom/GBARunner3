@@ -2,6 +2,7 @@
 #include "Fat/ff.h"
 #include "SaveTypeInfo.h"
 
+#define SAVE_DATA_FILL              0xFF
 #define SAVE_DATA_SIZE              (32 * 1024)
 #define ISNITRO_SAVE_BUFFER         ((vu8*)0x02480000)
 #define ISNITRO_SAVE_BUFFER_SIZE    (128 * 1024)
