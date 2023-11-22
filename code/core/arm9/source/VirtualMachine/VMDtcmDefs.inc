@@ -154,4 +154,8 @@ vm_regs_und:
 memu_biosOpcodeId:
     .word 0
 
+.global memu_adjustedRomBlockToCacheBlockAddress
+memu_adjustedRomBlockToCacheBlockAddress:
+    .word 0
+
 .previous

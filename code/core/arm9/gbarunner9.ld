@@ -181,7 +181,8 @@ SECTIONS
 		KEEP (VMUndefined.o(.itcm))
 		. = 0xB8;
 		KEEP (VMIrq.o(.itcm))
-		KEEP (PrefetchAbort.o(.itcm))
+		. = 0x378;
+		KEEP (MemoryLoadRom.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0x460;
@@ -190,6 +191,7 @@ SECTIONS
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		KEEP (IoFallback.o(.itcm))
+		KEEP (PrefetchAbort.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		*(.itcm)

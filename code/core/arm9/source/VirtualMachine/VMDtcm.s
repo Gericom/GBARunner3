@@ -2,6 +2,7 @@
 
 #include "AsmMacros.inc"
 #include "VMDtcmDefs.inc"
+#include "SdCache/SdCacheDefs.h"
 
 .org vm_hwIEAddr - VM_DTCM_BASE
     .word 0x04000210
@@ -35,5 +36,12 @@
 
 .org memu_biosOpcodeId - VM_DTCM_BASE
     .word MEMU_BIOS_OPCODE_ID_RESET
+
+.org memu_adjustedRomBlockToCacheBlockAddress - VM_DTCM_BASE
+#ifndef GBAR3_TEST
+    .word (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
+#else
+    .word 0
+#endif
 
 .end

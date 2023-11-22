@@ -115,17 +115,7 @@ arm_func memu_load8Oam
     ldrb r9, [r9]
     bx lr
 
-arm_func memu_load8Rom
-    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
-    bic r12, r8, #(3 << (SDC_BLOCK_SHIFT - 2))
-memu_load8RomContinue:
-    ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
-    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
-    cmp r11, #0
-    ldrneb r9, [r11, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
-    bxne lr
-
-load8RomCacheMiss:
+arm_func memu_load8RomCacheMiss
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r10, r11, r13
