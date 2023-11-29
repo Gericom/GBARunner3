@@ -194,6 +194,20 @@ SECTIONS
 		KEEP (PrefetchAbort.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
+		KEEP (ThumbLoad.o(.itcm))
+		KEEP (ThumbStore.o(.itcm))
+		KEEP (ThumbLdmStm.o(.itcm))
+		KEEP (ThumbLoadPc.o(.itcm))
+		KEEP (MemCopy.o(.itcm))
+		KEEP (JitThumbEnsureJitted.o(.itcm))
+		KEEP (JitThumbUndefinedBx.o(.itcm))
+		. = 0x2000;
+		KEEP (ThumbGetRnRm.o(.itcm))
+		KEEP (ArmLoadStoreShortRd.o(.itcm))
+		KEEP (ArmSwpRd.o(.itcm))
+		KEEP (GbaSoundAsm.o(.itcm))
+		. = 0x3000;
+		KEEP (ThumbGetRn.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);

@@ -206,6 +206,16 @@ SECTIONS
 		KEEP (IoFallback.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
+		KEEP (ThumbLoad.o(.itcm))
+		KEEP (ThumbStore.o(.itcm))
+		KEEP (ThumbLdmStm.o(.itcm))
+		KEEP (ThumbLoadPc.o(.itcm))
+		. = 0x2000;
+		KEEP (ThumbGetRnRm.o(.itcm))
+		KEEP (ArmLoadStoreShortRd.o(.itcm))
+		KEEP (ArmSwpRd.o(.itcm))
+		. = 0x3000;
+		KEEP (ThumbGetRn.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);
