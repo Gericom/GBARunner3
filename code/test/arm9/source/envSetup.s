@@ -28,7 +28,7 @@ main:
     ldr r0,= 0x8000002C
     mcr p15, 0, r0, c9, c1, 0
     // setup itcm to cover the first 32KB of memory
-    mov r0, #0xC
+    mov r0, #0x20
     mcr p15, 0, r0, c9, c1, 1
     // mpu region 0: IO, Palette, VRAM, OAM (64 MB)
     ldr r0,= ((1 | (25 << 1)) + 0x04000000)
@@ -42,10 +42,10 @@ main:
     // mpu region 3: Disabled
     mov r0, #0
     mcr	p15, 0, r0, c6, c3, 0
-    // mpu region 4: Disabled
-    mov r0, #0
+    // mpu region 4: ITCM (32 MB)
+    ldr r0,= (1 | (24 << 1))
     mcr	p15, 0, r0, c6, c4, 0
-    // mpu region 5: ITCM (32 KB)
+    // mpu region 5: ITCM (32 kB)
     ldr r0,= (1 | (14 << 1))
     mcr	p15, 0, r0, c6, c5, 0
     // mpu region 6: DTCM (2 GB)
@@ -58,7 +58,7 @@ main:
     ldr r0,= 0x33300333
 	mcr p15, 0, r0, c5, c0, 2
     // code permissions
-	ldr r0,= 0x30300330
+	ldr r0,= 0x30330330
 	mcr p15, 0, r0, c5, c0, 3
     // dcache
 	ldr r0,= 0b10000010

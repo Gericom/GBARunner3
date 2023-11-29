@@ -183,8 +183,8 @@ SECTIONS
 		KEEP (VMUndefined.o(.itcm))
 		. = 0xB8;
 		KEEP (VMIrq.o(.itcm))
-		KEEP (PrefetchAbort.o(.itcm))
-		KEEP (GbaSoundAsm.o(.itcm))
+		. = 0x378;
+		KEEP (MemoryLoadRom.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
 		. = 0x450;
@@ -193,9 +193,23 @@ SECTIONS
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		KEEP (IoFallback.o(.itcm))
-		KEEP (RegWinInOut.o(.itcm))
+		KEEP (PrefetchAbort.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
+		KEEP (ThumbLoad.o(.itcm))
+		KEEP (ThumbStore.o(.itcm))
+		KEEP (ThumbLdmStm.o(.itcm))
+		KEEP (ThumbLoadPc.o(.itcm))
+		KEEP (MemCopy.o(.itcm))
+		KEEP (JitThumbEnsureJitted.o(.itcm))
+		KEEP (JitThumbUndefinedBx.o(.itcm))
+		. = 0x2000;
+		KEEP (ThumbGetRnRm.o(.itcm))
+		KEEP (ArmLoadStoreShortRd.o(.itcm))
+		KEEP (ArmSwpRd.o(.itcm))
+		KEEP (GbaSoundAsm.o(.itcm))
+		. = 0x3000;
+		KEEP (ThumbGetRn.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);

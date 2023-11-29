@@ -20,8 +20,8 @@ _start:
     // move dtcm in place
     ldr r0,= 0x8000002C
     mcr p15, 0, r0, c9, c1, 0
-    // setup itcm to cover the first 32KB of memory
-    mov r0, #0xC
+    // setup itcm to cover the first 32MB of memory
+    mov r0, #0x20
     mcr p15, 0, r0, c9, c1, 1
 
     // iwram to arm 9

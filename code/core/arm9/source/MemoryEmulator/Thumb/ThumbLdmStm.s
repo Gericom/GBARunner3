@@ -5,6 +5,7 @@
 #include "ThumbMacros.inc"
 
 .macro memu_thumbLdmiaRn rn
+    .balign 8
     arm_func memu_thumbLdmiaR\rn
         ldr r12,= gPopCountTable
         and r13, r11, #0xFF
@@ -34,6 +35,7 @@ arm_func memu_thumbLdmiaCommon
     memu_thumbReturn
 
 .macro memu_thumbStmiaRn rn
+    .balign 8
     arm_func memu_thumbStmiaR\rn
         ldr r12,= gPopCountTable
         and r13, r11, #0xFF

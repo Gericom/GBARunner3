@@ -8,6 +8,7 @@
 #ifdef GBAR3_HICODE_CACHE_MAPPING
 
 .macro memu_thumbLdrPcRd rd
+    .balign 8
     arm_func memu_thumbLdrPcR\rd
         ldr r10,= memu_inst_addr
         and r8, r11, #0xFF

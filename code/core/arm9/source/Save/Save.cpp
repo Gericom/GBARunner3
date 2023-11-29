@@ -34,8 +34,9 @@ static void loadSaveClusterMap(void)
     f_lseek(&gSaveFile, CREATE_LINKMAP);
 }
 
-static void fillSaveFile(u32 start, u32 end, u8 saveFill)
+static void fillSaveFile(u32 start, u32 end)
 {
+    const u8 saveFill = SAVE_DATA_FILL;
     f_lseek(&gSaveFile, start);
     for (u32 i = start; i < end; ++i)
     {
@@ -48,16 +49,10 @@ static void fillSaveFile(u32 start, u32 end, u8 saveFill)
 void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
 {
     u32 saveSize = saveTypeInfo ? saveTypeInfo->size : (32 * 1024);
-    u8 saveFill = 0;
-    if (saveTypeInfo && (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
-    {
-        saveFill = 0xFF;
-    }
-
-    memset(gSaveData, saveFill, SAVE_DATA_SIZE);
+    memset(gSaveData, SAVE_DATA_FILL, SAVE_DATA_SIZE);
     if (Environment::IsIsNitroEmulator())
     {
-        memset((void*)ISNITRO_SAVE_BUFFER, saveFill, ISNITRO_SAVE_BUFFER_SIZE);
+        memset((void*)ISNITRO_SAVE_BUFFER, SAVE_DATA_FILL, ISNITRO_SAVE_BUFFER_SIZE);
     }
     memset(&gSaveFile, 0, sizeof(gSaveFile));
     if (f_open(&gSaveFile, savePath, FA_OPEN_EXISTING | FA_READ | FA_WRITE) == FR_OK)
@@ -71,7 +66,7 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
                 f_rewind(&gSaveFile);
                 loadSaveClusterMap();
                 clusterMapLoaded = true;
-                fillSaveFile(initialSize, saveSize, saveFill);
+                fillSaveFile(initialSize, saveSize);
             }
         }
 
@@ -103,7 +98,7 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
             {
                 f_rewind(&gSaveFile);
                 loadSaveClusterMap();
-                fillSaveFile(0, saveSize, saveFill);
+                fillSaveFile(0, saveSize);
             }
         }
     }
