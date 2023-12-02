@@ -340,8 +340,6 @@ static void startChannel(int channel)
         case 0:
         {
             duty = gbDutyToDs(sChannel1Duty);
-            snd_stopChannel(GB_CHANNEL_1_HW_L);
-            snd_stopChannel(GB_CHANNEL_1_HW_R);
             REG_SOUNDxCNT(GB_CHANNEL_1_HW_L) =
                 SOUNDCNT_ENABLED |
                 SOUNDCNT_FORMAT_PSG |
@@ -363,8 +361,6 @@ static void startChannel(int channel)
         case 1:
         {
             duty = gbDutyToDs(sChannel2Duty);
-            snd_stopChannel(GB_CHANNEL_2_HW_L);
-            snd_stopChannel(GB_CHANNEL_2_HW_R);
             REG_SOUNDxCNT(GB_CHANNEL_2_HW_L) =
                 SOUNDCNT_ENABLED |
                 SOUNDCNT_FORMAT_PSG |
