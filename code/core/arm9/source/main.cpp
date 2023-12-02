@@ -223,6 +223,15 @@ static void disableSramWrites(void)
 
 static void handleSave(const char* savePath)
 {
+    const auto& gameSettings = gAppSettingsService.GetAppSettings().gameSettings;
+    if (gameSettings.saveType == GbaSaveType::None)
+    {
+        gLogger->Log(LogLevel::Debug, "Save Type: None\n");
+        disableSramReads();
+        disableSramWrites();
+        return;
+    }
+
     u32 tagRomAddress;
     const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
     
@@ -394,8 +403,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         romExtension[3] = 'v';
         romExtension[4] = '\0';
     }
-    handleSave(romPath);
     loadGameSpecificSettings();
+    handleSave(romPath);
 
     gGbaDisplayConfigurationService.ApplyDisplaySettings(gAppSettingsService.GetAppSettings().displaySettings);
 

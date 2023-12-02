@@ -23,11 +23,17 @@
 #define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE         "enableWramICache"
 #define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE        "enableEWramDCache"
 
+#define KEY_GAME_SETTINGS                           "gameSettings"
+#define KEY_GAME_SETTINGS_SAVE_TYPE                 "saveType"
+
 #define ENUM_STRING_GBA_SCREEN_TOP                  "top"
 #define ENUM_STRING_GBA_SCREEN_BOTTOM               "bottom"
 
 #define ENUM_STRING_GBA_COLOR_CORRECTION_NONE       "none"
 #define ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001    "agb001"
+
+#define ENUM_STRING_GBA_SAVE_TYPE_AUTO              "auto"
+#define ENUM_STRING_GBA_SAVE_TYPE_NONE              "none"
 
 static bool tryParseGbaScreen(const char* gbaScreenString, GbaScreen& gbaScreen)
 {
@@ -53,6 +59,21 @@ static bool tryParseGbaColorCorrection(const char* gbaColorCorrectionString, Gba
         gbaColorCorrection = GbaColorCorrection::None;
     else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001))
         gbaColorCorrection = GbaColorCorrection::Agb001;
+    else
+        return false;
+
+    return true;
+}
+
+static bool tryParseGbaSaveType(const char* gbaSaveTypeString, GbaSaveType& gbaSaveType)
+{
+    if (!gbaSaveTypeString)
+        return false;
+
+    if (!strcasecmp(gbaSaveTypeString, ENUM_STRING_GBA_SAVE_TYPE_AUTO))
+        gbaSaveType = GbaSaveType::Auto;
+    else if (!strcasecmp(gbaSaveTypeString, ENUM_STRING_GBA_SAVE_TYPE_NONE))
+        gbaSaveType = GbaSaveType::None;
     else
         return false;
 
@@ -138,10 +159,19 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE], runSettings.enableEWramDataCache);
 }
 
+static void readGameSettings(const JsonObjectConst& json, GameSettings& gameSettings)
+{
+    if (json.isNull())
+        return;
+
+    tryParseGbaSaveType(json[KEY_GAME_SETTINGS_SAVE_TYPE], gameSettings.saveType);
+}
+
 static void readJson(const JsonDocument& json, AppSettings& appSettings)
 {
     readDisplaySettings(json[KEY_DISPLAY_SETTINGS], appSettings.displaySettings);
     readRunSettings(json[KEY_RUN_SETTINGS], appSettings.runSettings);
+    readGameSettings(json[KEY_GAME_SETTINGS], appSettings.gameSettings);
 }
 
 bool JsonAppSettingsSerializer::TryDeserialize(const TCHAR* filePath, AppSettings& appSettings)
