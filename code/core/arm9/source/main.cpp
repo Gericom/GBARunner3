@@ -189,6 +189,38 @@ static void loadGbaRom(const char* romPath)
     }
 }
 
+static void disableSramReads(void)
+{
+    memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
+    memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
+    memu_load8Table[0xE] = (u32)memu_load8Undefined;
+    memu_load8Table[0xF] = (u32)memu_load8Undefined;
+    memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
+    memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
+    memu_load16Table[0xE] = (u32)memu_load16Undefined;
+    memu_load16Table[0xF] = (u32)memu_load16Undefined;
+    memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
+    memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
+    memu_load32Table[0xE] = (u32)memu_load32Undefined;
+    memu_load32Table[0xF] = (u32)memu_load32Undefined;
+}
+
+static void disableSramWrites(void)
+{
+    memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
+    memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
+    memu_store8Table[0xE] = (u32)memu_store8Undefined;
+    memu_store8Table[0xF] = (u32)memu_store8Undefined;
+    memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
+    memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
+    memu_store16Table[0xE] = (u32)memu_store16Undefined;
+    memu_store16Table[0xF] = (u32)memu_store16Undefined;
+    memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
+    memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
+    memu_store32Table[0xE] = (u32)memu_store32Undefined;
+    memu_store32Table[0xF] = (u32)memu_store32Undefined;
+}
+
 static void handleSave(const char* savePath)
 {
     u32 tagRomAddress;
@@ -207,34 +239,12 @@ static void handleSave(const char* savePath)
 
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM)
         {
-            memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
-            memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
-            memu_load8Table[0xE] = (void*)memu_load8Undefined;
-            memu_load8Table[0xF] = (void*)memu_load8Undefined;
-            memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
-            memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
-            memu_load16Table[0xE] = (void*)memu_load16Undefined;
-            memu_load16Table[0xF] = (void*)memu_load16Undefined;
-            memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
-            memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
-            memu_load32Table[0xE] = (void*)memu_load32Undefined;
-            memu_load32Table[0xF] = (void*)memu_load32Undefined;
+            disableSramReads();
         }
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM ||
             (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
         {
-            memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
-            memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
-            memu_store8Table[0xE] = (void*)memu_store8Undefined;
-            memu_store8Table[0xF] = (void*)memu_store8Undefined;
-            memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
-            memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
-            memu_store16Table[0xE] = (void*)memu_store16Undefined;
-            memu_store16Table[0xF] = (void*)memu_store16Undefined;
-            memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
-            memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
-            memu_store32Table[0xE] = (void*)memu_store32Undefined;
-            memu_store32Table[0xF] = (void*)memu_store32Undefined;
+            disableSramWrites();
         }
     }
 

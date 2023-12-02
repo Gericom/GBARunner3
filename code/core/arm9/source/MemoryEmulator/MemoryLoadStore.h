@@ -7,12 +7,12 @@ extern void* memu_itcmStore8Table[16];
 extern void* memu_itcmStore16Table[16];
 extern void* memu_itcmStore32Table[16];
 
-extern void* memu_load8Table[16];
-extern void* memu_load16Table[16];
-extern void* memu_load32Table[16];
-extern void* memu_store8Table[16];
-extern void* memu_store16Table[16];
-extern void* memu_store32Table[16];
+extern u16 memu_load8Table[16];
+extern u16 memu_load16Table[16];
+extern u16 memu_load32Table[16];
+extern u16 memu_store8Table[16];
+extern u16 memu_store16Table[16];
+extern u16 memu_store32Table[16];
 
 #ifdef __cplusplus
 extern "C" {
