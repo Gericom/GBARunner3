@@ -159,7 +159,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI3
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SIOCNT
-        .short emu_ioStore16
+        .short emu_regSioCntStore16
     .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI_SEND
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_KEYCNT
