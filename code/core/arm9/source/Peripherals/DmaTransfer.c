@@ -10,6 +10,7 @@
 #include "Peripherals/Sound/GbaSound9.h"
 #include "VirtualMachine/VMNestedIrq.h"
 #include "GbaDma.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "DmaTransfer.h"
 
 DTCM_DATA dma_state_t dma_state;
@@ -278,7 +279,7 @@ ITCM_CODE static void dmaStop(int channel, GbaDmaChannel* dmaIoBase)
 ITCM_CODE static void dmaStartHBlank(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
         return;
     dmaIoBase->control = value;
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
@@ -345,7 +346,7 @@ ITCM_CODE static void dmaStartSound(int channel, GbaDmaChannel* dmaIoBase, u32 v
 ITCM_CODE static void dmaStartSpecial(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= 0x02200000 && src < 0x02400000) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
         return;
     switch (channel)
     {
@@ -366,10 +367,10 @@ ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u
     if (count == 0)
         count = 0x10000;
     u32 src = dmaIoBase->src;
-    if (src >= 0x02200000 && src < 0x02400000)
+    if (src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS)
     {
         // assume this is a pc-relative rom address
-        src = src + 0x08000000 - 0x02200000;
+        src = src + ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS;
     }
     u32 dst = dmaIoBase->dst;
     triggerDmaIrqIfEnabled(channel, control);

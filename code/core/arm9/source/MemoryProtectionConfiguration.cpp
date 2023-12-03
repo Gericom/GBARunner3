@@ -1,4 +1,5 @@
 #include "common.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "MemoryProtectionConfiguration.h"
 
 extern "C" void setupMemoryProtection()
@@ -23,7 +24,7 @@ extern "C" void setupMemoryProtection()
         .ApplyToRegion(MPU_REGION_2);
 
     // mpu region 3: Linear part of GBA rom
-    MemoryProtectionRegionBuilder(0x02200000, MPU_REGION_SIZE_2MB)
+    MemoryProtectionRegionBuilder(ROM_LINEAR_DS_ADDRESS, MPU_REGION_SIZE_2MB)
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
         .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
         .WithDataCache()

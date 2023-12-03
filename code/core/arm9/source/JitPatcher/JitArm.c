@@ -2,6 +2,7 @@
 #include "SdCache/SdCache.h"
 #include "JitCommon.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "JitArm.h"
 
 [[gnu::noreturn]]
@@ -375,7 +376,7 @@ u32* jit_handleArmUndefined(u32 instruction, u32* instructionPtr, u32* registers
             }
             u32 address = (rn + op2) & ~3;
             u32 branchDestination;
-            if (address >= 0x02200000 && address < 0x02400000)
+            if (address >= ROM_LINEAR_DS_ADDRESS && address < ROM_LINEAR_END_DS_ADDRESS)
             {
                 branchDestination = *(u32*)address;
             }
