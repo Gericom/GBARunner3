@@ -185,22 +185,18 @@ SECTIONS
 		KEEP (MemoryLoadRom.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
-		. = 0x460;
+		. = 0x474;
 		KEEP (VMMode.o(.itcm))
-		. = 0x7C4;
+		. = 0x7D8;
 		KEEP (VMSwi.o(.itcm))
 		KEEP (ArmLoadStoreShortRm.o(.itcm))
 		KEEP (IoFallback.o(.itcm))
-		KEEP (PrefetchAbort.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		KEEP (ThumbLoad.o(.itcm))
 		KEEP (ThumbStore.o(.itcm))
 		KEEP (ThumbLdmStm.o(.itcm))
 		KEEP (ThumbLoadPc.o(.itcm))
-		KEEP (MemCopy.o(.itcm))
-		KEEP (JitThumbEnsureJitted.o(.itcm))
-		KEEP (JitThumbUndefinedBx.o(.itcm))
 		. = 0x2000;
 		KEEP (ThumbGetRnRm.o(.itcm))
 		KEEP (ArmLoadStoreShortRd.o(.itcm))

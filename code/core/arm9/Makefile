@@ -54,7 +54,7 @@ INCLUDES	:=	include source ../common ../../libs/mini-printf
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-marm -mthumb-interwork -march=armv5te -mtune=arm946e-s \
-			-DLIBTWL_ARM9 -DARM9
+			-DLIBTWL_ARM9 -DARM9 -DGBAR3_HICODE_CACHE_MAPPING
 
 CFLAGS	:=	-g -Wall -O2\
 			 -fomit-frame-pointer\

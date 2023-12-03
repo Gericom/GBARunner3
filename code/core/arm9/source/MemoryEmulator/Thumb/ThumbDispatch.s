@@ -34,8 +34,7 @@ thumbDispatchContinue:
 #ifdef GBAR3_HICODE_CACHE_MAPPING
 
 readInstructionFromCache:
-    ldr r0,= memu_inst_addr
-    str lr, [r0]
+    str lr, DTCM(memu_inst_addr)
     sub r0, lr, #8
     bic r0, r0, #0xFE000000
     tst r0, #0x800

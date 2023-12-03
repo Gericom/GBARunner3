@@ -12,6 +12,8 @@ extern "C" void setupMemoryProtection()
     // mpu region 1: Cached Main Memory
     MemoryProtectionRegionBuilder(0x02000000, MPU_REGION_SIZE_4MB)
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_PRIV_READ_WRITE)
+        .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_PRIV_READ_WRITE)
+        .WithInstructionCache()
         .WithDataCache()
         .ApplyToRegion(MPU_REGION_1);
 
@@ -32,7 +34,7 @@ extern "C" void setupMemoryProtection()
 
     // mpu region 4: OBJ VRAM (DS)
     MemoryProtectionRegionBuilder(0x06400000, MPU_REGION_SIZE_32KB)
-        .WithDataAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
+        .WithDataAccessPermission(MPU_ACCESS_PERMISSION_PRIV_READ_WRITE)
         .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
         .WithInstructionCache()
         .Bufferable()

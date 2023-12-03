@@ -6,7 +6,7 @@
 
 vm_swi_base:
 
-#define DTCM(x) (vm_swi_base - 0x7C4 + (x))
+#define DTCM(x) (vm_swi_base - 0x7D8 + (x))
 
 .extern sav_swiHandler
 
@@ -26,6 +26,10 @@ arm_func vm_swi
 #endif
 
     mov r13, #0
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+    mcr p15, 0, r13, c9, c0, 1 // unlock icache
+    mcr	p15, 0, r13, c6, c4, 0 // disable mpu region
+#endif
     mcr p15, 0, r13, c7, c5, 0
 
     str lr, DTCM(vm_regs_svc + 4)
