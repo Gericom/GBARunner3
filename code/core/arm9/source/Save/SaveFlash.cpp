@@ -6,6 +6,7 @@
 #include "SaveSwi.h"
 #include "SaveFlashDefinitions.h"
 #include "SaveTypeInfo.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "SaveFlash.h"
 
 #define MAKER_ID_MACRONIX           0xC2
@@ -197,7 +198,7 @@ bool flash_patchV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
         return false;
     }
 
-    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)0x02200000, 0x200000, sIdentifyFlashV120Sig);
+    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, sIdentifyFlashV120Sig);
     if (!pIdentify)
     {
         return false;
@@ -207,10 +208,10 @@ bool flash_patchV120(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     *(u16*)pIdentify = SAVE_THUMB_SWI(0);
 
     sav_swiTable[1] = (void*)readFlash;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(1);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(1);
 
     sav_swiTable[2] = (void*)verifyFlashSector;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(2);
 
     initializeFlash512();
     return true;
@@ -223,7 +224,7 @@ bool flash_patchV123(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
         return false;
     }
 
-    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)0x02200000, 0x200000, sIdentifyFlashV123Sig);
+    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, sIdentifyFlashV123Sig);
     if (!pIdentify)
     {
         return false;
@@ -233,10 +234,10 @@ bool flash_patchV123(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     *(u16*)pIdentify = SAVE_THUMB_SWI(0);
 
     sav_swiTable[1] = (void*)readFlash;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(1);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(1);
 
     sav_swiTable[2] = (void*)verifyFlashSector;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(2);
 
     initializeFlash512();
     return true;
@@ -249,7 +250,7 @@ bool flash_patchV126(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
         return false;
     }
 
-    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)0x02200000, 0x200000, sIdentifyFlashV123Sig);
+    u32* pIdentify = (u32*)mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, sIdentifyFlashV123Sig);
     if (!pIdentify)
     {
         return false;
@@ -259,10 +260,10 @@ bool flash_patchV126(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomA
     *(u16*)pIdentify = SAVE_THUMB_SWI(0);
 
     sav_swiTable[1] = (void*)readFlash;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(1);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_READ) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(1);
 
     sav_swiTable[2] = (void*)verifyFlashSector;
-    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 + 0x02200000) = SAVE_THUMB_SWI(2);
+    *(u16*)((*(u32*)(tempBuffer + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS) = SAVE_THUMB_SWI(2);
 
     if (sav_tryPatchFunction(sVerifyFlashV126Sig, 3, (void*)verifyFlash))
     {

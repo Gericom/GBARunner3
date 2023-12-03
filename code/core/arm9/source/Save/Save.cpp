@@ -6,6 +6,7 @@
 #include "SaveSwi.h"
 #include "SaveTypeInfo.h"
 #include "VirtualMachine/VMNestedIrq.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "Save.h"
 
 [[gnu::section(".ewram.bss")]]
@@ -18,7 +19,7 @@ static DWORD sClusterTable[64];
 
 bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFunction)
 {
-    u32* function = (u32*)mem_fastSearch16((const u32*)0x02200000, 0x200000, signature);
+    u32* function = (u32*)mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, signature);
     if (!function)
         return false;
 

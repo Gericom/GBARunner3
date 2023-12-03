@@ -35,6 +35,7 @@
 #include "ColorLut.h"
 #include "MemoryProtectionConfiguration.h"
 #include "MemoryProtectionUnit.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "Application/GbaDisplayConfigurationService.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
@@ -46,6 +47,8 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
+[[gnu::section(".ewram.bss")]]
+GbaHeader gRomHeader;
 
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
@@ -179,10 +182,11 @@ static void loadGbaRom(const char* romPath)
     memset(&gFile, 0, sizeof(gFile));
     f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
-    f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    f_read(&gFile, &gRomHeader, sizeof(GbaHeader), &br);
+    f_lseek(&gFile, ROM_LINEAR_GBA_ADDRESS - 0x08000000);
+    f_read(&gFile, (void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, &br);
 
-    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
-    HarvestMoonPatches().TryApplyPatches(header->gameCode);
+    HarvestMoonPatches().TryApplyPatches(gRomHeader.gameCode);
     if (BadMixerPatch().TryApplyPatch())
     {
         gLogger->Log(LogLevel::Debug, "Bad mixer patch applied\n");
@@ -290,9 +294,9 @@ static void applyGameJitPatches()
         if (jitPatchAddress >= 0x08000000u && jitPatchAddress < 0x0A000000u)
         {
             gLogger->Log(LogLevel::Debug, "0x%08X\n", jitPatchAddress);
-            if (jitPatchAddress < 0x08200000u)
+            if (jitPatchAddress >= ROM_LINEAR_GBA_ADDRESS && jitPatchAddress < ROM_LINEAR_END_GBA_ADDRESS)
             {
-                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - 0x08000000u + 0x02200000u));
+                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS));
             }
 
             jit_processArmInstruction(static_cast<u32*>(sdc_loadRomBlockForPatching(jitPatchAddress)));
@@ -334,12 +338,11 @@ static void setupEWramDataCache()
 
 static void loadGameSpecificSettings()
 {
-    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
     auto path = std::make_unique<char[]>(128);
     mini_snprintf(path.get(), 128, GAME_SETTINGS_FILE_PATH_FORMAT,
-        header->gameCode & 0xFF, (header->gameCode >> 8) & 0xFF,
-        (header->gameCode >> 16) & 0xFF, header->gameCode >> 24,
-        header->softwareVersion);
+        gRomHeader.gameCode & 0xFF, (gRomHeader.gameCode >> 8) & 0xFF,
+        (gRomHeader.gameCode >> 16) & 0xFF, gRomHeader.gameCode >> 24,
+        gRomHeader.softwareVersion);
 
     if (gAppSettingsService.TryLoadAppSettings(path.get()))
     {
@@ -418,7 +421,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     setupJit();
     dma_init();
     gbas_init();
-    dc_flushRange((void*)0x02200000, 0x400000);
+    dc_flushRange((void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
     setupWramInstructionCache();

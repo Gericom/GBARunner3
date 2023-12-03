@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
+#include "MemoryEmulator/RomDefs.h"
 
 .macro jit_armUndefinedBxRm rm
     arm_func jit_armUndefinedBxR\rm
@@ -26,15 +27,15 @@ ensureJittedCommonHiReg:
     ldr r8, [r13]
 
 ensureJittedCommon:
-    cmp r8, #0x08000000
-        addhs r8, r8, #(0x02200000 - 0x08000000)
+    cmp r8, #ROM_LINEAR_GBA_ADDRESS
+        addhs r8, r8, #(ROM_LINEAR_DS_ADDRESS - ROM_LINEAR_GBA_ADDRESS)
 
     ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
     ldr sp,= dtcmStackEnd
     tst r8, #1
         orrne r10, r10, #0x20 // thumb bit
-    sub r9, r8, #0x02200000
-    cmp r9, #0x00200000
+    sub r9, r8, #ROM_LINEAR_DS_ADDRESS
+    cmp r9, #ROM_LINEAR_SIZE
     blo ensureJittedStaticRom
     mov r9, r8, lsr #24
     cmp r9, #3

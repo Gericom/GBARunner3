@@ -3,15 +3,16 @@
 
 #include "AsmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
+#include "MemoryEmulator/RomDefs.h"
 
 arm_func jit_thumbEnsureJittedHiReg
     ldr r8, [sp, #-4]
 
 arm_func jit_thumbEnsureJitted
-    cmp r8, #0x08000000
-        addhs r8, r8, #(0x02200000 - 0x08000000)
-    sub lr, r8, #0x02200000
-    cmp lr, #0x00200000
+    cmp r8, #ROM_LINEAR_GBA_ADDRESS
+        addhs r8, r8, #(ROM_LINEAR_DS_ADDRESS - ROM_LINEAR_GBA_ADDRESS)
+    sub lr, r8, #ROM_LINEAR_DS_ADDRESS
+    cmp lr, #ROM_LINEAR_SIZE
     bhs 1f
 
     ldr r12,= gJitState // staticRomJitBits
