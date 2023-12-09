@@ -4,6 +4,7 @@
 class GbaDisplayConfigurationService
 {
     void SetupCaptureOam(const DisplaySettings& displaySettings);
+    void SetupCaptureSprite(const DisplaySettings& displaySettings, vu16* oamPtr, int x, int y) const;
     void SetupCenterAndMask(const DisplaySettings& displaySettings);
     void SetupGbaScreen(const DisplaySettings& displaySettings);
     void SetupColorCorrection(const DisplaySettings& displaySettings);
