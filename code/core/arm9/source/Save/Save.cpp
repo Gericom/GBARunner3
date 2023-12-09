@@ -21,6 +21,26 @@ static DWORD sClusterTable[64];
 // temporarily
 extern FIL gFile;
 
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+
+static u32* searchHiCode(const u32* signature, u32 romStart, u32 romEnd)
+{
+    // todo: this doesn't work if the function lies on a cache block boundary
+    for (u32 i = romStart; i < romEnd; i += SDC_BLOCK_SIZE)
+    {
+        const void* block = sdc_getRomBlock(i);
+        u32* function = (u32*)mem_fastSearch16((const u32*)block, SDC_BLOCK_SIZE, signature);
+        if (function)
+        {
+            return (u32*)sdc_loadRomBlockForPatching(i + (u32)function - (u32)block);
+        }
+    }
+
+    return nullptr;
+}
+
+#endif
+
 bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFunction)
 {
     u32* function = (u32*)mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, signature);
@@ -44,26 +64,6 @@ bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFu
     *(u16*)function = SAVE_THUMB_SWI(saveSwiNumber);
     return true;
 }
-
-#ifdef GBAR3_HICODE_CACHE_MAPPING
-
-static u32* searchHiCode(const u32* signature, u32 romStart, u32 romEnd)
-{
-    // todo: this doesn't work if the function lies on a cache block boundary
-    for (u32 i = romStart; i < romEnd; i += SDC_BLOCK_SIZE)
-    {
-        const void* block = sdc_getRomBlock(i);
-        u32* function = (u32*)mem_fastSearch16((const u32*)block, SDC_BLOCK_SIZE, signature);
-        if (function)
-        {
-            return (u32*)sdc_loadRomBlockForPatching(i + (u32)function - (u32)block);
-        }
-    }
-
-    return nullptr;
-}
-
-#endif
 
 static void loadSaveClusterMap(void)
 {
