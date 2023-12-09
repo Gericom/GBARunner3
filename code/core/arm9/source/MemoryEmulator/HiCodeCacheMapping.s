@@ -37,38 +37,64 @@ arm_func hic_mapRomBlock
 
     mov r12, #0x80000000 //load bit + segment 0
     mcr p15, 0, r12, c9, c0, 1
-    bl prefetchCacheSet
-.rept 64
-    mcr p15, 3, r1, c15, c0, 0 //set index
-    mcr p15, 3, r1, c15, c1, 0 //write tag
-    add r1, r1, #32
-.endr
-    mov r12, #0x80000001 //load bit + segment 1
-    mcr p15, 0, r12, c9, c0, 1
-    bl prefetchCacheSet
-.rept 64
-    orr r3, r1, #(1 << 30)
-    mcr p15, 3, r3, c15, c0, 0 //set index
-    mcr p15, 3, r1, c15, c1, 0 //write tag
-    add r1, r1, #32
-.endr
-    mov r0, #0x00000002 //segment 2
-    mcr p15, 0, r0, c9, c0, 1
-    pop {r4, pc}
 
-prefetchCacheSet:
+prefetchCacheSet0:
     mov r12, #64
 1:
     mcr p15, 0, r0, c7, c13, 1 //prefetch
+    mcr p15, 3, r0, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
     add r0, r0, #32
     mcr p15, 0, r0, c7, c13, 1 //prefetch
+    mcr p15, 3, r0, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
     add r0, r0, #32
     mcr p15, 0, r0, c7, c13, 1 //prefetch
+    mcr p15, 3, r0, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
     add r0, r0, #32
     mcr p15, 0, r0, c7, c13, 1 //prefetch
+    mcr p15, 3, r0, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
     add r0, r0, #32
     subs r12, r12, #4
     bne 1b
-    bx lr
+
+    add r1, r1, #2048
+    mov r12, #0x80000001 //load bit + segment 1
+    mcr p15, 0, r12, c9, c0, 1
+    orr r3, r1, #(1 << 30)
+
+prefetchCacheSet1:
+    mov r12, #64
+2:
+    mcr p15, 0, r0, c7, c13, 1 //prefetch
+    add r0, r0, #32
+    mcr p15, 0, r0, c7, c13, 1 //prefetch
+    add r0, r0, #32
+    mcr p15, 0, r0, c7, c13, 1 //prefetch
+    add r0, r0, #32
+    mcr p15, 0, r0, c7, c13, 1 //prefetch
+    add r0, r0, #32
+
+    mcr p15, 3, r3, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
+    add r3, r3, #32
+    mcr p15, 3, r3, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
+    add r3, r3, #32
+    mcr p15, 3, r3, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
+    add r3, r3, #32
+    mcr p15, 3, r3, c15, c0, 0 //set index
+    mcr p15, 3, r1, c15, c1, 0 //write tag
+    add r3, r3, #32
+
+    subs r12, r12, #4
+    bne 2b
+
+    mov r0, #0x00000002 //segment 2
+    mcr p15, 0, r0, c9, c0, 1
+    pop {r4, pc}
 
 #endif
