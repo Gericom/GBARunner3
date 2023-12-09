@@ -12,17 +12,15 @@ vm_swi_base:
 
 arm_func vm_swi
     // check if this is a save patch swi
+#ifndef GBAR3_TEST
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     cmp lr, #0x08000000
-        bhs 1f
+        bhs hicodeLoadFromCache
 #endif
-#ifndef GBAR3_TEST
     ldrb r13, [lr, #-2]
+hicodeContinue:
     cmp r13, #0x80
         bhs sav_swiHandler
-#endif
-#ifdef GBAR3_HICODE_CACHE_MAPPING
-    1:
 #endif
 
     mov r13, #0
@@ -86,32 +84,21 @@ old_mode_svc:
     nop
     nop
 old_mode_4:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-old_mode_5:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-old_mode_6:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
+
+#ifdef GBAR3_HICODE_CACHE_MAPPING
+hicodeLoadFromCache:
+    sub r13, lr, #2
+    bic r13, r13, #0xFE000000
+    tst r13, #0x800
+    orrne r13, r13, #0x40000000 // set
+    mcr p15, 3, r13, c15, c0, 0 // set index
+    mrc p15, 3, r13, c15, c3, 0 // read data
+    and r13, r13, #0xFF
+    b hicodeContinue
+#endif
+
+.space 96 - (. - old_mode_4)
+
 old_mode_abt:
     add r13, lr, #(vm_regs_abt - vm_regs_svc)
     stmia r13, {r13,lr}^
