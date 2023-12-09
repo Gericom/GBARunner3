@@ -17,6 +17,7 @@
 #define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_Y        "centerOffsetY"
 #define KEY_DISPLAY_SETTINGS_MASK_WIDTH             "maskWidth"
 #define KEY_DISPLAY_SETTINGS_MASK_HEIGHT            "maskHeight"
+#define KEY_DISPLAY_SETTINGS_BORDER_IMAGE           "borderImage"
 
 #define KEY_RUN_SETTINGS                            "runSettings"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
@@ -31,6 +32,10 @@
 
 #define ENUM_STRING_GBA_COLOR_CORRECTION_NONE       "none"
 #define ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001    "agb001"
+
+#define ENUM_STRING_GBA_BORDER_IMAGE_NONE           "none"
+#define ENUM_STRING_GBA_BORDER_IMAGE_DEFAULT        "default"
+#define ENUM_STRING_GBA_BORDER_IMAGE_GAME           "game"
 
 #define ENUM_STRING_GBA_SAVE_TYPE_AUTO              "auto"
 #define ENUM_STRING_GBA_SAVE_TYPE_NONE              "none"
@@ -59,6 +64,23 @@ static bool tryParseGbaColorCorrection(const char* gbaColorCorrectionString, Gba
         gbaColorCorrection = GbaColorCorrection::None;
     else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001))
         gbaColorCorrection = GbaColorCorrection::Agb001;
+    else
+        return false;
+
+    return true;
+}
+
+static bool tryParseGbaBorderImage(const char* gbaBorderImageString, GbaBorderImage& gbaBorderImage)
+{
+    if (!gbaBorderImageString)
+        return false;
+
+    if (!strcasecmp(gbaBorderImageString, ENUM_STRING_GBA_BORDER_IMAGE_NONE))
+        gbaBorderImage = GbaBorderImage::None;
+    else if (!strcasecmp(gbaBorderImageString, ENUM_STRING_GBA_BORDER_IMAGE_DEFAULT))
+        gbaBorderImage = GbaBorderImage::Default;
+    else if (!strcasecmp(gbaBorderImageString, ENUM_STRING_GBA_BORDER_IMAGE_GAME))
+        gbaBorderImage = GbaBorderImage::Game;
     else
         return false;
 
@@ -107,6 +129,7 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
         = json[KEY_DISPLAY_SETTINGS_MASK_WIDTH] | displaySettings.maskWidth;
     displaySettings.maskHeight
         = json[KEY_DISPLAY_SETTINGS_MASK_HEIGHT] | displaySettings.maskHeight;
+    tryParseGbaBorderImage(json[KEY_DISPLAY_SETTINGS_BORDER_IMAGE], displaySettings.borderImage);
 }
 
 static u32 parseHexString(const char* hexString)

@@ -37,6 +37,7 @@
 #include "MemoryProtectionUnit.h"
 #include "MemoryEmulator/RomDefs.h"
 #include "Application/GbaDisplayConfigurationService.h"
+#include "Application/GbaBorderService.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -409,7 +410,12 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     loadGameSpecificSettings();
     handleSave(romPath);
 
-    gGbaDisplayConfigurationService.ApplyDisplaySettings(gAppSettingsService.GetAppSettings().displaySettings);
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    gGbaDisplayConfigurationService.ApplyDisplaySettings(displaySettings);
+    if (displaySettings.enableCenterAndMask)
+    {
+        gGbaBorderService.SetupBorder(displaySettings.borderImage, gRomHeader.gameCode);
+    }
 
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // Do not clear ewram before we read argv

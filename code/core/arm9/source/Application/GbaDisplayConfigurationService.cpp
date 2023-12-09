@@ -28,7 +28,8 @@ void GbaDisplayConfigurationService::SetupCaptureOam(const DisplaySettings& disp
                 GFX_OAM_ATTR1_X(x + displaySettings.centerOffsetX);
             oamPtr[2] =
                 GFX_OAM_ATTR2_BMP_ALPHA(15) |
-                GFX_OAM_ATTR2_VRAM_OFFS(((y >> 3) << 5) + (x >> 3));
+                GFX_OAM_ATTR2_PRIORITY(1) |
+                GFX_OAM_ATTR2_VRAM_OFFS((((y + 64) >> 3) << 5) + (x >> 3));
             oamPtr += 4;
         }
     }
@@ -54,8 +55,8 @@ void GbaDisplayConfigurationService::SetupCenterAndMask(const DisplaySettings& d
 
     REG_WININ_SUB = ((1 << 3) | (1 << 4)) | (((1 << 3) | (1 << 4)) << 8);
     REG_WINOUT_SUB = 0;
-    REG_DISPCNT_SUB = 0x40017923;
-    REG_BG3CNT_SUB = 0x4084;
+    REG_DISPCNT_SUB = 0x40017934;
+    REG_BG3CNT_SUB = 0x4284;
     gfx_setSubBg3Affine(
         256, 0, 0, 256,
         -(displaySettings.centerOffsetX * 256),
@@ -85,7 +86,7 @@ void GbaDisplayConfigurationService::SetupGbaScreen(const DisplaySettings& displ
         sysipc_setBottomBacklight(true);
     }
 
-    REG_DISPCAPCNT = 0x00320000;
+    REG_DISPCAPCNT = 0x00360000;
     if (displaySettings.enableCenterAndMask)
     {
         SetupCenterAndMask(displaySettings);
