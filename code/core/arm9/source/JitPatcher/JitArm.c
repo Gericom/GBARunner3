@@ -104,13 +104,24 @@ bool jit_processArmInstruction(u32* ptr)
     }
     else if ((instruction & 0x0E00F010) == 0x0000F000)
     {
-        // ALU{S} pc, Rn, Rm (imm shift)
-        *ptr = 0x0E000000
-            | (instruction & 0xF0000000) // cond
-            | ((instruction & 0x01E00000) >> 4) // op
-            | ((instruction & 0x00100000) << 1) // S
-            | ((instruction & 0x000F0000) >> 16) // Rn
-            | ((instruction & 0x00000FFF) << 5); // op2
+        if ((instruction & 0x0FFFFFF0) == 0x01B0F000 && (instruction & 0xF) != 15)
+        {
+            // MOVS pc, Rm
+            // encode it as undefined subs pc, Rm, #0
+            *ptr = 0x0E640000
+                | (instruction & 0xF0000000) // cond
+                | (instruction & 0x0000000F); // Rm
+        }
+        else
+        {
+            // ALU{S} pc, Rn, Rm (imm shift)
+            *ptr = 0x0E000000
+                | (instruction & 0xF0000000) // cond
+                | ((instruction & 0x01E00000) >> 4) // op
+                | ((instruction & 0x00100000) << 1) // S
+                | ((instruction & 0x000F0000) >> 16) // Rn
+                | ((instruction & 0x00000FFF) << 5); // op2
+        }
         if ((instruction >> 28) == 0xE)
         {
             return false;
