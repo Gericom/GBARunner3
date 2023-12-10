@@ -5,6 +5,7 @@
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
 #include "DtcmStackDefs.inc"
+#include "MemoryEmulator/RomDefs.h"
 
 /// @brief Loads a 16-bit value from the given GBA memory address.
 ///        When unaligned rotation is applied.
@@ -93,9 +94,9 @@ arm_func memu_load16Bios
     bx lr
 
 arm_func memu_load16Ewram
-    cmp r8, #0x02400000
-    addhs r9, r8, #(0x08000000 - 0x02200000)
-    bhs memu_load16RomHiContinue
+    cmp r8, #ROM_LINEAR_END_DS_ADDRESS
+        addhs r9, r8, #(ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS)
+        bhs memu_load16RomHiContinue
 
     bic r9, r8, #0x00FC0000
     ldrh r9, [r9]

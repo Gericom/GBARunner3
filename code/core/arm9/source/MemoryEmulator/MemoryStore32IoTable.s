@@ -89,7 +89,7 @@
     .elseif (\index << 2) == GBA_REG_OFFS_SIOMULTI2
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SIOCNT
-        .short emu_ioStore32
+        .short emu_regSioCntSioMultiSendStore32
     .elseif (\index << 2) == GBA_REG_OFFS_RCNT
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_JOYCNT

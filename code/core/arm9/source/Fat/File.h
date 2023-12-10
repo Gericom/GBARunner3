@@ -15,6 +15,12 @@ public:
         return f_read(&_file, buff, count, (UINT*)&bytesRead);
     }
 
+    bool ReadExact(void* buff, u32 count)
+    {
+        UINT bytesRead = 0;
+        return f_read(&_file, buff, count, &bytesRead) == FR_OK && bytesRead == count;
+    }
+
     FRESULT Write(const void* buff, u32 count, u32& bytesWritten)
     {
         return f_write(&_file, buff, count, (UINT*)&bytesWritten);

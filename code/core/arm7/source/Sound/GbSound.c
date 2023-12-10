@@ -174,28 +174,44 @@ static void updateChannelDuty(int channel)
     }
 }
 
+static u16 calculateChannel12Timer(int channelFreq)
+{
+    return 16 * channelFreq - 32768;
+}
+
+static u16 calculateChannel3Timer(void)
+{
+    return 8 * sChannelFreq[2] - 16384;
+}
+
+static u16 calculateChannel4Timer(void)
+{
+    int div = sChannel4Div == 0 ? 4 : (sChannel4Div * 8);
+    div <<= sChannel4ShiftFreq + 1;
+    return div > 16384 ? 0 : (-4 * div);
+}
+
 static void updateChannelFreq(int channel)
 {
     switch (channel)
     {
         case 0:
         {
-            u16 timer = -(33513982 / 2) / (131072 / (2048 - sChannelFreq[0]) * 8);
+            u16 timer = calculateChannel12Timer(sChannelFreq[0]);
             snd_setChannelTimer(GB_CHANNEL_1_HW_L, timer);
             snd_setChannelTimer(GB_CHANNEL_1_HW_R, timer);
             break;
         }
         case 1:
         {
-            u16 timer = -(33513982 / 2) / (131072 / (2048 - sChannelFreq[1]) * 8);
+            u16 timer = calculateChannel12Timer(sChannelFreq[1]);
             snd_setChannelTimer(GB_CHANNEL_2_HW_L, timer);
             snd_setChannelTimer(GB_CHANNEL_2_HW_R, timer);
             break;
         }
         case 2:
         {
-            int freq = 2097152 / (2048 - sChannelFreq[2]);
-            u16 timer = -(33513982 / 2) / freq;
+            u16 timer = calculateChannel3Timer();
             snd_setChannelTimer(GB_CHANNEL_3_HW_L_0, timer);
             snd_setChannelTimer(GB_CHANNEL_3_HW_R_0, timer);
             snd_setChannelTimer(GB_CHANNEL_3_HW_L_1, timer);
@@ -204,22 +220,9 @@ static void updateChannelFreq(int channel)
         }
         case 3:
         {
-            int div = sChannel4Div * 8;
-            if (div == 0)
-                div = 4;
-            div *= 2 << sChannel4ShiftFreq;
-            int freq = 4194304 / div;
-            if (freq == 0)
-            {
-                snd_setChannelTimer(GB_CHANNEL_4_HW_L, 0);
-                snd_setChannelTimer(GB_CHANNEL_4_HW_R, 0);
-            }
-            else
-            {
-                u16 timer = -(33513982 / 2) / freq;
-                snd_setChannelTimer(GB_CHANNEL_4_HW_L, timer);
-                snd_setChannelTimer(GB_CHANNEL_4_HW_R, timer);
-            }
+            u16 timer = calculateChannel4Timer();
+            snd_setChannelTimer(GB_CHANNEL_4_HW_L, timer);
+            snd_setChannelTimer(GB_CHANNEL_4_HW_R, timer);
             break;
         }
     }
@@ -340,8 +343,6 @@ static void startChannel(int channel)
         case 0:
         {
             duty = gbDutyToDs(sChannel1Duty);
-            snd_stopChannel(GB_CHANNEL_1_HW_L);
-            snd_stopChannel(GB_CHANNEL_1_HW_R);
             REG_SOUNDxCNT(GB_CHANNEL_1_HW_L) =
                 SOUNDCNT_ENABLED |
                 SOUNDCNT_FORMAT_PSG |
@@ -363,8 +364,6 @@ static void startChannel(int channel)
         case 1:
         {
             duty = gbDutyToDs(sChannel2Duty);
-            snd_stopChannel(GB_CHANNEL_2_HW_L);
-            snd_stopChannel(GB_CHANNEL_2_HW_R);
             REG_SOUNDxCNT(GB_CHANNEL_2_HW_L) =
                 SOUNDCNT_ENABLED |
                 SOUNDCNT_FORMAT_PSG |

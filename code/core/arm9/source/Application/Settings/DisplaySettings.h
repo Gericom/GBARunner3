@@ -1,6 +1,7 @@
 #pragma once
 #include "Enums/GbaScreen.h"
 #include "Enums/GbaColorCorrection.h"
+#include "Enums/GbaBorderImage.h"
 
 #define DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN  1
 #define DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX  16
@@ -33,4 +34,7 @@ public:
 
     /// @brief Height of the visible screen area when enableCenterAndMask is true.
     u16 maskHeight = 160;
+
+    /// @brief Type of border image to be used when enableCenterAndMask is true.
+    GbaBorderImage borderImage = GbaBorderImage::Game;
 };

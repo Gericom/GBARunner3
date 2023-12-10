@@ -5,6 +5,7 @@
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
 #include "DtcmStackDefs.inc"
+#include "MemoryEmulator/RomDefs.h"
 
 /// @brief Loads an 8-bit value from the given GBA memory address.
 /// @param r0-r7 Preserved.
@@ -43,9 +44,9 @@ arm_func memu_load8Bios
     b memu_load32BiosContinue
 
 arm_func memu_load8Ewram
-    cmp r8, #0x02400000
-    addhs r9, r8, #(0x08000000 - 0x02200000)
-    bhs memu_load8RomHiContinue
+    cmp r8, #ROM_LINEAR_END_DS_ADDRESS
+        addhs r9, r8, #(ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS)
+        bhs memu_load8RomHiContinue
 
     bic r9, r8, #0x00FC0000
     ldrb r9, [r9]

@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
+#include "MemoryEmulator/RomDefs.h"
 
 .macro jit_armUndefinedLdrPcImmRn rn
     arm_func jit_armUndefinedLdrPcImmR\rn
@@ -17,11 +18,11 @@
         .else
             // pc
             add r8, r11, #4
-            cmp r11, #0x02200000
+            cmp r11, #ROM_LINEAR_DS_ADDRESS
             blo 1f
-            cmp r11, #0x02400000
+            cmp r11, #ROM_LINEAR_END_DS_ADDRESS
             bhs 1f
-            add r8, r8, #(0x08000000 - 0x02200000)
+            add r8, r8, #(ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS)
         1:
         .endif
         b jit_armUndefinedLdrPcImmCommon

@@ -35,7 +35,9 @@
 #include "ColorLut.h"
 #include "MemoryProtectionConfiguration.h"
 #include "MemoryProtectionUnit.h"
+#include "MemoryEmulator/RomDefs.h"
 #include "Application/GbaDisplayConfigurationService.h"
+#include "Application/GbaBorderService.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -46,6 +48,8 @@
 FATFS gFatFs;
 [[gnu::section(".ewram.bss")]]
 FIL gFile;
+[[gnu::section(".ewram.bss")]]
+GbaHeader gRomHeader;
 
 [[gnu::section(".vramhi.bss")]]
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
@@ -180,18 +184,60 @@ static void loadGbaRom(const char* romPath)
     memset(&gFile, 0, sizeof(gFile));
     f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
-    f_read(&gFile, (void*)0x02200000, 2 * 1024 * 1024, &br);
+    f_read(&gFile, &gRomHeader, sizeof(GbaHeader), &br);
+    f_lseek(&gFile, ROM_LINEAR_GBA_ADDRESS - 0x08000000);
+    f_read(&gFile, (void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, &br);
 
-    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
-    HarvestMoonPatches().TryApplyPatches(header->gameCode);
+    HarvestMoonPatches().TryApplyPatches(gRomHeader.gameCode);
     if (BadMixerPatch().TryApplyPatch())
     {
         gLogger->Log(LogLevel::Debug, "Bad mixer patch applied\n");
     }
 }
 
+static void disableSramReads(void)
+{
+    memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
+    memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
+    memu_load8Table[0xE] = (u32)memu_load8Undefined;
+    memu_load8Table[0xF] = (u32)memu_load8Undefined;
+    memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
+    memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
+    memu_load16Table[0xE] = (u32)memu_load16Undefined;
+    memu_load16Table[0xF] = (u32)memu_load16Undefined;
+    memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
+    memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
+    memu_load32Table[0xE] = (u32)memu_load32Undefined;
+    memu_load32Table[0xF] = (u32)memu_load32Undefined;
+}
+
+static void disableSramWrites(void)
+{
+    memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
+    memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
+    memu_store8Table[0xE] = (u32)memu_store8Undefined;
+    memu_store8Table[0xF] = (u32)memu_store8Undefined;
+    memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
+    memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
+    memu_store16Table[0xE] = (u32)memu_store16Undefined;
+    memu_store16Table[0xF] = (u32)memu_store16Undefined;
+    memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
+    memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
+    memu_store32Table[0xE] = (u32)memu_store32Undefined;
+    memu_store32Table[0xF] = (u32)memu_store32Undefined;
+}
+
 static void handleSave(const char* savePath)
 {
+    const auto& gameSettings = gAppSettingsService.GetAppSettings().gameSettings;
+    if (gameSettings.saveType == GbaSaveType::None)
+    {
+        gLogger->Log(LogLevel::Debug, "Save Type: None\n");
+        disableSramReads();
+        disableSramWrites();
+        return;
+    }
+
     u32 tagRomAddress;
     const SaveTypeInfo* saveTypeInfo = SaveTagScanner().FindSaveTag(&gFile, &sdc_cache[0][0], tagRomAddress);
     
@@ -208,34 +254,12 @@ static void handleSave(const char* savePath)
 
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM)
         {
-            memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
-            memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
-            memu_load8Table[0xE] = (void*)memu_load8Undefined;
-            memu_load8Table[0xF] = (void*)memu_load8Undefined;
-            memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
-            memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
-            memu_load16Table[0xE] = (void*)memu_load16Undefined;
-            memu_load16Table[0xF] = (void*)memu_load16Undefined;
-            memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
-            memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
-            memu_load32Table[0xE] = (void*)memu_load32Undefined;
-            memu_load32Table[0xF] = (void*)memu_load32Undefined;
+            disableSramReads();
         }
         if ((saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_EEPROM ||
             (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_FLASH)
         {
-            memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
-            memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
-            memu_store8Table[0xE] = (void*)memu_store8Undefined;
-            memu_store8Table[0xF] = (void*)memu_store8Undefined;
-            memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
-            memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
-            memu_store16Table[0xE] = (void*)memu_store16Undefined;
-            memu_store16Table[0xF] = (void*)memu_store16Undefined;
-            memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
-            memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
-            memu_store32Table[0xE] = (void*)memu_store32Undefined;
-            memu_store32Table[0xF] = (void*)memu_store32Undefined;
+            disableSramWrites();
         }
     }
 
@@ -272,9 +296,9 @@ static void applyGameJitPatches()
         if (jitPatchAddress >= 0x08000000u && jitPatchAddress < 0x0A000000u)
         {
             gLogger->Log(LogLevel::Debug, "0x%08X\n", jitPatchAddress);
-            if (jitPatchAddress < 0x08200000u)
+            if (jitPatchAddress >= ROM_LINEAR_GBA_ADDRESS && jitPatchAddress < ROM_LINEAR_END_GBA_ADDRESS)
             {
-                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - 0x08000000u + 0x02200000u));
+                jit_processArmInstruction(reinterpret_cast<u32*>(jitPatchAddress - ROM_LINEAR_GBA_ADDRESS + ROM_LINEAR_DS_ADDRESS));
             }
 
             jit_processArmInstruction(static_cast<u32*>(sdc_loadRomBlockForPatching(jitPatchAddress)));
@@ -316,12 +340,11 @@ static void setupEWramDataCache()
 
 static void loadGameSpecificSettings()
 {
-    auto header = reinterpret_cast<const GbaHeader*>(0x02200000);
     auto path = std::make_unique<char[]>(128);
     mini_snprintf(path.get(), 128, GAME_SETTINGS_FILE_PATH_FORMAT,
-        header->gameCode & 0xFF, (header->gameCode >> 8) & 0xFF,
-        (header->gameCode >> 16) & 0xFF, header->gameCode >> 24,
-        header->softwareVersion);
+        gRomHeader.gameCode & 0xFF, (gRomHeader.gameCode >> 8) & 0xFF,
+        (gRomHeader.gameCode >> 16) & 0xFF, gRomHeader.gameCode >> 24,
+        gRomHeader.softwareVersion);
 
     if (gAppSettingsService.TryLoadAppSettings(path.get()))
     {
@@ -386,10 +409,15 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         romExtension[3] = 'v';
         romExtension[4] = '\0';
     }
-    handleSave(romPath);
     loadGameSpecificSettings();
+    handleSave(romPath);
 
-    gGbaDisplayConfigurationService.ApplyDisplaySettings(gAppSettingsService.GetAppSettings().displaySettings);
+    const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
+    gGbaDisplayConfigurationService.ApplyDisplaySettings(displaySettings);
+    if (displaySettings.enableCenterAndMask)
+    {
+        gGbaBorderService.SetupBorder(displaySettings.borderImage, gRomHeader.gameCode);
+    }
 
     GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // Do not clear ewram before we read argv
@@ -402,7 +430,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     setupJit();
     dma_init();
     gbas_init();
-    dc_flushRange((void*)0x02200000, 0x400000);
+    dc_flushRange((void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
     setupWramInstructionCache();
