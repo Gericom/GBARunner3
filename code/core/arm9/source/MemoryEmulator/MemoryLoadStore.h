@@ -24,12 +24,40 @@ extern "C" {
 /// @return The loaded value.
 extern u32 memu_load32FromC(u32 address);
 
+/// @brief Stores a 32-bit value to the given GBA memory address.
+/// @param address The address to store to.
+/// @param value The value to store.
+extern void memu_store32FromC(u32 address, u32 value);
+
 extern void memu_load8Undefined(void);
 extern void memu_load16Undefined(void);
 extern void memu_load32Undefined(void);
 extern void memu_store8Undefined(void);
 extern void memu_store16Undefined(void);
 extern void memu_store32Undefined(void);
+
+extern void memu_load8Vram012(void);
+extern void memu_load16Vram012(void);
+extern void memu_load32Vram012(void);
+extern void memu_store8Vram012(void);
+extern void memu_store16Vram012(void);
+extern void memu_store32Vram012(void);
+
+extern void memu_load8Vram345(void);
+extern void memu_load16Vram345(void);
+extern void memu_load32Vram345(void);
+
+extern void memu_store8Vram3(void);
+extern void memu_store16Vram3(void);
+extern void memu_store32Vram3(void);
+
+extern void memu_store8Vram4(void);
+extern void memu_store16Vram4(void);
+extern void memu_store32Vram4(void);
+
+extern void memu_store8Vram5(void);
+extern void memu_store16Vram5(void);
+extern void memu_store32Vram5(void);
 
 #ifdef __cplusplus
 }

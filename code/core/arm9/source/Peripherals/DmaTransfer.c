@@ -190,7 +190,13 @@ static inline bool fastDmaSourceAllowed(u32 srcRegion)
 
 static inline bool fastDmaDestinationAllowed(u32 dstRegion)
 {
-    return 0b0000000011001100 & (1 << dstRegion);
+    u32 mask = 0b0000000011001100;
+    if ((emu_ioRegisters[GBA_REG_OFFS_DISPCNT] & 7) >= 3)
+    {
+        mask &= ~(1 << 6);
+    }
+
+    return mask & (1 << dstRegion);
 }
 
 ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 byteCount, int srcStep, int dstStep)
