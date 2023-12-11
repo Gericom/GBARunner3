@@ -138,7 +138,6 @@ ITCM_CODE static u32 translateAddress(u32 address)
                 break;
             }
 
-            address &= ~0x8000;
             if (address & 0x4000)
             {
                 address += 0x003F0000;
@@ -146,7 +145,7 @@ ITCM_CODE static u32 translateAddress(u32 address)
             else
             {
                 u32 dispCnt = emu_ioRegisters[GBA_REG_OFFS_DISPCNT];
-                if ((dispCnt & 7) < 3)
+                if ((dispCnt & 7) < 3 || address & 0x8000)
                 {
                     address += 0x003F0000;
                 }

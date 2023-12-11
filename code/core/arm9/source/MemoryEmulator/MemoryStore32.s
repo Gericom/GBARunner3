@@ -82,19 +82,15 @@ arm_func memu_store32Pltt
     bx lr
 
 arm_func memu_store32Vram012
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        addmi r11, r11, #0x3F0000
-        bicmi r10, r10, #(0x8000 << 15)
-
-    str r9, [r11, r10, lsr #15]
+    bic r11, r8, #0xFE0000
+    tst r11, #0x10000
+        addne r11, r11, #0x3F0000
+    str r9, [r11]
     bx lr
 
 arm_func memu_store32Vram3
     mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
     str r9, [r11, r10, lsr #15]!
@@ -111,9 +107,7 @@ arm_func memu_store32Vram3
 
 arm_func memu_store32Vram4
     mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
     str r9, [r11, r10, lsr #15]!
@@ -132,9 +126,7 @@ arm_func memu_store32Vram4
 
 arm_func memu_store32Vram5
     mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
     str r9, [r11, r10, lsr #15]!

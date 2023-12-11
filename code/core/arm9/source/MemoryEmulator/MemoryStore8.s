@@ -97,9 +97,7 @@ arm_func memu_store8Vram012
     bx lr
 
 arm_func memu_store8Vram3
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         bxhs lr
 
@@ -108,9 +106,7 @@ arm_func memu_store8Vram3
     b memu_store16Vram3Finish
 
 arm_func memu_store8Vram4
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         bxhs lr
 
@@ -119,9 +115,7 @@ arm_func memu_store8Vram4
     b memu_store16Vram4Finish
 
 arm_func memu_store8Vram5
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         bxhs lr
 
