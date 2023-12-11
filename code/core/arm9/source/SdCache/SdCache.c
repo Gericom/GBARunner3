@@ -5,6 +5,7 @@
 #include "cp15.h"
 #include "SdCache.h"
 
+[[gnu::section(".vramhi.bss")]]
 void* sdc_romBlockToCacheBlock[SDC_ROM_BLOCK_COUNT];
 
 /// @brief Random generator state for random cache replacement.

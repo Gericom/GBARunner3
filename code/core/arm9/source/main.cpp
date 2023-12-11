@@ -51,6 +51,7 @@ FIL gFile;
 [[gnu::section(".ewram.bss")]]
 GbaHeader gRomHeader;
 
+[[gnu::section(".vramhi.bss")]]
 u32 gGbaBios[16 * 1024 / 4] alignas(256);
 
 /// @brief Opcodes returned by bios reads.
@@ -361,6 +362,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     GFX_PLTT_BG_SUB[0] = 0;
     REG_MASTER_BRIGHT = 0;
 
+    mem_setVramBMapping(MEM_VRAM_AB_MAIN_BG_40000);
     mem_setVramCMapping(MEM_VRAM_C_LCDC);
     mem_setVramDMapping(MEM_VRAM_D_LCDC);
     mem_setVramEMapping(MEM_VRAM_E_MAIN_BG_00000);
@@ -422,6 +424,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);
     memset((void*)GFX_BG_MAIN, 0, 64 * 1024);
+    memset((void*)((u32)GFX_BG_MAIN + 0x40000), 0, 128 * 1024); // vram B
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
     setupJit();

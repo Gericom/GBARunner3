@@ -88,6 +88,18 @@ bss_done:
     cmp r0, r1
     bne 1b
 ewram_bss_done:
+
+    // clear vram hi bss
+    ldr r0,= __vramhi_bss_start
+    ldr r1,= __vramhi_bss_end
+    cmp r0, r1
+    beq vramhi_bss_done
+    mov r2, #0
+1:
+    str r2, [r0], #4
+    cmp r0, r1
+    bne 1b
+vramhi_bss_done:
     // bkpt #0
 
     // disable interrupts
@@ -100,6 +112,10 @@ ewram_bss_done:
     push {r11, r12}
     bl __libc_init_array
     pop {r0, r1}
+
+    // idk why this is needed
+    nop
+
     b gbaRunnerMain
 
 .pool

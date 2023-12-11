@@ -40,7 +40,7 @@ extern "C" void setupMemoryProtection()
         .ApplyToRegion(MPU_REGION_4);
 
     // mpu region 5: LCDC VRAM A and B
-    MemoryProtectionRegionBuilder(0x06800000, MPU_REGION_SIZE_256KB)
+    MemoryProtectionRegionBuilder(0x06800000, MPU_REGION_SIZE_1MB)
         .WithDataAccessPermission(MPU_ACCESS_PERMISSION_USER_READ_PRIV_WRITE)
         .WithInstructionAccessPermission(MPU_ACCESS_PERMISSION_READ_WRITE)
         .WithDataCache()

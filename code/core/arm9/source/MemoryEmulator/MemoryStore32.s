@@ -3,6 +3,13 @@
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
 
+arm_func memu_store32FromC
+    push {r8-r11,lr}
+    mov r8, r0
+    mov r9, r1
+    bl memu_store32
+    pop {r8-r11,pc}
+
 /// @brief Stores a 32-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
 /// @param r8 The address to store to. This register is preserved,
@@ -83,14 +90,68 @@ arm_func memu_store32Vram012
     str r9, [r11, r10, lsr #15]
     bx lr
 
-arm_func memu_store32Vram345
+arm_func memu_store32Vram3
     mov r11, #0x06000000
     movs r10, r8, lsl #15
         bicmi r10, r10, #(0x8000 << 15)
 
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
-    str r9, [r11, r10, lsr #15]
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 4370
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    orr r9, r9, #0x80000000
+    str r9, [r11, r12, lsl #5]
+    bx lr
+
+arm_func memu_store32Vram4
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 4370
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #19
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    str r9, [r11, r12, lsl #4]
+    bx lr
+
+arm_func memu_store32Vram5
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 6554
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    orr r9, r9, #0x80000000
+    add r12, r12, r12, lsl #1
+    str r9, [r11, r12, lsl #6]
     bx lr
 
 arm_func memu_store32Oam

@@ -6,7 +6,7 @@
 
 vm_swi_base:
 
-#define DTCM(x) (vm_swi_base - 0x7C4 + (x))
+#define DTCM(x) (vm_swi_base - 0x7B4 + (x))
 
 .extern sav_swiHandler
 

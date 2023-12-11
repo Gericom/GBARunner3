@@ -78,15 +78,75 @@ arm_func memu_store16Vram012
     strh r9, [r11]
     bx lr
 
-arm_func memu_store16Vram345
+arm_func memu_store16Vram3
     mov r11, #0x06000000
     movs r10, r8, lsl #15
         bicmi r10, r10, #(0x8000 << 15)
 
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram3Finish
     add r11, r11, r10, lsr #15
     strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 4370
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    mov r12, r12, lsl #5
+    strh r9, [r11, r12]
+    bx lr
+
+arm_func memu_store16Vram4
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram4Finish
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 4370
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #19
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    mov r12, r12, lsl #4
+    strh r9, [r11, r12]
+    bx lr
+
+arm_func memu_store16Vram5
+    mov r11, #0x06000000
+    movs r10, r8, lsl #15
+        bicmi r10, r10, #(0x8000 << 15)
+
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram5Finish
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 6554
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    add r12, r12, r12, lsl #1
+    mov r12, r12, lsl #6
+    strh r9, [r11, r12]
     bx lr
 
 arm_func memu_store16Oam
