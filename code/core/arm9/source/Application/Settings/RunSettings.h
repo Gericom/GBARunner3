@@ -16,4 +16,10 @@ public:
 
     /// @brief Specifies whether the data cache should be enabled on ewram.
     bool16 enableEWramDataCache = true;
+
+    /// @brief Specifies the rom addresses of instructions that perform a self-modifying write and that should be patched.
+    std::unique_ptr<u32[]> selfModifyingPatchAddresses;
+
+    /// @brief Specifies the number of self-modifying write instructions that should be patched.
+    u32 selfModifyingPatchAddressCount = 0;
 };

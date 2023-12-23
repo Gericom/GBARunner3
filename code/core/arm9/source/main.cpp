@@ -38,6 +38,8 @@
 #include "MemoryEmulator/RomDefs.h"
 #include "Application/GbaDisplayConfigurationService.h"
 #include "Application/GbaBorderService.h"
+#include "Patches/PatchSwi.h"
+#include "Patches/SelfModifyingPatches.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -396,6 +398,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 
     gAppSettingsService.TryLoadAppSettings(SETTINGS_FILE_PATH);
 
+    patch_resetSwiPatches();
     loadGbaBios();
     relocateGbaBios();
     applyBiosVmPatches();
@@ -411,6 +414,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     }
     loadGameSpecificSettings();
     handleSave(romPath);
+    SelfModifyingPatches().ApplyPatches(gAppSettingsService.GetAppSettings().runSettings);
 
     const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
     gGbaDisplayConfigurationService.ApplyDisplaySettings(displaySettings);

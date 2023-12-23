@@ -19,10 +19,11 @@
 #define KEY_DISPLAY_SETTINGS_MASK_HEIGHT            "maskHeight"
 #define KEY_DISPLAY_SETTINGS_BORDER_IMAGE           "borderImage"
 
-#define KEY_RUN_SETTINGS                            "runSettings"
-#define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES        "jitPatchAddresses"
-#define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE         "enableWramICache"
-#define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE        "enableEWramDCache"
+#define KEY_RUN_SETTINGS                                    "runSettings"
+#define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES                "jitPatchAddresses"
+#define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE                 "enableWramICache"
+#define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE                "enableEWramDCache"
+#define KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES     "selfModifyingPatchAddresses"
 
 #define KEY_GAME_SETTINGS                           "gameSettings"
 #define KEY_GAME_SETTINGS_SAVE_TYPE                 "saveType"
@@ -172,6 +173,22 @@ static bool tryParseJitPatchAddresses(const JsonArrayConst& jitPatchAddresses, R
     return true;
 }
 
+static bool tryParseSelfModifyingPatchAddresses(const JsonArrayConst& selfModifyingPatchAddresses, RunSettings& runSettings)
+{
+    if (selfModifyingPatchAddresses.isNull())
+        return false;
+
+    runSettings.selfModifyingPatchAddresses = std::make_unique<u32[]>(selfModifyingPatchAddresses.size());
+    int i = 0;
+    for (const char* addressString : selfModifyingPatchAddresses)
+    {
+        runSettings.selfModifyingPatchAddresses[i++] = parseHexString(addressString);
+    }
+
+    runSettings.selfModifyingPatchAddressCount = i;
+    return true;
+}
+
 static void readRunSettings(const JsonObjectConst& json, RunSettings& runSettings)
 {
     if (json.isNull())
@@ -180,6 +197,7 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
     tryParseJitPatchAddresses(json[KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES], runSettings);
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE], runSettings.enableWramInstructionCache);
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE], runSettings.enableEWramDataCache);
+    tryParseSelfModifyingPatchAddresses(json[KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES], runSettings);
 }
 
 static void readGameSettings(const JsonObjectConst& json, GameSettings& gameSettings)
