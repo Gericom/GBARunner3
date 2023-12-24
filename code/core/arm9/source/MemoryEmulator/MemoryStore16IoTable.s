@@ -163,7 +163,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI_SEND
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_KEYCNT
-        .short emu_ioStore16
+        .short emu_regKeyControlStore16
     .elseif (\index << 1) == GBA_REG_OFFS_RCNT
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_JOYCNT

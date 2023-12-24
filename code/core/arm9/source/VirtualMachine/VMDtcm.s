@@ -8,7 +8,7 @@
     .word 0x04000210
 
 .org vm_emulatedIrqMask - VM_DTCM_BASE
-    .word 0xFFFFFF80 // timers and display irqs have a hw source
+    .word 0xFFFFEF80 // keys, timers and display irqs have a hw source
 
 .org vm_undefinedArmTableAddr - VM_DTCM_BASE
     .word vm_armUndefinedDispatchTable
