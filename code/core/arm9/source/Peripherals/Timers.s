@@ -83,8 +83,11 @@ arm_func emu_timerCntLStore16
     str r10, [r11, #0x188]
     bx lr
 
+arm_func emu_timer0CntHStore16
+    bic r9, r9, #(1 << 2) // timer 0 has no cascade bit
 arm_func emu_timerCntHStore16
     ldr r11,= (emu_ioRegisters - 0x04000000)
+    and r9, r9, #0xC7 // mask out the unused bits
     strh r9, [r11, r8]!
 
     ldrh r12, [r8]
@@ -124,8 +127,13 @@ arm_func emu_timerCntHStore16
     str r10, [r11, #0x188]
     bx lr
 
+arm_func emu_timer0CntStore32
+    bic r9, r9, #(1 << 18) // timer 0 has no cascade bit
 arm_func emu_timerCntStore32
     ldr r11,= (emu_ioRegisters - 0x04000000)
+    // mask out the unused bits
+    bic r9, r9, #0xFF000000
+    bic r9, r9, #0x00380000
     ldr r12, [r11, r8]
     cmp r12, r9
         bxeq lr // nothing changed

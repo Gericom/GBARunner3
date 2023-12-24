@@ -25,7 +25,7 @@ u32 gbat_updateTimer(gbat_t* timer)
 {
     u32 control = timer->control;
     if (!(control & GBAT_CONTROL_ENABLED))
-    {        
+    {
         timer->isStarted = false;
         return 0;
     }
@@ -39,7 +39,9 @@ u32 gbat_updateTimer(gbat_t* timer)
     else
     {
         if (control & GBAT_CONTROL_SLAVE)
-           return;//todo: implement chaining
+        {
+            return 0; // todo: implement chaining
+        }
 
         u32 ticks = sPrescaleShiftedTicksPerUpdate[control & GBAT_CONTROL_PRESCALE_MASK];
         u32 counter = timer->counter + ticks;

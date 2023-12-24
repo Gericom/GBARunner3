@@ -137,7 +137,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_L
         .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_H
-        .short emu_timerCntHStore16
+        .short emu_timer0CntHStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_L
         .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_H
