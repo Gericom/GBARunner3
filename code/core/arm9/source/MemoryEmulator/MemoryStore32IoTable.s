@@ -90,8 +90,8 @@
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SIOCNT
         .short emu_regSioCntSioMultiSendStore32
-    .elseif (\index << 1) == GBA_REG_OFFS_KEYINPUT
-        .short emu_regKeyControlStore32
+    .elseif (\index << 2) == GBA_REG_OFFS_KEYINPUT
+        .short emu_regKeyInputKeyControlStore32
     .elseif (\index << 2) == GBA_REG_OFFS_RCNT
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_JOYCNT
