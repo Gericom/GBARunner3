@@ -284,7 +284,7 @@ ITCM_CODE static void dmaStop(int channel, GbaDmaChannel* dmaIoBase)
 ITCM_CODE static void dmaStartHBlank(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS))
         return;
     dmaIoBase->control = value;
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
@@ -351,7 +351,7 @@ ITCM_CODE static void dmaStartSound(int channel, GbaDmaChannel* dmaIoBase, u32 v
 ITCM_CODE static void dmaStartSpecial(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS))
         return;
     switch (channel)
     {
@@ -391,9 +391,16 @@ ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u
     }
     int dstStep = getDstStep(control);
     if (control & GBA_DMA_CONTROL_32BIT)
+    {
+        sdc_setIrqForbiddenReplacementRange((u32)src, count << 2);
         dma_immTransfer32(src, dst, count << 2, srcStep, dstStep);
+    }
     else
+    {
+        sdc_setIrqForbiddenReplacementRange((u32)src, count << 1);
         dma_immTransfer16(src, dst, count << 1, srcStep, dstStep);
+    }
+    sdc_resetIrqForbiddenReplacementRange();
     if (channel == 3)
     {
         vm_disableNestedIrqs();

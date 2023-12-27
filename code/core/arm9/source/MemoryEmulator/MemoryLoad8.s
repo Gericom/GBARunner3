@@ -116,7 +116,7 @@ arm_func memu_load8RomCacheMiss
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r10, r11, r13
-    cmp r10, #DTCM_STACK_SIZE
+    cmp r10, #(DTCM_STACK_SIZE + DTCM_IRQ_STACK_SIZE)
     mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11

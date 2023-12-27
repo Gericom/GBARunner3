@@ -66,6 +66,7 @@ u32 memu_biosOpcodes[4]
 };
 
 static NitroEmulatorOutputStream sIsNitroOutput;
+[[gnu::section(".ewram.bss")]]
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
 static NullLogger sNullLogger;
 ILogger* gLogger;
