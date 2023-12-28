@@ -22,11 +22,10 @@ arm_func memu_load32RomContinue
 
 arm_func memu_load16Rom
     ldr r11, DTCM(memu_adjustedRomBlockToCacheBlockAddress)
-    bic r12, r8, #(3 << (SDC_BLOCK_SHIFT - 2))
+    mov r12, r8, lsr #SDC_BLOCK_SHIFT
 arm_func memu_load16RomContinue
-    ldr r11, [r11, r12, lsr #(SDC_BLOCK_SHIFT - 2)]
-    mov r9, r8, lsl #(32 - SDC_BLOCK_SHIFT)
-    mov r9, r9, lsr #(32 - SDC_BLOCK_SHIFT)
+    ldr r11, [r11, r12, lsl #2]
+    bic r9, r8, r12, lsl #SDC_BLOCK_SHIFT
     cmn r11, r8, lsl #31
         ldrgth r9, [r11, r9]
         bxgt lr
