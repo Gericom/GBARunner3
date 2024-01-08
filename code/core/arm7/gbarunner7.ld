@@ -28,7 +28,7 @@ __iwram_start	=	ORIGIN(iwram);
 __iwram_top	=	ORIGIN(iwram)+ LENGTH(iwram);
 
 __sp_irq	=	__iwram_top - 0x100;
-__sp_svc	=	__sp_irq - 0x100;
+__sp_svc	=	__sp_irq - 0x1000;
 __sp_usr	=	__sp_svc - 0x100;
 
 __irq_flags	=	0x04000000 - 8;

@@ -10,6 +10,7 @@
 #include <libtwl/gfx/gfxOam.h>
 #include <libtwl/gfx/gfxStatus.h>
 #include <libtwl/rtos/rtosIrq.h>
+#include <libtwl/ipc/ipcSync.h>
 #include <array>
 #include <string.h>
 #include "cp15.h"
@@ -27,6 +28,7 @@
 #include "JitPatcher/JitCommon.h"
 #include "JitPatcher/JitArm.h"
 #include "Peripherals/Sound/GbaSound9.h"
+#include "Peripherals/Sio.h"
 #include "Patches/HarvestMoonPatches.h"
 #include "Patches/BadMixerPatch.h"
 #include "Application/Settings/AppSettingsService.h"
@@ -379,6 +381,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 
     Environment::Initialize();
     setupLogger();
+    mem_setGbaCartridgeCpu(EXMEMCNT_SLOT2_CPU_ARM7);
 
     mem_setMainMemoryPriority(EXMEMCNT_MAIN_MEM_PRIO_ARM9);
 
@@ -435,6 +438,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     setupJit();
     dma_init();
     gbas_init();
+    sio_init();
+    ipc_enableArm7Irq();
     dc_flushRange((void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE);
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();

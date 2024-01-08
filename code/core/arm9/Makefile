@@ -33,7 +33,7 @@ SOURCES		:=	source \
 				source/Emulator \
 				source/Fat \
 				source/JitPatcher \
-				source/Logger \
+				../common/Logger \
 				source/MemoryEmulator \
 				source/MemoryEmulator/Arm \
 				source/MemoryEmulator/Thumb \

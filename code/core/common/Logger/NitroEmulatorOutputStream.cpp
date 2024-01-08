@@ -1,4 +1,5 @@
-#include <nds.h>
+#include "common.h"
+#include <libtwl/mem/memExtern.h>
 #include "NitroEmulatorOutputStream.h"
 
 #define ISND_DBGINFO_ADDRESS                    0x027FFF60
@@ -21,6 +22,17 @@ NitroEmulatorOutputStream::NitroEmulatorOutputStream()
 void NitroEmulatorOutputStream::Write(const char* str)
 {
 #ifdef LIBTWL_ARM9
+    // this is not safe, but better than no printing on arm7 at all
+    // todo: some form of spinlock or something
+    u32 oldSlot2Mapping = mem_setGbaCartridgeCpu(EXMEMCNT_SLOT2_CPU_ARM9);
+#endif
+#ifdef LIBTWL_ARM7
+    if (!(REG_EXMEMCNT & EXMEMCNT_SLOT2_CPU_ARM7))
+    {
+        // no access
+        return;
+    }
+#endif
     char c;
     *(vu16*)(ISND_DBGINFO_AGB_ADDR + ISND_AGB_SOMETHING_OFFSET) = 0x202;
     vu16* ring = (vu16*)(ISND_DBGINFO_AGB_ADDR + ISND_AGB_PRINT_ARM9_RING_OFFSET);
@@ -41,5 +53,7 @@ void NitroEmulatorOutputStream::Write(const char* str)
         writePtr = newWritePtr;
     }
     *(vu16*)(ISND_DBGINFO_AGB_ADDR + ISND_AGB_PRINT_ARM9_WRITE_PTR_OFFSET) = writePtr;
+#ifdef LIBTWL_ARM9
+    mem_setGbaCartridgeCpu(oldSlot2Mapping);
 #endif
 }

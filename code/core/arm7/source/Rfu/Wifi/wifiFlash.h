@@ -1,0 +1,39 @@
+#pragma once
+#include "wifiCommon.h"
+
+typedef struct
+{
+    u16 crc;
+    u16 length;
+    u8 unk2E;
+    u8 wifiVersion;
+    u8 unk30[6];
+    wifi_macaddr_t macAddress;
+    u16 channelMask;
+    u16 unk3E;
+    u8 rfType;
+    u8 rfBitsPerEntry;
+    u8 rfEntryCount;
+    u8 unk43;
+    u16 wifiTxpeOffDelay;
+    u16 wifiTxDelay;
+	u16 wifiRxDelay;
+	u16 wifiTrxPeInterval;
+	u16 wifiRdyTimeout;
+	u16 wifiRxTimeout;
+	u16 wifiMultiAckDelayTime;
+	u16 wifiCcaDelay;
+	u16 wifiAckCcaTimeout1;
+	u16 wifiAckCcaTimeout2;
+	u16 wifiTsfTxOffset;
+	u16 wifiTsfRxOffset;
+	u16 wifiWakeupCtrl;
+	u16 wifiTbttActTime;
+	u16 wifiTmpttActTime;
+	u16 wifiRfWakeupTime;
+    u8 bbConfig[0x69];
+    u8 unkCD;
+    u8 rest[0x132];
+} wifi_flashdata_t;
+
+void wifi_initFlashData();

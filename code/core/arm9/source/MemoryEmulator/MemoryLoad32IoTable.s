@@ -55,6 +55,8 @@
         .short emu_timerCntLoad32
     .elseif (\index << 2) == GBA_REG_OFFS_TM3CNT
         .short emu_timerCntLoad32
+    .elseif (\index << 2) == GBA_REG_OFFS_SIOCNT
+        .short emu_regSioCntSioMultiSendLoad32
     .elseif (\index << 2) == GBA_REG_OFFS_KEYINPUT
         .short emu_regKeyInputKeyControlLoad32
     .elseif ((\index << 2) > GBA_REG_OFFS_JOYSTAT) && ((\index << 2) < GBA_REG_OFFS_IE)

@@ -1,6 +1,8 @@
 #pragma once
 #include <nds/ndstypes.h>
 
+typedef u16 bool16;
+
 #ifdef __cplusplus
 
 #include "logger/ILogger.h"

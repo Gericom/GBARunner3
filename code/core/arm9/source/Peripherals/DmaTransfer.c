@@ -41,10 +41,10 @@ static inline void updateHBlankIrqForChannelStop(void)
 
 static inline void updateArm7IrqForChannelStop(void)
 {
-    if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
-    {
-        vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
-    }
+    // if (!(dma_state.dmaFlags & DMA_FLAG_SOUND_MASK))
+    // {
+    //     vm_forcedIrqMask &= ~(1 << 16); // arm7 irq
+    // }
 }
 
 static inline void triggerDmaIrqIfEnabled(int channel, u32 control)
@@ -341,7 +341,7 @@ ITCM_CODE static void dmaStartSound(int channel, GbaDmaChannel* dmaIoBase, u32 v
 {
     dmaIoBase->control = value;
     dma_state.dmaFlags |= DMA_FLAG_SOUND(channel);
-    vm_forcedIrqMask |= 1 << 16; // arm7 irq
+    // vm_forcedIrqMask |= 1 << 16; // arm7 irq
     dma_state.channels[channel].curSrc = dmaIoBase->src;
     dma_state.channels[channel].curDst = dmaIoBase->dst;
     gGbaSoundShared.directChannels[channel - 1].dmaRequest = false;

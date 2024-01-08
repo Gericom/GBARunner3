@@ -70,13 +70,11 @@ void gbas_init(void)
     memset(&gGbaSoundShared, 0, sizeof(gGbaSoundShared));
     resetFifo(&gGbaSoundShared.directChannels[0]);
     resetFifo(&gGbaSoundShared.directChannels[1]);
-    ipc_sendWordDirect(
-        ((((u32)&gGbaSoundShared) >> 5) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
-        (GBA_SOUND_IPC_CMD_SETUP << IPC_FIFO_MSG_CHANNEL_BITS) |
-        IPC_CHANNEL_GBA_SOUND);
+    ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SOUND,
+        ((((u32)&gGbaSoundShared) >> 5) << 3) |
+        GBA_SOUND_IPC_CMD_SETUP));
     while (ipc_isRecvFifoEmpty());
     ipc_recvWordDirect();
-    ipc_enableArm7Irq();
 }
 
 void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
@@ -115,33 +113,29 @@ void gbas_writeSoundRegister(u32 address, u32 value, u32 length)
         while (ipc_isSendFifoFull());
         if (length == 1)
         {
-            ipc_sendWordDirect(
-                ((value & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
-                (GBA_SOUND_IPC_CMD_GB_REG_WRITE_8 << IPC_FIFO_MSG_CHANNEL_BITS) |
-                IPC_CHANNEL_GBA_SOUND);
+            ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SOUND,
+                ((value & 0xFF) << (3 + 8)) |
+                ((address & 0xFF) << 3) |
+                GBA_SOUND_IPC_CMD_GB_REG_WRITE_8));
         }
         else if (length == 2)
         {
-            ipc_sendWordDirect(
-                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
-                (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
-                IPC_CHANNEL_GBA_SOUND);
+            ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SOUND,
+                ((value & 0xFFFF) << (3 + 8)) |
+                ((address & 0xFF) << 3) |
+                GBA_SOUND_IPC_CMD_GB_REG_WRITE_16));
         }
         else
         {
-            ipc_sendWordDirect(
-                ((value & 0xFFFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
-                ((address & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
-                (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
-                IPC_CHANNEL_GBA_SOUND);
+            ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SOUND,
+                ((value & 0xFFFF) << (3 + 8)) |
+                ((address & 0xFF) << 3) |
+                GBA_SOUND_IPC_CMD_GB_REG_WRITE_16));
             while (ipc_isSendFifoFull());
-            ipc_sendWordDirect(
-                ((value >> 16) << (IPC_FIFO_MSG_CHANNEL_BITS + 3 + 8)) |
-                (((address + 2) & 0xFF) << (IPC_FIFO_MSG_CHANNEL_BITS + 3)) |
-                (GBA_SOUND_IPC_CMD_GB_REG_WRITE_16 << IPC_FIFO_MSG_CHANNEL_BITS) |
-                IPC_CHANNEL_GBA_SOUND);
+            ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SOUND,
+                ((value >> 16) << (3 + 8)) |
+                (((address + 2) & 0xFF) << 3) |
+                GBA_SOUND_IPC_CMD_GB_REG_WRITE_16));
         }
 
         for (u32 i = 0; i < length; ++i)

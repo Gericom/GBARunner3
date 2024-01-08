@@ -93,7 +93,7 @@
     .elseif (\index << 2) == GBA_REG_OFFS_KEYINPUT
         .short emu_regKeyInputKeyControlStore32
     .elseif (\index << 2) == GBA_REG_OFFS_RCNT
-        .short emu_ioStore32
+        .short emu_regRcntStore32
     .elseif (\index << 2) == GBA_REG_OFFS_JOYCNT
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_JOY_RECV

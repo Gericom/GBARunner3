@@ -24,6 +24,6 @@ u32 VirtualMachine::Run(const context_t* context)
     memset(vm_regs_und, 0, sizeof(vm_regs_und));
     vm_hwIrqMask = 0;
     vm_emulatedIfImeIe = 0;
-    vm_forcedIrqMask = RTOS_IRQ_GX_FIFO | RTOS_IRQ_VBLANK;
+    vm_forcedIrqMask = RTOS_IRQ_GX_FIFO | RTOS_IRQ_IPC_SYNC | RTOS_IRQ_VBLANK;
     return vm_run(_startAddress, context, &_storeContext);
 }

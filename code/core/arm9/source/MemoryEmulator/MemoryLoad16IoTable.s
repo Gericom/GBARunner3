@@ -109,6 +109,8 @@
         .short emu_timerCntLLoad16
     .elseif (\index << 1) == GBA_REG_OFFS_TM3CNT_L
         .short emu_timerCntLLoad16
+    .elseif (\index << 1) == GBA_REG_OFFS_SIOCNT
+        .short emu_regSioCntLoad16
     .elseif (\index << 1) == GBA_REG_OFFS_KEYINPUT
         .short emu_regKeyInputLoad16
     .elseif (\index << 1) == 0x136

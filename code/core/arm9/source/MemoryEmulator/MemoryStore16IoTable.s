@@ -165,7 +165,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_KEYCNT
         .short emu_regKeyControlStore16
     .elseif (\index << 1) == GBA_REG_OFFS_RCNT
-        .short emu_ioStore16
+        .short emu_regRcntStore16
     .elseif (\index << 1) == GBA_REG_OFFS_JOYCNT
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_JOY_RECV_L
