@@ -6,6 +6,7 @@
 #include <libtwl/timer/timer.h>
 #include <libtwl/sound/soundChannel.h>
 #include "GbaSound7.h"
+#include "TimerIds.h"
 #include "SoundThread.h"
 
 #define SOUND_CHANNEL_LEFT              0
@@ -13,9 +14,7 @@
 #define SOUND_CHANNEL_RELOAD            (-512)
 
 #define SOUND_THREAD_PRIORITY           20
-#define SOUND_TIMER_SAMPLERATE          0
 #define SOUND_TIMER_SAMPLERATE_RELOAD   (SOUND_CHANNEL_RELOAD * 2)
-#define SOUND_TIMER_SAMPLE_COUNTER      (SOUND_TIMER_SAMPLERATE + 1)
 #define SOUND_BUFFER_SIZE               128
 
 static rtos_event_t sSampleEvent;
@@ -38,7 +37,7 @@ static void soundThreadMain(void* arg)
 {
     while (true)
     {
-        u16 playbackSampleCount = tmr_getCounter(SOUND_TIMER_SAMPLE_COUNTER);
+        u16 playbackSampleCount = tmr_getCounter(TIMER_ID_SOUND_SAMPLE_COUNTER);
         int difference = (u16)(playbackSampleCount - (u16)(sSamplePosition / 4));
         difference *= 4;
         while (difference-- > 0)
@@ -74,19 +73,19 @@ static void startThread(void)
 
 static void startTimers(void)
 {
-    tmr_stop(SOUND_TIMER_SAMPLERATE);
-    tmr_stop(SOUND_TIMER_SAMPLE_COUNTER);
-    tmr_configure(SOUND_TIMER_SAMPLERATE, TMCNT_H_CLK_SYS, SOUND_TIMER_SAMPLERATE_RELOAD * 4, true);
-    tmr_configure(SOUND_TIMER_SAMPLE_COUNTER, TMCNT_H_CLK_PREV_TMR_OVF, 0, false);
+    tmr_stop(TIMER_ID_SOUND_SAMPLERATE);
+    tmr_stop(TIMER_ID_SOUND_SAMPLE_COUNTER);
+    tmr_configure(TIMER_ID_SOUND_SAMPLERATE, TMCNT_H_CLK_SYS, SOUND_TIMER_SAMPLERATE_RELOAD * 4, true);
+    tmr_configure(TIMER_ID_SOUND_SAMPLE_COUNTER, TMCNT_H_CLK_PREV_TMR_OVF, 0, false);
 
-    u32 irq = RTOS_IRQ_TIMER(SOUND_TIMER_SAMPLERATE);
+    u32 irq = RTOS_IRQ_TIMER(TIMER_ID_SOUND_SAMPLERATE);
     rtos_disableIrqMask(irq);
     rtos_setIrqFunc(irq, soundTimerIrq);
     rtos_ackIrqMask(irq);
     rtos_enableIrqMask(irq);
 
-    tmr_start(SOUND_TIMER_SAMPLE_COUNTER);
-    tmr_start(SOUND_TIMER_SAMPLERATE);
+    tmr_start(TIMER_ID_SOUND_SAMPLE_COUNTER);
+    tmr_start(TIMER_ID_SOUND_SAMPLERATE);
 }
 
 static void startSoundChannels(void)

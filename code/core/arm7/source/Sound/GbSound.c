@@ -9,6 +9,7 @@
 #include "GbaSound7.h"
 #include "GbEnvelope.h"
 #include "GbSweep.h"
+#include "TimerIds.h"
 #include "GbSound.h"
 
 #define GB_CHANNEL_1_HW_L        8
@@ -21,8 +22,6 @@
 #define GB_CHANNEL_3_HW_R_1     13
 #define GB_CHANNEL_4_HW_L       14
 #define GB_CHANNEL_4_HW_R       15
-
-#define SOUND_TIMER_SEQUENCER    3
 
 //information sources:
 //- http://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware
@@ -742,16 +741,16 @@ void gbs_init(void)
     sMasterEnable = false;
 
     //setup timer 3 for the frame sequencer
-    tmr_stop(SOUND_TIMER_SEQUENCER);
-    tmr_configure(SOUND_TIMER_SEQUENCER, TMCNT_H_CLK_SYS, 0, true);
+    tmr_stop(TIMER_ID_SOUND_SEQUENCER);
+    tmr_configure(TIMER_ID_SOUND_SEQUENCER, TMCNT_H_CLK_SYS, 0, true);
 
-    u32 irq = RTOS_IRQ_TIMER(SOUND_TIMER_SEQUENCER);
+    u32 irq = RTOS_IRQ_TIMER(TIMER_ID_SOUND_SEQUENCER);
     rtos_disableIrqMask(irq);
     rtos_setIrqFunc(irq, gbs_frameSeqTick);
     rtos_ackIrqMask(irq);
     rtos_enableIrqMask(irq);
 
-    tmr_start(SOUND_TIMER_SEQUENCER);
+    tmr_start(TIMER_ID_SOUND_SEQUENCER);
 }
 
 //assumes an 8 bit write

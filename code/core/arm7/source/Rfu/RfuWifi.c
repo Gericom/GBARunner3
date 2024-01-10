@@ -7,8 +7,6 @@
 #include "Rfu.h"
 #include "RfuWifi.h"
 
-#define logFromC(...)
-
 #define BEACON_TYPE_MULTICARD   1
 #define GAME_ID_GBARUNNER3      0x00409BA3
 
@@ -168,7 +166,8 @@ typedef struct
 #define TX_RAM_OFFSET_ASSOCIATION_REQUEST       0x100
 #define TX_RAM_OFFSET_ASSOCIATION_RESPONSE      0x200
 #define TX_RAM_OFFSET_MP_PARENT                 0x300
-#define TX_RAM_OFFSET_MP_CHILD                  0x400
+#define TX_RAM_OFFSET_MP_CHILD_1                0x400
+#define TX_RAM_OFFSET_MP_CHILD_2                0x500
 
 static rfu_beacon_tx_t sBeaconFrame =
 {
@@ -342,8 +341,6 @@ static void parentModeRxDoneCallback(void* arg)
         int hdrLen = rxRamRead(base + 8);
         int len = ((hdrLen + 3) & ~3) + 12;
 
-        logFromC("Parent packet received (len=%d)!\n", len);
-
         u32 frameType = rxRamRead(base) & 0xF;
         if (frameType == 0xE)
         {
@@ -358,7 +355,6 @@ static void parentModeRxDoneCallback(void* arg)
             rxRamRead(base + 12 + offsetof(wifi_association_request_t, ssid) + 2) == (GAME_ID_GBARUNNER3 & 0xFFFF) &&
             rxRamRead(base + 12 + offsetof(wifi_association_request_t, ssid) + 4) == (GAME_ID_GBARUNNER3 >> 16))
         {
-            logFromC("Association request received!\n");
             wifi_macaddr_t childMacAddress;
             childMacAddress.address16[0] = rxRamRead(base + 12 + 10);
             childMacAddress.address16[1] = rxRamRead(base + 12 + 12);
@@ -378,8 +374,6 @@ static void childModeRxDoneCallback(void* arg)
         u32 hdrLen = rxRamRead(base + 8);
         u32 len = ((hdrLen + 3) & ~3) + 12;
 
-        logFromC("c rx %d\n", len);
-
         u32 frameType = rxRamRead(base) & 0xF;
         if (frameType == 1)
         {
@@ -397,7 +391,6 @@ static void childModeRxDoneCallback(void* arg)
                     if (gameId == GAME_ID_GBARUNNER3)
                     {
                         // GBARunner3 beacon
-                        logFromC("beacon\n");
                         rfu_beacon_data_t beaconData;
                         for (u32 i = 0; i < sizeof(rfu_beacon_data_t); i += 2)
                         {
@@ -426,13 +419,9 @@ static void receiveParentDataRxDoneCallback(void* arg)
         u32 hdrLen = rxRamRead(base + 8);
         u32 len = ((hdrLen + 3) & ~3) + 12;
 
-        logFromC("Child packet received (len=%d)!\n", len);
-
         u32 frameType = rxRamRead(base) & 0xF;
-        logFromC("Frame type %d!\n", frameType);
         if (frameType == 0xC)
         {
-            logFromC("Parent data!\n");
             u8 data[88];
             for (u32 i = 0; i < sizeof(data); i += 2)
             {
@@ -448,7 +437,6 @@ static void receiveParentDataRxDoneCallback(void* arg)
 static void mpDoneCallback(void* arg)
 {
     u16 childMask = *(u16*)&WIFI_RAM->txBuf[TX_RAM_OFFSET_MP_PARENT + 2];
-    // logFromC("Mp done! %4X\n", childMask);
     rfu_notifyMpEnd((childMask >> 1) & 0xF);
 }
 
@@ -460,14 +448,11 @@ static void connectToParentRxDoneCallback(void* arg)
         u32 hdrLen = rxRamRead(base + 8);
         u32 len = ((hdrLen + 3) & ~3) + 12;
 
-        logFromC("Child packet received (len=%d)!\n", len);
-
         u32 frameType = rxRamRead(base) & 0xF;
         if (frameType == 0 && rxRamRead(base + 12) == 0x10)
         {
             u32 status = rxRamRead(base + 12 + offsetof(wifi_association_response_header_t, status));
             u32 associationId = rxRamRead(base + 12 + offsetof(wifi_association_response_header_t, associationId));
-            logFromC("Association response received (status=%d, aid=%d)!\n", status, associationId);
             if (status == WIFI_ASSOCIATION_RESPONSE_STATUS_SUCCESS)
             {
                 REG_WIFI_TXQ_RESET = WIFI_TXQ_RESET_KEYIN | WIFI_TXQ_RESET_KEYOUT;
@@ -489,14 +474,12 @@ static void connectToParentRxDoneCallback(void* arg)
 
 void rfuw_stopSendParentBeacons(void)
 {
-    logFromC("rfuw_stopSendParentBeacons\n");
     // stop wifi hardware sending beacons
     REG_WIFI_BEACON_ADRS = 0;
 }
 
 void rfuw_startParentMode(u16 parentId, u8 entrySlot, const u8* userName, const u8* gameName)
 {
-    logFromC("rfuw_startParentMode\n");
     // start sending beacons with wifi hardware to announce the available parent
     REG_WIFI_BEACON_ADRS = 0;
 
@@ -523,8 +506,6 @@ void rfuw_startParentMode(u16 parentId, u8 entrySlot, const u8* userName, const 
     dmaCopyWords(3, &sBeaconFrame, (void*)&WIFI_RAM->txBuf[TX_RAM_OFFSET_BEACON], sizeof(sBeaconFrame));
     REG_WIFI_BEACON_ADRS = 0x8000 | ((WIFI_RAM_TX_BUF_OFFSET + TX_RAM_OFFSET_BEACON) >> 1);
 
-    // wifi_initRx();
-    // REG_WIFI_MDP_CONFIG = WIFI_MDP_CONFIG_RX_BUF_ENABLE;
     wifi_setRxDoneCallback(parentModeRxDoneCallback, NULL);
     wifi_setMpDoneCallback(mpDoneCallback, NULL);
     REG_WIFI_ISR = WIFI_IRQ_MP_END;
@@ -533,9 +514,7 @@ void rfuw_startParentMode(u16 parentId, u8 entrySlot, const u8* userName, const 
 
 void rfuw_stopParentMode(void)
 {
-    logFromC("rfuw_stopParentMode\n");
     REG_WIFI_IMR &= ~WIFI_IRQ_MP_END;
-    // REG_WIFI_MDP_CONFIG = 0;
     REG_WIFI_ISR = WIFI_IRQ_MP_END;
     wifi_setRxDoneCallback(NULL, NULL);
     wifi_setMpDoneCallback(NULL, NULL);
@@ -561,22 +540,17 @@ void rfuw_sendAssociationResponseToChild(const wifi_macaddr_t* childMacAddress, 
 
 void rfuw_startSearchMode(void)
 {
-    logFromC("rfuw_startSearchMode\n");
     REG_WIFI_BSSID.address16[0] = 0;
     REG_WIFI_BSSID.address16[1] = 0;
     REG_WIFI_BSSID.address16[2] = 0;
     REG_WIFI_KSID = 0;
     REG_WIFI_BUFFERING_SELECT = 0x581;
     REG_WIFI_DS_MASK = WIFI_DS_MASK_IGNORE_STA_TO_STA | WIFI_DS_MASK_IGNORE_STA_TO_DS | WIFI_DS_MASK_IGNORE_DS_TO_DS;
-    // REG_WIFI_MDP_CONFIG = WIFI_MDP_CONFIG_RX_BUF_ENABLE;
-    //wifi_initRx();
     wifi_setRxDoneCallback(childModeRxDoneCallback, NULL);
 }
 
 void rfuw_stopSearchMode(void)
 {
-    logFromC("rfuw_stopSearchMode\n");
-    // REG_WIFI_MDP_CONFIG = 0;
     wifi_setRxDoneCallback(NULL, NULL);
 }
 
@@ -586,8 +560,6 @@ void rfuw_startConnectToParent(const wifi_macaddr_t* parentBssid)
     REG_WIFI_DS_MASK = WIFI_DS_MASK_IGNORE_STA_TO_STA | WIFI_DS_MASK_IGNORE_STA_TO_DS | WIFI_DS_MASK_IGNORE_DS_TO_DS;
     wifi_setBssid(parentBssid);
 
-    // wifi_initRx();
-    // REG_WIFI_MDP_CONFIG = WIFI_MDP_CONFIG_RX_BUF_ENABLE;
     REG_WIFI_ISR = WIFI_IRQ_RX_END;
     REG_WIFI_IMR |= WIFI_IRQ_RX_END;
     wifi_setRxDoneCallback(connectToParentRxDoneCallback, NULL);
@@ -604,21 +576,20 @@ void rfuw_startConnectToParent(const wifi_macaddr_t* parentBssid)
 
 void rfuw_setMultiPollChildReplyData(const wifi_macaddr_t* parentBssid, const u32* childData, u32 childDataLength)
 {
-    logFromC("rfuw_setMultiPollChildReplyData\n");
-    // REG_WIFI_TX_CONFIG = 0xF000;
+    u32 oldBuffer = ((REG_WIFI_KEYOUT_ADR & 0xFFF) << 1) - WIFI_RAM_TX_BUF_OFFSET;
+    u32 newBuffer = oldBuffer == TX_RAM_OFFSET_MP_CHILD_1 ? TX_RAM_OFFSET_MP_CHILD_2 : TX_RAM_OFFSET_MP_CHILD_1;
     sChildReplyFrame.mpChildPacket.ieeeHeader.addr1 = *parentBssid;
     sChildReplyFrame.mpChildPacket.ieeeHeader.addr2 = WIFI_RAM->firmData.wifiData.macAddress;
     memcpy(sChildReplyFrame.mpChildPacket.payload, childData, childDataLength);
     sChildReplyFrame.mpChildPacket.payloadLength = childDataLength;
     sChildReplyFrame.mpChildPacket.childId = REG_WIFI_KSID - 1;
-    dmaCopyWords(3, &sChildReplyFrame, (void*)&WIFI_RAM->txBuf[TX_RAM_OFFSET_MP_CHILD], sizeof(sChildReplyFrame));
+    dmaCopyWords(3, &sChildReplyFrame, (void*)&WIFI_RAM->txBuf[newBuffer], sizeof(sChildReplyFrame));
     wifi_setRetryLimit(7);
-    REG_WIFI_KEYIN_ADR = 0x8000 | ((WIFI_RAM_TX_BUF_OFFSET + TX_RAM_OFFSET_MP_CHILD) >> 1);
+    REG_WIFI_KEYIN_ADR = 0x8000 | ((WIFI_RAM_TX_BUF_OFFSET + newBuffer) >> 1);
 }
 
 void rfuw_sendMultiPollParentCmd(const u32* parentData, u32 parentDataLength, u32 childMask, u32 childCount)
 {
-    logFromC("rfuw_sendMultiPollParentCmd\n");
     int parentBytes = sizeof(wifi_mp_parent_packet_t) + 4;
     int childBytes = sizeof(wifi_mp_child_packet_t) + 4;
     int parentTime = parentBytes * 4 + 0x60;

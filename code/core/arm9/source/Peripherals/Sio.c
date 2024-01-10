@@ -89,14 +89,11 @@ bool sio_sioCntStore16(u32 newValue)
             if (!sTransferBusy && (newValue & GBA_SIOCNT_ENABLE))
             {
                 sTransferBusy = true;
-                // gGbaSioShared.si = true;
                 gGbaSioShared.gbaToSioData32 = *(u32*)((u32)emu_ioRegisters + GBA_REG_OFFS_SIODATA32);
-                // logAddress(data);
                 if (newValue & GBA_SIOCNT_CLOCK_SOURCE_INTERNAL)
                 {
                     *(u32*)((u32)emu_ioRegisters + GBA_REG_OFFS_SIODATA32) = gGbaSioShared.sioToGbaData32;
                 }
-                // logAddress(data);
                 dc_drainWriteBuffer();
                 while (ipc_isSendFifoFull());
                 ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SIO, GBA_SIO_IPC_CMD_RFU_TRANSFER | (newValue << 3)));
@@ -125,17 +122,14 @@ bool sio_sioCntStore16(u32 newValue)
                 if (!(oldValue & GBA_SIOCNT_NORMAL_SO) && (newValue & GBA_SIOCNT_NORMAL_SO))
                 {
                     gGbaSioShared.si = true;
-                    //newValue |= GBA_SIOCNT_SI;
                 }
                 else if ((oldValue & GBA_SIOCNT_NORMAL_SO) && !(newValue & GBA_SIOCNT_NORMAL_SO))
                 {
                     gGbaSioShared.si = false;
-                    // newValue &= ~GBA_SIOCNT_SI;
                 }
 
                 if ((oldValue & GBA_SIOCNT_NORMAL_SO) != (newValue & GBA_SIOCNT_NORMAL_SO))
                 {
-                    // gGbaSioShared.so = (newValue & GBA_SIOCNT_NORMAL_SO) != 0;
                     dc_drainWriteBuffer();
                     while (ipc_isSendFifoFull());
                     ipc_sendWordDirect(IPC_FIFO_MSG(IPC_CHANNEL_GBA_SIO, GBA_SIO_IPC_CMD_SO_CHANGED));

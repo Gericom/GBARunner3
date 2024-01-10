@@ -20,6 +20,7 @@
 #include "common.h"
 #include <libtwl/spi/spiPmic.h>
 #include <libtwl/ipc/ipcSync.h>
+#include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/sys/swi.h>
 #include <string.h>
 #include "Wifi/wifi.h"
@@ -27,6 +28,8 @@
 #include "GbaIoRegOffsets.h"
 #include "RfuWifi.h"
 #include "Rfu.h"
+
+#define logFromC(...)
 
 // #define RFU_DEBUG
 
@@ -38,21 +41,10 @@
 #endif
 
 // Config knobs, update with care.
-#define MAX_RFU_PEERS                4 //32   // Do not allow more than 32 peers.
+#define MAX_RFU_PEERS                 4    // Do not allow more than 4 peers.
 
-#define RFU_DEF_TIMEOUT              0 //32   // Expressed as frames (~533ms)
+#define RFU_DEF_TIMEOUT               0   // Expressed as frames (~533ms)
 #define RFU_DEF_RTXMAX                4   // Up to 4 transmissions per send
-
-
-// Unpacks big endian integers used for signaling
-static inline u32 upack32(const u8 *ptr) {
-  return ptr[3] | (ptr[2] << 8) | (ptr[1] << 16) | (ptr[0] << 24);
-}
-
-// Unpacks payload data, which is little-endian
-static inline u32 leupack32(const u8 *ptr) {
-  return ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
-}
 
 // The following commands, names and bit fields are not a 100% known.
 // Most of them is guessed via reverse engineering the adapter and/or
@@ -173,7 +165,6 @@ void rfu_init(sio_shared_t* sharedData)
     sSioSharedData = sharedData;
     wifi_init();
     wifi_start();
-    // pmic_setPowerLedBlink(PMIC_CONTROL_POWER_LED_BLINK_FAST);
 }
 
 // This is called whenever the game uses the GPIO (pin D) to perform a reset
@@ -234,7 +225,6 @@ static void sendDisassociationToChild(int child)
 static s32 rfu_process_command() {
   u32 i, j, cnt = 0;
   RFU_DEBUG_LOG("Processing command 0x%x\n", rfu_cmd);
-  logFromC("cmd 0x%2X\n", rfu_cmd);
 
   switch (rfu_cmd) {
   // These are not 100% supported, but they are OK as long as we ACK them.
@@ -441,7 +431,7 @@ static s32 rfu_process_command() {
   case RFU_CMD_RTX_WAIT:
     if (rfu_state == RFU_STATE_HOST || rfu_state == RFU_STATE_SHOST) {
       // Host sends a package to all clients.
-      /*RFU_DEBUG_LOG*/logFromC("Host sending %d bytes / %d words to clients\n",
+      RFU_DEBUG_LOG("Host sending %d bytes / %d words to clients\n",
                     rfu_tx_buf.blen, rfu_plen - 1);
       if (rfu_tx_buf.blen <= 90)
       {
@@ -460,7 +450,7 @@ static s32 rfu_process_command() {
     }
     else if (rfu_state == RFU_STATE_CLIENT) {
       // Schedule data to be sent
-      /*RFU_DEBUG_LOG*/logFromC("Client sending %d bytes / %d words to host\n",
+      RFU_DEBUG_LOG("Client sending %d bytes / %d words to host\n",
                     rfu_tx_buf.blen, rfu_plen - 1);
       if (rfu_tx_buf.blen <= 16) {
         rfuw_setMultiPollChildReplyData(&rfu_client.parentBssid, rfu_tx_buf.buf, rfu_tx_buf.blen);
@@ -481,7 +471,7 @@ static s32 rfu_process_command() {
           RFU_DEBUG_LOG("Host reads data from client buffer (%d bytes)\n", dlen);
           // Copy data into words into the RFU buffer.
           for (j = 0; j < (dlen + 3) / 4; j++)
-            rfu_buf[cnt++] = leupack32(&rfu_host.clients[i].data[j*4]);
+            rfu_buf[cnt++] = *(u32*)&rfu_host.clients[i].data[j*4];
           // Update byte count header for this client
           rfu_buf[0] |= dlen << (8 + i * 5);
           rfu_host.clients[i].datalen = 0;
@@ -495,7 +485,7 @@ static s32 rfu_process_command() {
       RFU_DEBUG_LOG("Client reads data from host buffer (%d bytes)\n", dlen);
       rfu_buf[cnt++] = dlen;   // Header contains byte count.
       for (j = 0; j < (dlen + 3) / 4; j++)
-        rfu_buf[cnt++] = leupack32(&rfu_client.hdata[j*4]);
+        rfu_buf[cnt++] = *(u32*)&rfu_client.hdata[j*4];
       rfu_client.hblen = 0;
       return cnt;
     }
@@ -558,7 +548,6 @@ static void checkEvent(void)
     {
         if (rfu_data_avail())
         {
-            logFromC("going to return data\n");
             rfu_buf[0] = 0x99660000 | RFU_CMD_RESP_DATA;
             rfu_buf[1] = 0x80000000;
             rfu_cnt = 0;
@@ -569,13 +558,13 @@ static void checkEvent(void)
     if (rfu_comstate == RFU_COMSTATE_WAITRESP && sExternalClockTransferStarted &&
         !sSioSharedData->si && !sSioSharedData->so)
     {
-        logFromC("sending back a word\n");
         sExternalClockTransferStarted = false;
         sSioSharedData->sioToGbaData32 = rfu_buf[rfu_cnt++];
         if (rfu_cnt == rfu_plen)
         {
             rfu_comstate = RFU_COMSTATE_WAITCMD;
         }
+        swi_waitByLoop(256);
         sSioSharedData->irqRequest = true;
         ipc_triggerArm7Irq();
     }
@@ -651,7 +640,6 @@ u32 rfu_transfer(u32 sent_value)
             rfu_plen = (u32)ret;
             if (rfu_cmd == RFU_CMD_WAIT || rfu_cmd == RFU_CMD_RTX_WAIT || rfu_cmd == RFU_CMD_SEND_DATAW)
             {
-                logFromC("wait command\n");
                 rfu_comstate = RFU_COMSTATE_WAITEVENT;
                 rfu_timeout_frames = rfu_timeout;
                 // rfu_resp_timeout = 
@@ -682,7 +670,6 @@ u32 rfu_transfer(u32 sent_value)
         rfu_plen = (u32)ret;
         if (rfu_cmd == RFU_CMD_WAIT || rfu_cmd == RFU_CMD_RTX_WAIT || rfu_cmd == RFU_CMD_SEND_DATAW)
         {
-            logFromC("wait command\n");
             rfu_comstate = RFU_COMSTATE_WAITEVENT;
             rfu_timeout_frames = rfu_timeout;
         }
@@ -715,10 +702,8 @@ void rfu_doTransfer(bool internalClock)
 {
     if (!internalClock)
     {
-        // logFromC("rfu_doTransfer extern\n");
         if (rfu_comstate == RFU_COMSTATE_WAITEVENT || rfu_comstate == RFU_COMSTATE_WAITRESP)
         {
-            logFromC("rfu_doTransfer extern accepted\n");
             sExternalClockTransferStarted = true;
             checkEvent();
         }
@@ -726,30 +711,16 @@ void rfu_doTransfer(bool internalClock)
     else
     {
         u32 data = sSioSharedData->gbaToSioData32;
-      // logFromC("rfu_doTransfer %8X\n", data);
+        swi_waitByLoop(256);
         sSioSharedData->sioToGbaData32 = rfu_transfer(data);//sSioSharedData->gbaToSioData32);
         sSioSharedData->irqRequest = true;
         ipc_triggerArm7Irq();
     }
-  //   bool so = sSioSharedData->so;
-  //   bool si = sSioSharedData->si;
-  // logFromC("so=%d si=%d\n", so, si);
-  //   if (so && si)
-  //   {
-  //       sSioSharedData->si = false;
-  //   }
 }
 
 void rfu_soChanged(void)
 {
     checkEvent();
-    // bool so = sSioSharedData->so;
-    // bool si = sSioSharedData->si;
-    // // logFromC("rfu_soChanged so=%d si=%d\n", so, si);
-    // if (so && si)
-    // {
-    //     sSioSharedData->si = false;
-    // }
 }
 
 // Gets called every frame for basic device updates.
@@ -781,10 +752,9 @@ void rfu_frame_update(void)
                 rfu_cnt = 0;
                 rfu_plen = 2;
                 rfu_comstate = RFU_COMSTATE_WAITRESP;
-                checkEvent();
-                logFromC("timeout\n");
             }
         }
+        checkEvent();
         rtos_restoreIrqs(irq);
     }
 }
@@ -816,7 +786,7 @@ void rfu_notifyBeaconReceived(const rfu_beacon_data_t* beaconData, const wifi_ma
 
 void rfu_notifyAssociationRequestReceived(const wifi_macaddr_t* childMacAddress)
 {
-    /*RFU_DEBUG_LOG*/logFromC("Received Conn Req\n");
+    RFU_DEBUG_LOG("Received Conn Req\n");
     if (rfu_state == RFU_STATE_HOST)
     {
         // Ensure this client is not already connected!
@@ -827,7 +797,7 @@ void rfu_notifyAssociationRequestReceived(const wifi_macaddr_t* childMacAddress)
                 rfu_host.clients[i].clientMacAddress.address16[1] == childMacAddress->address16[1] &&
                 rfu_host.clients[i].clientMacAddress.address16[2] == childMacAddress->address16[2])
             {
-                /*RFU_DEBUG_LOG*/logFromC("Connection request ignored: already connected!\n");
+                RFU_DEBUG_LOG("Connection request ignored: already connected!\n");
                 return;
             }
         }
@@ -839,7 +809,7 @@ void rfu_notifyAssociationRequestReceived(const wifi_macaddr_t* childMacAddress)
                 u16 newid = new_devid(childMacAddress) | i;
                 rfu_host.clients[i].associationId = newid;
                 rfu_host.clients[i].clientMacAddress = *childMacAddress;
-                /*RFU_DEBUG_LOG*/logFromC("Connected client: assigned new devID %4X\n", newid);
+                RFU_DEBUG_LOG("Connected client: assigned new devID %4X\n", newid);
 
                 // Respond with ACK
                 rfuw_sendAssociationResponseToChild(childMacAddress, newid, WIFI_ASSOCIATION_RESPONSE_STATUS_SUCCESS);
@@ -860,11 +830,10 @@ void rfu_notifyAssociationResponseReceived(u16 associationId, u16 status)
 {
     if (status == WIFI_ASSOCIATION_RESPONSE_STATUS_SUCCESS)
     {
-        /*RFU_DEBUG_LOG*/logFromC("Received connection ACK");
+        RFU_DEBUG_LOG("Received connection ACK");
         // Only ok if we are not connected (not hosting)
         if (rfu_state == RFU_STATE_IDLE)
         {
-            logFromC("ACK processed");
             // Clear state and install device ID and slot number.
             wifi_macaddr_t parentBssid = rfu_client.parentBssid;
             memset(&rfu_client, 0, sizeof(rfu_client));
@@ -878,7 +847,7 @@ void rfu_notifyAssociationResponseReceived(u16 associationId, u16 status)
     {
         // TODO: How do we handle a connection reject?
         // For now do nothing and timeout will handle it.
-        /*RFU_DEBUG_LOG*/logFromC("Received CONN NACK, no action taken (unimplemented)\n");
+        RFU_DEBUG_LOG("Received CONN NACK, no action taken (unimplemented)\n");
     }
 }
 
@@ -892,12 +861,12 @@ void rfu_notifyParentDataReceived(const u8* data, u32 dataLength)
         {
             memcpy(&rfu_client.hdata, data, dataLength);
             rfu_client.hblen = dataLength;
-            /*RFU_DEBUG_LOG*/logFromC("Received host packet (%d bytes)\n",
+            RFU_DEBUG_LOG("Received host packet (%d bytes)\n",
                           dataLength);
             checkEvent();
             return;
         }
-        /*RFU_DEBUG_LOG*/logFromC("Client dropped a host packet\n");
+        RFU_DEBUG_LOG("Client dropped a host packet\n");
     }
 }
 
@@ -912,12 +881,11 @@ void rfu_notifyChildDataReceived(u32 childId, const u8* data, u32 dataLength)
             {
                 memcpy(rfu_host.clients[childId].data, data, dataLength);
                 rfu_host.clients[childId].datalen = dataLength;
-                /*RFU_DEBUG_LOG*/logFromC("Received client packet (%d bytes)\n",
+                RFU_DEBUG_LOG("Received client packet (%d bytes)\n",
                               dataLength);
-                // checkEvent();
                 return;
             }
-            /*RFU_DEBUG_LOG*/logFromC("Host dropped a client packet\n");
+            RFU_DEBUG_LOG("Host dropped a client packet\n");
         }
     }
 }
@@ -926,25 +894,22 @@ void rfu_notifyMpEnd(u32 failChildMask)
 {
     if (rfu_comstate == RFU_COMSTATE_WAITEVENT)
     {
-        logFromC("Ending wait with fail mask %2X\n", failChildMask);
         if (failChildMask == 0)
         {
             rfu_buf[0] = 0x99660000 | RFU_CMD_RESP_DATA;
             rfu_buf[1] = 0x80000000;
-            rfu_cnt = 0;
             rfu_plen = 2;
-            rfu_comstate = RFU_COMSTATE_WAITRESP;
         }
         else
         {
             u32 okChildMask = failChildMask ^ 0xF; // TODO: just using 4 slots for now
             rfu_buf[0] = 0x99660000 | RFU_CMD_RESP_DATA | (1 << 8);
-            rfu_buf[1] = (/*okChildMask*/0xF << 8) | okChildMask;
+            rfu_buf[1] = (0xF << 8) | okChildMask;
             rfu_buf[2] = 0x80000000;
-            rfu_cnt = 0;
             rfu_plen = 3;
-            rfu_comstate = RFU_COMSTATE_WAITRESP;
         }
+        rfu_cnt = 0;
+        rfu_comstate = RFU_COMSTATE_WAITRESP;
     }
     checkEvent();
 }

@@ -39,14 +39,13 @@ extern "C" void logFromC(const char* fmt, ...)
 {
     va_list vlist;
     va_start(vlist, fmt);
-    swi_waitByLoop(100);
-    //gLogger->LogV(LogLevel::Debug, fmt, vlist);
+    gLogger->LogV(LogLevel::Debug, fmt, vlist);
     va_end(vlist);
 }
 
 static void setupLogger()
 {
-    if (false)//true)//false)//Environment::IsIsNitroEmulator())
+    if (false)
         gLogger = &sPlainLogger;
     else
         gLogger = &sNullLogger;
