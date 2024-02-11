@@ -38,29 +38,43 @@ static void checkMcuIrq(void)
     if (!isDSiMode())
         return;
 
+	static u32 irqMask = 0;
+
+    // check the irq mask
+	static bool pressed = false;
+	if (pressed) {
+		if (irqMask & MCU_IRQ_RESET)
+		{
+			if (ipc_getArm9SyncBits() != 6) return; // return if .sav is still writing
+
+            // power button was released
+			mcu_setWarmBootFlag(true);
+			mcu_hardReset();
+
+			while (1);
+		}
+		if (irqMask & MCU_IRQ_POWER_OFF)
+		{
+			if (ipc_getArm9SyncBits() != 6) return; // return if .sav is still writing
+
+            // power button was held long to trigger a power off
+			pmic_shutdown();
+
+			while (1);
+		}
+	}
+
     // check and ack the flag atomically
     if (!mem_swapByte(false, &sMcuIrqFlag))
         return;
 
-    // check the irq mask
-    u32 irqMask = mcu_getIrqMask();
-    if (irqMask & MCU_IRQ_RESET)
+    irqMask = mcu_getIrqMask();
+    if ((irqMask & MCU_IRQ_RESET) || (irqMask & MCU_IRQ_POWER_OFF))
     {
-        // power button was released
         // todo: maybe ensure no sd writes are still pending
-
-        mcu_setWarmBootFlag(true);
-        mcu_hardReset();
-
-        while (1);
-    }
-    if (irqMask & MCU_IRQ_POWER_OFF)
-    {
-        // power button was held long to trigger a power off
-        // todo: maybe ensure no sd writes are still pending
-        pmic_shutdown();
-
-        while (1);
+		pressed = true;
+		ipc_setArm7SyncBits(6); // notify arm9 to write .sav file
+		snd_setMasterVolume(0); // mute sound
     }
 }
 

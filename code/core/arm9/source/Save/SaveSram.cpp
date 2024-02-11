@@ -1,5 +1,7 @@
 #include "common.h"
+#include "Core/Environment.h"
 #include "Save.h"
+#include "SaveSwi.h"
 #include "SaveTypeInfo.h"
 #include "SaveSram.h"
 
@@ -20,8 +22,24 @@ static void readSram(const u8* src, u8* dst, u32 size)
 
 static void writeSram(const u8* src, u8* dst, u32 size)
 {
-    for (u32 i = 0; i < size; i++)
-        *dst++ = *src++;
+	if (Environment::IsDsiMode()) {
+		for (u32 i = 0; i < size; i++) {
+			*dst++ = *src++;
+		}
+		return;
+	}
+	bool writeToSav = false;
+    for (u32 i = 0; i < size; i++) {
+		if (*(dst + i) != *(src + i)) {
+			writeToSav = true;
+		}
+        *(dst + i) = *(src + i);
+	}
+	if (!writeToSav) {
+		return;
+	}
+	sav_writeSaveSizeToFileFromUserMode((u32)dst - 0x0E000000, size);
+	sav_flushSaveFileFromUserMode();
 }
 
 static const u8* verifySram(const u8* src, const u8* tgt, u32 size)

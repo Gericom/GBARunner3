@@ -1,5 +1,6 @@
 #include "common.h"
 #include <string.h>
+#include <libtwl/ipc/ipcSync.h>
 #include "Fat/ff.h"
 #include "Core/Environment.h"
 #include "MemFastSearch.h"
@@ -8,6 +9,7 @@
 #include "VirtualMachine/VMNestedIrq.h"
 #include "MemoryEmulator/RomDefs.h"
 #include "Save.h"
+#include "Sha1.h"
 
 [[gnu::section(".ewram.bss")]]
 u8 gSaveData[SAVE_DATA_SIZE] alignas(32);
@@ -16,6 +18,10 @@ u8 gSaveData[SAVE_DATA_SIZE] alignas(32);
 FIL gSaveFile alignas(32);
 
 static DWORD sClusterTable[64];
+static u32 saveSize = 0;
+static bool isSram;
+
+static char saveHash[20];
 
 bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFunction)
 {
@@ -49,7 +55,8 @@ static void fillSaveFile(u32 start, u32 end)
 
 void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
 {
-    u32 saveSize = saveTypeInfo ? saveTypeInfo->size : (32 * 1024);
+    saveSize = saveTypeInfo ? saveTypeInfo->size : (32 * 1024);
+	isSram = memcmp(saveTypeInfo->tag, "SRAM", 4) == 0;
     memset(gSaveData, SAVE_DATA_FILL, SAVE_DATA_SIZE);
     if (Environment::IsIsNitroEmulator())
     {
@@ -82,6 +89,8 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
             f_rewind(&gSaveFile);
             UINT read = 0;
             f_read(&gSaveFile, gSaveData, saveSize, &read);
+			if (Environment::IsDsiMode() && isSram)
+				SHA1(saveHash, (char*)gSaveData, saveSize);
         }
 
         if (Environment::IsIsNitroEmulator())
@@ -141,6 +150,60 @@ extern "C" void sav_writeSaveByteToFile(u32 saveAddress, u8 data)
         f_write(&gSaveFile, &data, 1, &bytesWritten);
     }
     vm_disableNestedIrqs();
+}
+
+extern "C" void sav_writeSaveSizeToFile(u32 saveAddress, u32 size)
+{
+    vm_enableNestedIrqs();
+    if (Environment::IsIsNitroEmulator())
+    {
+        // save buffer in extended memory
+		for (u32 i = 0; i < size; i++)
+		   ISNITRO_SAVE_BUFFER[saveAddress+i] = gSaveData[saveAddress+i];
+    }
+    else
+    {
+        // write to file
+        f_lseek(&gSaveFile, saveAddress);
+        UINT bytesWritten = 0;
+        f_write(&gSaveFile, gSaveData+saveAddress, size, &bytesWritten);
+    }
+    vm_disableNestedIrqs();
+}
+
+extern "C" void sav_writeSaveToFile(void)
+{
+	if (!Environment::IsDsiMode() || !(ipc_getArm7SyncBits() == 6)) {
+		return;
+	}
+
+	if (!isSram) {
+		ipc_setArm9SyncBits(6); // notify arm7 to reboot or power off
+        while (1);
+	}
+
+	char newSaveHash[20];
+	SHA1(newSaveHash, (char*)gSaveData, saveSize);
+
+	if (memcmp(newSaveHash, saveHash, 20) != 0) {
+		// new save hash does not match the current hash, so proceed with writing
+		if (Environment::IsIsNitroEmulator())
+		{
+			// save buffer in extended memory
+			for (u32 i = 0; i < saveSize; i++)
+			   ISNITRO_SAVE_BUFFER[i] = gSaveData[i];
+		}
+		else
+		{
+			// write to file
+			f_lseek(&gSaveFile, 0);
+			UINT bytesWritten = 0;
+			f_write(&gSaveFile, gSaveData, saveSize, &bytesWritten);
+		}
+	}
+
+	ipc_setArm9SyncBits(6); // notify arm7 to reboot or power off
+    while (1);
 }
 
 extern "C" void sav_flushSaveFile(void)

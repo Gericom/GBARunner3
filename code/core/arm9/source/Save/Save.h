@@ -19,6 +19,7 @@ extern "C" {
 
 u8 sav_readSaveByteFromFile(u32 offset);
 void sav_writeSaveByteToFile(u32 offset, u8 data);
+void sav_writeSaveSizeToFile(u32 offset, u32 size);
 void sav_flushSaveFile(void);
 
 #ifdef __cplusplus

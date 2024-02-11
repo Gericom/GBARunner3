@@ -15,5 +15,6 @@ arm_func emu_arm7Irq
     tst r4, #(1 << 10)
         movne r0, #2
         blne dma_dmaSound
+	bl sav_writeSaveToFile
 #endif
     pop {r0-r3,r4,r12,pc}
