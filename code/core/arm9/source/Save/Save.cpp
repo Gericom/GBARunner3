@@ -56,7 +56,7 @@ static void fillSaveFile(u32 start, u32 end)
 void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
 {
     saveSize = saveTypeInfo ? saveTypeInfo->size : (32 * 1024);
-	isSram = memcmp(saveTypeInfo->tag, "SRAM", 4) == 0;
+	isSram = (saveTypeInfo->type & SAVE_TYPE_MASK) == SAVE_TYPE_SRAM;
     memset(gSaveData, SAVE_DATA_FILL, SAVE_DATA_SIZE);
     if (Environment::IsIsNitroEmulator())
     {
