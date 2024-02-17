@@ -150,8 +150,18 @@ arm_func memu_store16Rom
 
 arm_func memu_store16Sram
     tst r8, #1
-        ldreq r10,= gSaveData
-        moveq r11, r8, lsl #17
-        streqb r9, [r10, r11, lsr #17]!
-        streqb r9, [r10, #1]
+        bxne lr
+    ldr r10,= gSaveData
+    mov r11, r8, lsl #17
+    mov r11, r11, lsr #17
+    ldrh r11, [r10, r11]!
+    and r9, r9, #0xFF
+    orr r9, r9, r9, lsl #8
+    cmp r9, r11
+    ldrne r12,= gGbaSaveShared
+    strneh r9, [r10]
+    movne r11, #1 // GBA_SAVE_STATE_DIRTY
+    strneb r11, [r12]
+    movne r11, #0
+    mcrne p15, 0, r11, c7, c10, 4 // drain write buffer
     bx lr

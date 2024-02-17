@@ -18,5 +18,19 @@ arm_func emu_vblankIrq
     movne r1, #0x084 // BG or OBJ
     orr r1, r1, #0x8000
     strh r1, [r0] // REG_VRAMCNT_C and REG_VRAMCNT_D
+
+#ifndef GBAR3_TEST
+    ldr r0,= gGbaSaveShared
+    mcr p15, 0, r0, c7, c6, 1 // invalidate range
+    ldrb r1, [r0]
+    cmp r1, #3 // GBA_SAVE_STATE_WRITE
+    popne {r0-r1}
+    bxne lr
+
+writeSaveToFile:
+    push {r2,r3,r12,lr}
+    bl sav_writeSaveToFile
+    pop {r2,r3,r12,lr}
+#endif
     pop {r0-r1}
     bx lr

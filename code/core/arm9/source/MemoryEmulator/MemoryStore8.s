@@ -129,5 +129,13 @@ arm_func memu_store8Rom
 arm_func memu_store8Sram
     ldr r10,= gSaveData
     mov r11, r8, lsl #17
-    strb r9, [r10, r11, lsr #17]
+    ldrb r11, [r10, r11, lsr #17]!
+    and r9, r9, #0xFF
+    ldr r12,= gGbaSaveShared
+    cmp r9, r11
+    strneb r9, [r10]
+    movne r11, #1 // GBA_SAVE_STATE_DIRTY
+    strneb r11, [r12]
+    movne r11, #0
+    mcrne p15, 0, r11, c7, c10, 4 // drain write buffer
     bx lr
