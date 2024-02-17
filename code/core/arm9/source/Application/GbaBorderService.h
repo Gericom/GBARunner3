@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include <memory>
-#include "fat/File.h"
+#include "Fat/File.h"
 #include "Application/Settings/Enums/GbaBorderImage.h"
 
 class GbaBorderService
