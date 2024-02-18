@@ -164,10 +164,13 @@ arm_func memu_store32Sram
     orr r9, r9, r9, lsl #8
     orr r9, r9, r9, lsl #16
     cmp r9, r11
-    strne r9, [r10]
-    ldrne r12,= gGbaSaveShared
-    movne r11, #1 // GBA_SAVE_STATE_DIRTY
-    strneb r11, [r12]
-    movne r11, #0
-    mcrne p15, 0, r11, c7, c10, 4 // drain write buffer
+        bxeq lr
+    str r9, [r10]
+    ldr r12,= gGbaSaveShared
+    mov r11, #1 // GBA_SAVE_STATE_DIRTY
+    strb r11, [r12]
+    mov r11, #0
+    ldr r12,= emu_vblankIrqSkipSaveCheckInstruction
+    mcr p15, 0, r11, c7, c10, 4 // drain write buffer
+    str r11, [r12] // nop, do not skip the save check when dirty
     bx lr

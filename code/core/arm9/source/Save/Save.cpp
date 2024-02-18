@@ -114,7 +114,8 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
     }
 
     gGbaSaveShared.saveState = GBA_SAVE_STATE_CLEAN;
-    if (!Environment::IsIsNitroEmulator() && (!saveTypeInfo || (saveTypeInfo->type & SAVE_TYPE_SRAM)))
+    emu_vblankIrqSkipSaveCheckInstruction = SKIP_SAVE_CHECK_INSTRUCTION;
+    if (!saveTypeInfo || (saveTypeInfo->type & SAVE_TYPE_SRAM))
     {
         gGbaSaveShared.saveData = gSaveData;
         gGbaSaveShared.saveDataSize = saveSize;
@@ -183,7 +184,7 @@ extern "C" void sav_flushSaveFile(void)
 
 extern "C" void sav_writeSaveToFile(void)
 {
-    if (gGbaSaveShared.saveDataSize != 0)
+    if (gGbaSaveShared.saveDataSize != 0 && !Environment::IsIsNitroEmulator())
     {
         f_lseek(&gSaveFile, 0);
         UINT bytesWritten = 0;
@@ -192,4 +193,5 @@ extern "C" void sav_writeSaveToFile(void)
     }
 
     gGbaSaveShared.saveState = GBA_SAVE_STATE_CLEAN;
+    emu_vblankIrqSkipSaveCheckInstruction = SKIP_SAVE_CHECK_INSTRUCTION;
 }
