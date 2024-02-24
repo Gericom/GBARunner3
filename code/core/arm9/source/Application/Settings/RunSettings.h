@@ -22,4 +22,7 @@ public:
 
     /// @brief Specifies the number of self-modifying write instructions that should be patched.
     u32 selfModifyingPatchAddressCount = 0;
+
+    /// @brief Specifies whether the bios boot animation should be skipped.
+    bool16 skipBiosIntro = false;
 };

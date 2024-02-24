@@ -24,6 +24,7 @@
 #define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE                 "enableWramICache"
 #define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE                "enableEWramDCache"
 #define KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES     "selfModifyingPatchAddresses"
+#define KEY_RUN_SETTINGS_SKIP_BIOS_INTRO                    "skipBiosIntro"
 
 #define KEY_GAME_SETTINGS                           "gameSettings"
 #define KEY_GAME_SETTINGS_SAVE_TYPE                 "saveType"
@@ -198,6 +199,7 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE], runSettings.enableWramInstructionCache);
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE], runSettings.enableEWramDataCache);
     tryParseSelfModifyingPatchAddresses(json[KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES], runSettings);
+    readBoolSetting(json[KEY_RUN_SETTINGS_SKIP_BIOS_INTRO], runSettings.skipBiosIntro);
 }
 
 static void readGameSettings(const JsonObjectConst& json, GameSettings& gameSettings)

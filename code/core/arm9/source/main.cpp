@@ -41,6 +41,7 @@
 #include "Application/SplashScreen.h"
 #include "Patches/PatchSwi.h"
 #include "Patches/SelfModifyingPatches.h"
+#include "Emulator/BootAnimationSkip.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -501,7 +502,13 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     rtos_ackIrqMask(~0u);
     REG_IME = 1;
     gfx_setVBlankIrqEnabled(true);
-    VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[8 >> 2], &gGbaBios[0x18 >> 2] };
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    VirtualMachine virtualMachine
+    {
+        runSettings.skipBiosIntro ? (void*)&emu_resetVectorSkipBootAnimation : &gGbaBios[0],
+        &gGbaBios[8 >> 2],
+        &gGbaBios[0x18 >> 2]
+    };
     context_t runContext { };
     virtualMachine.Run(&runContext);
     while (true);
