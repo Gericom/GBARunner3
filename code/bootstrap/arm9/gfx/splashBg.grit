@@ -1,0 +1,17 @@
+# tile format
+-gt
+
+# tile reduction by tiles, palette and hflip/vflip
+-mRtpf
+
+# graphics bit depth is 4 (16 color)
+-gB4
+
+-p
+-pn16
+
+# map layout standard bg format
+-mLs
+
+#-gzl
+#-mzl

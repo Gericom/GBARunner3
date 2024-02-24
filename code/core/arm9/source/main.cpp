@@ -38,6 +38,7 @@
 #include "MemoryEmulator/RomDefs.h"
 #include "Application/GbaDisplayConfigurationService.h"
 #include "Application/GbaBorderService.h"
+#include "Application/SplashScreen.h"
 #include "Patches/PatchSwi.h"
 #include "Patches/SelfModifyingPatches.h"
 
@@ -70,6 +71,7 @@ static NitroEmulatorOutputStream sIsNitroOutput;
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
 static NullLogger sNullLogger;
 ILogger* gLogger;
+static SplashScreen* sSplashScreen;
 
 static void setupLogger()
 {
@@ -355,22 +357,70 @@ static void loadGameSpecificSettings()
     }
 }
 
+[[gnu::interrupt("IRQ")]]
+static void splashScreenIrqHandler()
+{
+    rtos_ackIrqMask(RTOS_IRQ_VBLANK);
+    if (sSplashScreen)
+    {
+        sSplashScreen->VBlank();
+    }
+}
+
+static void startSplashScreenAnimation()
+{
+    REG_IME = 0;
+    rtos_setIrqMask(0);
+
+    // Set the irq vector (at a mirror address to keep GCC happy)
+    *(vu32*)0x01000018 = 0xE51FF004; // ldr pc,= splashScreenIrqHandler
+    *(vu32*)0x0100001C = (u32)splashScreenIrqHandler;
+
+    rtos_setIrqMask(RTOS_IRQ_VBLANK);
+    rtos_ackIrqMask(~0u);
+    REG_IME = 1;
+    gfx_setVBlankIrqEnabled(true);
+    arm_enableIrqs();
+}
+
+static void waitSplashScreenAnimation()
+{
+    while (!sSplashScreen->IsFinished())
+    {
+        arm_waitForInterrupt();
+    }
+}
+
+static void stopSplashScreenAnimation()
+{
+    arm_disableIrqs();
+    REG_IME = 0;
+    gfx_setVBlankIrqEnabled(false);
+    rtos_setIrqMask(0);
+    rtos_ackIrqMask(~0u);
+
+    *(vu32*)0x01000018 = 0xEAFFFFFE; // b .
+    *(vu32*)0x0100001C = 0xEAFFFFFE; // b .
+}
+
 extern "C" void gbaRunnerMain(int argc, char* argv[])
 {
     heap_init();
 
     REG_DISPCNT = 0x10000;
     REG_DISPCNT_SUB = 0x10000;
-    GFX_PLTT_BG_MAIN[0] = 0x1F;
     GFX_PLTT_BG_SUB[0] = 0;
-    REG_MASTER_BRIGHT = 0;
+
+    sSplashScreen = new SplashScreen();
+    sSplashScreen->Initialize();
 
     mem_setVramBMapping(MEM_VRAM_AB_MAIN_BG_40000);
     mem_setVramCMapping(MEM_VRAM_C_LCDC);
     mem_setVramDMapping(MEM_VRAM_D_LCDC);
-    mem_setVramEMapping(MEM_VRAM_E_MAIN_BG_00000);
-    mem_setVramFMapping(MEM_VRAM_FG_MAIN_OBJ_00000);
-    mem_setVramGMapping(MEM_VRAM_FG_MAIN_OBJ_04000);
+    // these are already mapped by bootstrap
+    // mem_setVramEMapping(MEM_VRAM_E_MAIN_BG_00000);
+    // mem_setVramFMapping(MEM_VRAM_FG_MAIN_OBJ_00000);
+    // mem_setVramGMapping(MEM_VRAM_FG_MAIN_OBJ_04000);
     mem_setNtrWramMapping(MEM_NTR_WRAM_ARM9, MEM_NTR_WRAM_ARM9);
     mem_setVramHMapping(MEM_VRAM_H_LCDC);
     mem_setVramIMapping(MEM_VRAM_I_LCDC);
@@ -381,6 +431,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     setupLogger();
 
     mem_setMainMemoryPriority(EXMEMCNT_MAIN_MEM_PRIO_ARM9);
+
+    startSplashScreenAnimation();
 
     bool mountResult;
     if (shouldMountDsiSd(argc, argv))
@@ -417,6 +469,11 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     handleSave(romPath);
     SelfModifyingPatches().ApplyPatches(gAppSettingsService.GetAppSettings().runSettings);
 
+    waitSplashScreenAnimation();
+    stopSplashScreenAnimation();
+    delete sSplashScreen;
+    sSplashScreen = nullptr;
+
     const auto& displaySettings = gAppSettingsService.GetAppSettings().displaySettings;
     gGbaDisplayConfigurationService.ApplyDisplaySettings(displaySettings);
     if (displaySettings.enableCenterAndMask)
@@ -424,7 +481,6 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         gGbaBorderService.SetupBorder(displaySettings.borderImage, gRomHeader.gameCode);
     }
 
-    GFX_PLTT_BG_MAIN[0] = 0x1F << 5;
     // Do not clear ewram before we read argv
     memset((void*)0x02000000, 0, 256 * 1024);
     memset((void*)0x03000000, 0, 32 * 1024);

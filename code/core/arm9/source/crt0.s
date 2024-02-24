@@ -102,11 +102,10 @@ ewram_bss_done:
 vramhi_bss_done:
     // bkpt #0
 
-    // disable interrupts
-    mrs r0, cpsr
-    orr r0, r0, #0x80
-    msr cpsr_c, r0
+    msr cpsr_c, #0x92
+    ldr sp,= 0x03008000
 
+    msr cpsr_c, #0x9F
     ldr sp,= dtcmStackEnd
 
     push {r11, r12}

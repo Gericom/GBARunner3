@@ -32,6 +32,8 @@ SOURCES		:=	source \
 				source/Core/Heap \
 				source/Emulator \
 				source/Fat \
+				source/Gui \
+				source/Gui/Animation \
 				source/JitPatcher \
 				source/Logger \
 				source/MemoryEmulator \
