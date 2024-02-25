@@ -12,8 +12,6 @@ extern u8 gSaveData[SAVE_DATA_SIZE];
 extern FIL gSaveFile;
 extern gba_save_shared_t gGbaSaveShared;
 
-#define SKIP_SAVE_CHECK_INSTRUCTION     0xE8BD9000 // pop {r12,pc}
-
 extern u32 emu_vblankIrqSkipSaveCheckInstruction;
 
 bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFunction);

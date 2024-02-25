@@ -18,36 +18,26 @@ arm_func vm_irq
     // here emulator irq tasks can be performed
 
     mov r13, #0x04000000
-    str lr, DTCM(vm_irqSavedLR)
     ldr r4, [r13, #0x214]
-    ldrh lr, [r13, #6]
+    str lr, DTCM(vm_irqSavedLR)
     str r4, [r13, #0x214]
 
-    // Don't tigger hblank irq on scanlines beyond the gba screen
-    cmp lr, #260
-    sublo lr, lr, #160
-    rsblos lr, lr, #31
-    bichs r4, r4, #2 // HBLANK IRQ
+    tst r4, #(1 << 16) // ARM7 IRQ
+        bne emu_arm7Irq
+arm_func emu_arm7IrqReturn
+    tst r4, #2 // HBLANK IRQ
+        bne emu_hblankIrq
+arm_func emu_hblankIrqReturn
+    tst r4, #1 // VBLANK IRQ
+        bne emu_vblankIrq
+arm_func emu_vblankIrqReturn
 
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
     and r13, r13, r4 // bits to add to the emulated IF
     orr r13, lr, r13
-    ldr lr, DTCM(vm_forcedIrqMask)
     str r13, DTCM(vm_emulatedIfImeIe)
-    
-    ands r4, r4, lr
-    beq 1f
 
-    tst r4, #(1 << 16) // ARM7 IRQ
-        blne emu_arm7Irq
-    tst r4, #2 // HBLANK IRQ
-        blne emu_hblankIrq
-    tst r4, #1 // VBLANK IRQ
-        blne emu_vblankIrq
-
-    ldr r13, DTCM(vm_emulatedIfImeIe)
-1:
     ldr r4, DTCM(vm_irqSavedR4)
     // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IE, M = IME, F = IF)
     //M0FFF FFFF FFFF FFF0
