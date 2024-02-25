@@ -445,7 +445,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     rtos_ackIrqMask(~0u);
     REG_IME = 1;
     gfx_setVBlankIrqEnabled(true);
-    VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[8 >> 2], &gGbaBios[0x18 >> 2] };
+    VirtualMachine virtualMachine { &gGbaBios[0], &gGbaBios[0x140 >> 2], &gGbaBios[0x128 >> 2] };
     context_t runContext { };
     virtualMachine.Run(&runContext);
     while (true);

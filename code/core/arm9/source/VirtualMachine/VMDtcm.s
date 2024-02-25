@@ -44,4 +44,7 @@
     .word 0
 #endif
 
+.org vm_returnFromIrqAddress - VM_DTCM_BASE
+    .word vm_returnFromIrq
+
 .end

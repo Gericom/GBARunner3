@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "VMDtcmDefs.inc"
+#include "VMUndefinedInstructions.inc"
 
 vm_irq_base:
 
@@ -13,101 +14,105 @@ vm_irq_base:
 ///        the hardware irq vector.
 /// @param lr The return address + 4.
 arm_func vm_irq
-    str r0, DTCM(vm_irqSavedR0)
+    str r4, DTCM(vm_irqSavedR4)
     // here emulator irq tasks can be performed
 
     mov r13, #0x04000000
     str lr, DTCM(vm_irqSavedLR)
-    ldr r0, [r13, #0x214]
+    ldr r4, [r13, #0x214]
     ldrh lr, [r13, #6]
-    str r0, [r13, #0x214]
+    str r4, [r13, #0x214]
 
     // Don't tigger hblank irq on scanlines beyond the gba screen
     cmp lr, #260
     sublo lr, lr, #160
     rsblos lr, lr, #31
-    bichs r0, r0, #2 // HBLANK IRQ
+    bichs r4, r4, #2 // HBLANK IRQ
 
     ldr r13, DTCM(vm_hwIrqMask)
     ldr lr, DTCM(vm_emulatedIfImeIe)
-    and r13, r13, r0 // bits to add to the emulated IF
+    and r13, r13, r4 // bits to add to the emulated IF
     orr r13, lr, r13
     ldr lr, DTCM(vm_forcedIrqMask)
     str r13, DTCM(vm_emulatedIfImeIe)
     
-    ands r0, r0, lr
+    ands r4, r4, lr
     beq 1f
 
-    tst r0, #(1 << 16) // ARM7 IRQ
+    tst r4, #(1 << 16) // ARM7 IRQ
         blne emu_arm7Irq
-    tst r0, #2 // HBLANK IRQ
+    tst r4, #2 // HBLANK IRQ
         blne emu_hblankIrq
-    tst r0, #1 // VBLANK IRQ
+    tst r4, #1 // VBLANK IRQ
         blne emu_vblankIrq
 
     ldr r13, DTCM(vm_emulatedIfImeIe)
 1:
-    ldr r0, DTCM(vm_irqSavedR0)
+    ldr r4, DTCM(vm_irqSavedR4)
     // 0EEE EEEE EEEE EEE0 M0FF FFFF FFFF FFFF (E = IE, M = IME, F = IF)
     //M0FFF FFFF FFFF FFF0
     tst r13, r13, lsl #17 // IF & IE
-    ldr r13, DTCM(vm_irqSavedLR)
-    ldr lr, DTCM(vm_cpsr)
+    ldr lr, DTCM(vm_irqSavedLR)
+    ldr r13, DTCM(vm_cpsr)
 .global vm_irqReturnForNestedIrq
 vm_irqReturnForNestedIrq:
-    sublss pc, r13, #4 // IME = 0 or (IF & IE == 0)
+    sublss pc, lr, #4 // IME = 0 or (IF & IE == 0)
 
-    teq lr, lr, lsl #25 // C = I flag, N = F flag
-    subcss pc, r13, #4 // vm doesn't want irqs; nothing changed; resume where we left off
+    teq r13, r13, lsl #25 // C = I flag, N = F flag
+    subcss pc, lr, #4 // vm doesn't want irqs; nothing changed; resume where we left off
 
-    str r13, DTCM(vm_regs_irq + 4)
+    mrs r4, spsr
+    bic r4, r4, #0xCF
+    orr r4, r4, r13
+    ldr sp, DTCM(vm_regs_irq) // sp_irq
+    str r4, DTCM(vm_spsr_irq)
+
+    stmfd sp!, {r0-r3,r12,lr}
+    ldr r1, DTCM(vm_returnFromIrqAddress)
+    str sp, DTCM(vm_regs_irq)
+    str r1, DTCM(vm_regs_irq + 4)
 
     // only forced irqs stay on in DS REG_IE
     // if this is not done we can get in a loop of short
     // timer irqs for example
-    ldr r13, DTCM(vm_forcedIrqMask)
+    ldr r1, DTCM(vm_forcedIrqMask)
     mov r0, #0x04000000
     strb r0, DTCM(memu_biosOpcodeId) // store MEMU_BIOS_OPCODE_ID_IRQ_ENTRY
-    str r13, [r0, #0x210]
-    ldr r0, DTCM(vm_irqSavedR0)
+    str r1, [r0, #0x210]
 
-    mrs r13, spsr
-    bic r13, r13, #0xCF
-    orr r13, r13, lr
-    str r13, DTCM(vm_spsr_irq)
-    and r13, r13, #0xF
     mov lr, #0x92
     orrmi lr, lr, #0x40
     str lr, DTCM(vm_cpsr)
 
-    msr spsr, #0x10 // user mode, irqs stay on, arm mode
+    and r1, r4, #0xF
+    ldr r4, [r0, #-4] // load irq handler address
+
     mov lr, #(vm_regs_irq + 3)
-    add pc, pc, r13, lsl #5
+    add pc, pc, r1, lsl #5
     nop
 old_mode_usr:
     stmdb lr, {r13,lr}^
+    b jumpToIrqHandlerWithLdmiaLr
     nop
-    ldmia lr, {r13,lr}^
     nop
-1:
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
+    nop
     nop
     nop
 old_mode_fiq:
-    add r13, lr, #(vm_regs_sys - vm_regs_irq)
-    stmdb r13, {r8,r9,r10,r11,r12,r13,lr}^
+    add r1, lr, #(vm_regs_sys - vm_regs_irq)
+    stmdb r1, {r8,r9,r10,r11,r12,r13,lr}^
     nop
-    ldmia r13, {r8,r9,r10,r11,r12}^
+    ldmia r1, {r8,r9,r10,r11,r12}^
+    b jumpToIrqHandlerWithLdmiaLr
     nop
-    ldmia lr, {r13,lr}^
-    b 1b
+    nop
     nop
 old_mode_irq:
     ldmib lr, {lr}^
+    msr spsr, #0x10 // user mode, irqs stay on, arm mode
+    b vm_jumpToIrqHandler
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
     nop
     nop
     nop
@@ -115,11 +120,11 @@ old_mode_irq:
 old_mode_svc:
     add lr, lr, #(vm_regs_svc - vm_regs_irq)
     stmia lr, {r13,lr}^
-    nop
+    msr spsr, #0x10 // user mode, irqs stay on, arm mode
     ldmdb lr, {r13,lr}^
+    b vm_jumpToIrqHandler
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
     nop
 old_mode_4:
     nop
@@ -149,13 +154,13 @@ old_mode_6:
     nop
     nop
 old_mode_abt:
-    add r13, lr, #(vm_regs_abt - vm_regs_irq)
-    stmia r13, {r13,lr}^
+    add r1, lr, #(vm_regs_abt - vm_regs_irq)
+    stmia r1, {r13,lr}^
+    b jumpToIrqHandlerWithLdmiaLr
     nop
-    ldmia lr, {r13,lr}^
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
+    nop
     nop
 old_mode_8:
     nop
@@ -185,13 +190,13 @@ old_mode_10:
     nop
     nop
 old_mode_und:
-    add r13, lr, #(vm_regs_und - vm_regs_irq)
-    stmia r13, {r13,lr}^
+    add r1, lr, #(vm_regs_und - vm_regs_irq)
+    stmia r1, {r13,lr}^
+    b jumpToIrqHandlerWithLdmiaLr
     nop
-    ldmia lr, {r13,lr}^
     nop
-    ldr lr, DTCM(vm_irqVector)
-    movs pc, lr
+    nop
+    nop
     nop
 old_mode_12:
     nop
@@ -222,8 +227,25 @@ old_mode_14:
     nop
 old_mode_sys:
     stmdb lr, {r13,lr}^
-    nop
+jumpToIrqHandlerWithLdmiaLr:
+    msr spsr, #0x10 // user mode, irqs stay on, arm mode
     ldmia lr, {r13,lr}^
-    nop
-    ldr lr, DTCM(vm_irqVector)
+
+arm_func vm_jumpToIrqHandler
+// this part is only needed when jit is on
+// when modifying keep jit_disable in mind
+    mov r0, r4
+#ifndef GBAR3_TEST
+    bl jit_ensureBlockJitted
+#endif
+
+arm_func vm_jumpToIrqHandlerCommon
+    mov r0, #0x04000000 // not strictly necessary when jit is off, but safety for ldmia^
+    mov lr, r4
+    ldr r4, DTCM(vm_irqSavedR4)
     movs pc, lr
+
+.text
+arm_func vm_returnFromIrq
+    pop {r0-r3,r12,lr}
+    vmSUBS pc, lr, 4

@@ -7,7 +7,7 @@
 
 memu_loadRom_base:
 
-#define DTCM(x) (memu_loadRom_base - 0x378 + (x))
+#define DTCM(x) (memu_loadRom_base - 0x390 + (x))
 
 arm_func memu_load32Rom
     ldr r11, DTCM(memu_adjustedRomBlockToCacheBlockAddress)
