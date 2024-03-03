@@ -506,8 +506,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     VirtualMachine virtualMachine
     {
         runSettings.skipBiosIntro ? (void*)&emu_resetVectorSkipBootAnimation : &gGbaBios[0],
-        &gGbaBios[8 >> 2],
-        &gGbaBios[0x18 >> 2]
+        &gGbaBios[0x140 >> 2],
+        &gGbaBios[0x128 >> 2]
     };
     context_t runContext { };
     virtualMachine.Run(&runContext);

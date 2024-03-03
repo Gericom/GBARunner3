@@ -1,15 +1,16 @@
 #pragma once
 
 .global vm_thumbUndefinedDispatchTable
-.set vm_thumbUndefinedDispatchTable, 0xFFFFF32C
+.set vm_thumbUndefinedDispatchTable, 0xFFFFF328
 
 .global vm_armUndefinedDispatchTable
-.set vm_armUndefinedDispatchTable, 0xFFFFF72C
+.set vm_armUndefinedDispatchTable, 0xFFFFF728
 
-#define VM_DTCM_BASE 0xFFFFFF2C
+#define VM_DTCM_BASE 0xFFFFFF28
 
 .struct VM_DTCM_BASE
-vm_irqSavedR0:
+
+vm_irqSavedR4:
     .word 0
 vm_irqSavedLR:
     .word 0
@@ -156,6 +157,10 @@ memu_biosOpcodeId:
 
 .global memu_adjustedRomBlockToCacheBlockAddress
 memu_adjustedRomBlockToCacheBlockAddress:
+    .word 0
+
+.global vm_returnFromIrqAddress
+vm_returnFromIrqAddress:
     .word 0
 
 .previous

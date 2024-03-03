@@ -25,6 +25,7 @@ FIL gSaveFile alignas(32);
 gba_save_shared_t gGbaSaveShared;
 
 static DWORD sClusterTable[64];
+static u32 sSkipSaveCheckInstruction;
 
 bool sav_tryPatchFunction(const u32* signature, u32 saveSwiNumber, void* patchFunction)
 {
@@ -114,7 +115,7 @@ void sav_initializeSave(const SaveTypeInfo* saveTypeInfo, const char* savePath)
     }
 
     gGbaSaveShared.saveState = GBA_SAVE_STATE_CLEAN;
-    emu_vblankIrqSkipSaveCheckInstruction = SKIP_SAVE_CHECK_INSTRUCTION;
+    sSkipSaveCheckInstruction = emu_vblankIrqSkipSaveCheckInstruction;
     if (!saveTypeInfo || (saveTypeInfo->type & SAVE_TYPE_SRAM))
     {
         gGbaSaveShared.saveData = gSaveData;
@@ -193,5 +194,5 @@ extern "C" void sav_writeSaveToFile(void)
     }
 
     gGbaSaveShared.saveState = GBA_SAVE_STATE_CLEAN;
-    emu_vblankIrqSkipSaveCheckInstruction = SKIP_SAVE_CHECK_INSTRUCTION;
+    emu_vblankIrqSkipSaveCheckInstruction = sSkipSaveCheckInstruction;
 }

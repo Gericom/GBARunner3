@@ -5,7 +5,7 @@
 
 arm_func emu_arm7Irq
     ldr sp,= dtcmIrqStackEnd
-    push {r0-r3,r4,r12,lr}
+    push {r0-r3,r4,r12}
 #ifndef GBAR3_TEST
     ldr r12,= dma_state
     ldr r4, [r12] // dmaFlags
@@ -16,4 +16,5 @@ arm_func emu_arm7Irq
         movne r0, #2
         blne dma_dmaSound
 #endif
-    pop {r0-r3,r4,r12,pc}
+    pop {r0-r3,r4,r12}
+    b emu_arm7IrqReturn
