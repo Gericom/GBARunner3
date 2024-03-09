@@ -8,10 +8,10 @@ vm_swi_base:
 
 #define DTCM(x) (vm_swi_base - 0x7D8 + (x))
 
-.extern sav_swiHandler
+.extern patch_swiHandler
 
 arm_func vm_swi
-    // check if this is a save patch swi
+    // check if this is a patch swi
 #ifndef GBAR3_TEST
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     cmp lr, #0x08000000
@@ -20,7 +20,7 @@ arm_func vm_swi
     ldrb r13, [lr, #-2]
 hicodeContinue:
     cmp r13, #0x80
-        bhs sav_swiHandler
+        bhs patch_swiHandler
 #endif
 
     mov r13, #0

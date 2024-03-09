@@ -34,6 +34,12 @@ static inline void dc_invalidateLine(void* ptr)
     asm volatile("mcr p15, 0, %0, c7, c6, 1\n" :: "r"(((u32)ptr) & ~0x1F));
 }
 
+/// @brief Halts the processor until an interrupt occurs.
+static inline void arm_waitForInterrupt(void)
+{
+    asm volatile("mcr p15, 0, %0, c7, c0, 4\n" :: "r"(0));
+}
+
 #ifdef __cplusplus
 }
 #endif

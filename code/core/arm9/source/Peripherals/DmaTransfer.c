@@ -138,7 +138,6 @@ ITCM_CODE static u32 translateAddress(u32 address)
                 break;
             }
 
-            address &= ~0x8000;
             if (address & 0x4000)
             {
                 address += 0x003F0000;
@@ -146,7 +145,7 @@ ITCM_CODE static u32 translateAddress(u32 address)
             else
             {
                 u32 dispCnt = emu_ioRegisters[GBA_REG_OFFS_DISPCNT];
-                if ((dispCnt & 7) < 3)
+                if ((dispCnt & 7) < 3 || address & 0x8000)
                 {
                     address += 0x003F0000;
                 }
@@ -190,7 +189,13 @@ static inline bool fastDmaSourceAllowed(u32 srcRegion)
 
 static inline bool fastDmaDestinationAllowed(u32 dstRegion)
 {
-    return 0b0000000011001100 & (1 << dstRegion);
+    u32 mask = 0b0000000011001100;
+    if ((emu_ioRegisters[GBA_REG_OFFS_DISPCNT] & 7) >= 3)
+    {
+        mask &= ~(1 << 6);
+    }
+
+    return mask & (1 << dstRegion);
 }
 
 ITCM_CODE void dma_immTransfer16(u32 src, u32 dst, u32 byteCount, int srcStep, int dstStep)
@@ -279,7 +284,7 @@ ITCM_CODE static void dmaStop(int channel, GbaDmaChannel* dmaIoBase)
 ITCM_CODE static void dmaStartHBlank(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS))
         return;
     dmaIoBase->control = value;
     dma_state.dmaFlags |= DMA_FLAG_HBLANK(channel);
@@ -346,7 +351,7 @@ ITCM_CODE static void dmaStartSound(int channel, GbaDmaChannel* dmaIoBase, u32 v
 ITCM_CODE static void dmaStartSpecial(int channel, GbaDmaChannel* dmaIoBase, u32 value)
 {
     u32 src = dmaIoBase->src;
-    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS) || src >= 0x08000000)
+    if ((src >= ROM_LINEAR_DS_ADDRESS && src < ROM_LINEAR_END_DS_ADDRESS))
         return;
     switch (channel)
     {
@@ -386,9 +391,16 @@ ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u
     }
     int dstStep = getDstStep(control);
     if (control & GBA_DMA_CONTROL_32BIT)
+    {
+        sdc_setIrqForbiddenReplacementRange((u32)src, count << 2);
         dma_immTransfer32(src, dst, count << 2, srcStep, dstStep);
+    }
     else
+    {
+        sdc_setIrqForbiddenReplacementRange((u32)src, count << 1);
         dma_immTransfer16(src, dst, count << 1, srcStep, dstStep);
+    }
+    sdc_resetIrqForbiddenReplacementRange();
     if (channel == 3)
     {
         vm_disableNestedIrqs();

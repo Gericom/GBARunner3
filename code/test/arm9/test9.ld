@@ -178,10 +178,10 @@ SECTIONS
 		KEEP (ArmDtcm.o(.dtcm))
 		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x332C;
+		. = 0x3328;
 		KEEP (VMUndefinedThumbTable.o(.dtcm))
 		KEEP (VMUndefinedArmTable.o(.dtcm))
-		. = 0x3F2C;
+		. = 0x3F28;
 		KEEP (VMDtcm.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);

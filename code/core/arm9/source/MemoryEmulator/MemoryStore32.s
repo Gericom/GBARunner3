@@ -3,6 +3,13 @@
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
 
+arm_func memu_store32FromC
+    push {r8-r11,lr}
+    mov r8, r0
+    mov r9, r1
+    bl memu_store32
+    pop {r8-r11,pc}
+
 /// @brief Stores a 32-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
 /// @param r8 The address to store to. This register is preserved,
@@ -75,22 +82,68 @@ arm_func memu_store32Pltt
     bx lr
 
 arm_func memu_store32Vram012
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        addmi r11, r11, #0x3F0000
-        bicmi r10, r10, #(0x8000 << 15)
-
-    str r9, [r11, r10, lsr #15]
+    bic r11, r8, #0xFE0000
+    tst r11, #0x10000
+        addne r11, r11, #0x3F0000
+    str r9, [r11]
     bx lr
 
-arm_func memu_store32Vram345
+arm_func memu_store32Vram3
     mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
-    str r9, [r11, r10, lsr #15]
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 4370
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    orr r9, r9, #0x80000000
+    str r9, [r11, r12, lsl #5]
+    bx lr
+
+arm_func memu_store32Vram4
+    mov r11, #0x06000000
+    mov r10, r8, lsl #15
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 4370
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #19
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    str r9, [r11, r12, lsl #4]
+    bx lr
+
+arm_func memu_store32Vram5
+    mov r11, #0x06000000
+    mov r10, r8, lsl #15
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+    str r9, [r11, r10, lsr #15]!
+    bxhs lr
+
+    ldr r12,= 6554
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    orr r9, r9, #0x80000000
+    add r12, r12, r12, lsl #1
+    str r9, [r11, r12, lsl #6]
     bx lr
 
 arm_func memu_store32Oam
@@ -103,10 +156,21 @@ arm_func memu_store32Rom
 
 arm_func memu_store32Sram
     tst r8, #3
-        ldreq r10,= gSaveData
-        moveq r11, r8, lsl #17
-        streqb r9, [r10, r11, lsr #17]!
-        streqb r9, [r10, #1]
-        streqb r9, [r10, #2]
-        streqb r9, [r10, #3]
+        bxne lr
+    ldr r10,= gSaveData
+    mov r11, r8, lsl #17
+    ldr r11, [r10, r11, lsr #17]!
+    and r9, r9, #0xFF
+    orr r9, r9, r9, lsl #8
+    orr r9, r9, r9, lsl #16
+    cmp r9, r11
+        bxeq lr
+    str r9, [r10]
+    ldr r12,= gGbaSaveShared
+    mov r11, #1 // GBA_SAVE_STATE_DIRTY
+    strb r11, [r12]
+    mov r11, #0
+    ldr r12,= emu_vblankIrqSkipSaveCheckInstruction
+    mcr p15, 0, r11, c7, c10, 4 // drain write buffer
+    str r11, [r12] // nop, do not skip the save check when dirty
     bx lr

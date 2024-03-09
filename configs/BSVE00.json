@@ -1,0 +1,21 @@
+{
+    "runSettings": {
+        "jitPatchAddresses": [
+            "0x080000C4",
+            "0x080000D0",
+            "0x087F40CC",
+            "0x087F4118",
+            "0x087F4124",
+            "0x087F4140",
+            "0x087F414C",
+            "0x087F415C",
+            "0x087F62B8"
+        ],
+        "selfModifyingPatchAddresses": [
+            "0x087F6124",
+            "0x087F6240",
+            "0x087F62C0",
+            "0x087F62D4"
+        ]
+    }
+}

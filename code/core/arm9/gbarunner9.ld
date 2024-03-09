@@ -12,7 +12,9 @@ MEMORY
 	itcm	: ORIGIN = 0x00000000, LENGTH = 32K
 	ewram   : ORIGIN = 0x02040000, LENGTH = 4M - 2M - 256K
 	dtcm	: ORIGIN = 0xFFFFC000, LENGTH = 16K
-	vram	: ORIGIN = 0x06800000, LENGTH = 256K
+	vrama	: ORIGIN = 0x06800000, LENGTH = 128K
+	vramab	: ORIGIN = 0x06800000, LENGTH = 256K
+	vramhi  : ORIGIN = 0x06898000, LENGTH = 48K
 }
 
 PHDRS
@@ -31,7 +33,7 @@ SECTIONS
 		__text_start = . ;
 		KEEP (*(.crt0))
 		. = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	.text :   /* ALIGN (4): */
 	{
@@ -49,13 +51,13 @@ SECTIONS
 		*(.glue_7t)
 		__glue_end = ABSOLUTE(.);
 		. = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	.fini           :
 	{
 		KEEP (*(.fini))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main =0xff
+	} >vrama AT> vramab :main =0xff
 
 	__text_end = . ;
 
@@ -68,11 +70,11 @@ SECTIONS
 		*(.gnu.linkonce.r*)
 		SORT(CONSTRUCTORS)
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
-	.ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >vram :main
+	.ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >vrama AT> vramab :main
 	__exidx_start = .;
-	.ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >vram :main
+	.ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >vrama AT> vramab :main
 	__exidx_end = .;
 
 /* Ensure the __preinit_array_start label is properly aligned.  We
@@ -81,13 +83,13 @@ SECTIONS
    be empty, which isn't pretty.  */
 	. = ALIGN(32 / 8);
 	PROVIDE (__preinit_array_start = .);
-	.preinit_array     : { KEEP (*(.preinit_array)) } >vram :main = 0xff
+	.preinit_array     : { KEEP (*(.preinit_array)) } >vrama AT> vramab :main = 0xff
 	PROVIDE (__preinit_array_end = .);
 	PROVIDE (__init_array_start = .);
-	.init_array     : { KEEP (*(.init_array)) } >vram :main = 0xff
+	.init_array     : { KEEP (*(.init_array)) } >vrama AT> vramab :main = 0xff
 	PROVIDE (__init_array_end = .);
 	PROVIDE (__fini_array_start = .);
-	.fini_array     : { KEEP (*(.fini_array)) } >vram :main = 0xff
+	.fini_array     : { KEEP (*(.fini_array)) } >vrama AT> vramab :main = 0xff
 	PROVIDE (__fini_array_end = .);
 
 	.ctors :
@@ -103,7 +105,7 @@ SECTIONS
 		KEEP (*(SORT(.ctors.*)))
 		KEEP (*(.ctors))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	.dtors :
 	{
@@ -112,20 +114,20 @@ SECTIONS
 		KEEP (*(SORT(.dtors.*)))
 		KEEP (*(.dtors))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	.eh_frame :
 	{
 		KEEP (*(.eh_frame))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	.gcc_except_table :
 	{
 		*(.gcc_except_table)
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >vram :main = 0xff
-	.jcr            : { KEEP (*(.jcr)) } >vram = 0
+	} >vrama AT> vramab :main = 0xff
+	.jcr            : { KEEP (*(.jcr)) } >vrama AT> vramab = 0
 
 
 	__got_start = . ;
@@ -134,7 +136,7 @@ SECTIONS
 		*(.got.plt) 
 		*(.got) 
 		*(.rel.got)
-	} >vram :main = 0
+	} >vrama AT> vramab :main = 0
 	__got_end = . ;
 
 	
@@ -146,7 +148,7 @@ SECTIONS
 		CONSTRUCTORS
 		. = ALIGN(4);
 		__data_end = ABSOLUTE(.) ;
-	} >vram :main = 0xff
+	} >vrama AT> vramab :main = 0xff
 
 	__data_end = . ;
 
@@ -163,14 +165,14 @@ SECTIONS
 		KEEP (ArmDtcm.o(.dtcm))
 		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x332C;
+		. = 0x3328;
 		KEEP (VMUndefinedThumbTable.o(.dtcm))
 		KEEP (VMUndefinedArmTable.o(.dtcm))
-		. = 0x3F2C;
+		. = 0x3F28;
 		KEEP (VMDtcm.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
-	} >dtcm AT>vram :dtcm = 0xff
+	} >dtcm AT>vramab :dtcm = 0xff
 
 	.itcm :
 	{
@@ -181,7 +183,7 @@ SECTIONS
 		KEEP (VMUndefined.o(.itcm))
 		. = 0xB8;
 		KEEP (VMIrq.o(.itcm))
-		. = 0x378;
+		. = 0x390;
 		KEEP (MemoryLoadRom.o(.itcm))
 		. = 0x400;
 		KEEP (ArmDispatch.o(.itcm))
@@ -208,7 +210,7 @@ SECTIONS
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);
 		__itcm_end = ABSOLUTE(.);
-	} >itcm AT>vram :itcm = 0xff
+	} >itcm AT>vramab :itcm = 0xff
 
 	.ewram.bss (NOLOAD):
 	{
@@ -222,6 +224,17 @@ SECTIONS
 	__ewram_bss_end__ = . ;
 	__heap_start = . ;
 
+	.vramhi.bss (NOLOAD):
+	{
+		__vramhi_bss_start = ABSOLUTE(.);
+		__vramhi_bss_start__ = ABSOLUTE(.);
+		*(.vramhi.bss*)
+		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+	} >vramhi :NONE
+
+	__vramhi_bss_end = . ;
+	__vramhi_bss_end__ = . ;
+
 	.bss __bss_vma (NOLOAD):
 	{
 		__bss_start = ABSOLUTE(.);
@@ -231,7 +244,7 @@ SECTIONS
 		*(.bss*)
 		*(COMMON)
 		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
-	} >vram :NONE
+	} >vrama :NONE
 
 	__bss_end = . ;
 	__bss_end__ = . ;

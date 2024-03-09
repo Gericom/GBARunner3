@@ -3,6 +3,7 @@
 #include "SdCache/SdCache.h"
 #include "cp15.h"
 #include "MemoryEmulator/RomDefs.h"
+#include "VirtualMachine/VMIrq.h"
 #include "JitArm.h"
 #include "JitThumb.h"
 #include "JitCommon.h"
@@ -137,4 +138,11 @@ void jit_disable(void)
     memset(gJitState.iWramJitBits, 0xFF, sizeof(gJitState.iWramJitBits));
     memset(gJitState.eWramJitBits, 0xFF, sizeof(gJitState.eWramJitBits));
     memset(gJitState.vramJitBits, 0xFF, sizeof(gJitState.vramJitBits));
+
+    for (u32 i = 0; i < VM_JUMP_TO_IRQ_HANDLER_COMMON_INSTRUCTION_COUNT; i++)
+    {
+        vm_jumpToIrqHandler[i] = vm_jumpToIrqHandlerCommon[i];
+    }
+
+    vm_jumpToIrqHandler[2] -= 8; // fix the ldr r4, DTCM(vm_irqSavedR4)
 }

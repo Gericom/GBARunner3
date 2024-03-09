@@ -5,6 +5,10 @@
 #include <libtwl/ipc/ipcSync.h>
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include "gbarunner9_bin.h"
+#include "three.h"
+#include "threeGlow.h"
+#include "splashBg.h"
+#include "runner.h"
 #include "../../../core/common/IpcChannels.h"
 #include "../../../core/common/FsIpcCommand.h"
 
@@ -52,17 +56,39 @@ static bool tryInitDldi()
     return ipc_recvWordDirect();
 }
 
+static void loadSplashScreen()
+{
+    mem_setVramEMapping(MEM_VRAM_E_MAIN_BG_00000);
+    mem_setVramFMapping(MEM_VRAM_FG_MAIN_OBJ_00000);
+    mem_setVramGMapping(MEM_VRAM_FG_MAIN_OBJ_04000);
+
+    dmaCopy(splashBgTiles, (void*)0x06000000, splashBgTilesLen);
+    dmaCopy(splashBgMap, (void*)0x06001000, splashBgMapLen);
+    dmaCopy(splashBgPal, (void*)0x05000000, splashBgPalLen);
+    dmaCopy(threeGlowTiles, (void*)0x06004000, threeGlowTilesLen);
+    dmaCopy(threeGlowMap, (void*)0x06001800, threeGlowMapLen);
+    dmaCopy(threeGlowPal, (void*)0x05000020, threeGlowPalLen);
+    dmaCopy(threeTiles, (void*)0x06400000, threeTilesLen);
+    dmaCopy(runnerTiles, (void*)(0x06400000 + threeTilesLen), runnerTilesLen);
+    dmaCopy(threePal, (void*)0x05000200, threePalLen);
+    dmaCopy(runnerPal, (void*)0x05000220, runnerPalLen);
+}
+
 int main(int argc, char* argv[])
 {
     REG_IME = 0;
     rtos_disableIrqMask(~0u);
     rtos_ackIrqMask(~0u);
-    
+
     initIpc();
     tryInitDldi();
 
     mem_setVramAMapping(MEM_VRAM_AB_LCDC);
     mem_setVramBMapping(MEM_VRAM_AB_LCDC);
+    mem_setVramHMapping(MEM_VRAM_H_LCDC);
+    mem_setVramIMapping(MEM_VRAM_I_LCDC);
+
+    loadSplashScreen();
 
     DC_FlushAll();
     DC_InvalidateAll();

@@ -146,12 +146,9 @@ arm_func memu_load16Pltt
     bx lr
 
 arm_func memu_load16Vram012
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        addmi r11, r11, #0x3F0000
-        bicmi r10, r10, #(0x8000 << 15)
-
-    add r11, r11, r10, lsr #15
+    bic r11, r8, #0xFE0000
+    tst r11, #0x10000
+        addne r11, r11, #0x3F0000
     ldrh r9, [r11]
     tst r8, #1
         bxeq lr
@@ -159,13 +156,10 @@ arm_func memu_load16Vram012
     bx lr
 
 arm_func memu_load16Vram345
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
-    cmp r10, #(0x14000 << 15)
+    bic r11, r8, #0xFE0000
+    sub r10, r11, #0x06000000
+    cmp r10, #0x14000
         addhs r11, r11, #0x3F0000
-    add r11, r11, r10, lsr #15
     ldrh r9, [r11]
     tst r8, #1
         bxeq lr
@@ -179,16 +173,32 @@ arm_func memu_load16Oam
         movne r9, r9, ror #8
     bx lr
 
+arm_func memu_load16RomHi
+    bic r9, r8, #0x06000000
+memu_load16RomHiContinue:
+    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
+    mov r12, r9, lsr #SDC_BLOCK_SHIFT
+    ldr r11, [r11, r12, lsl #2]
+    bic r9, r9, r12, lsl #SDC_BLOCK_SHIFT
+    cmn r11, r8, lsl #31
+        ldrgth r9, [r11, r9]
+        bxgt lr
+
+    cmp r11, #0
+    ldrneh r9, [r11, r9]
+    movne r9, r9, ror #8
+    bxne lr
+
 arm_func memu_load16RomCacheMiss
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r10, r11, r13
-    cmp r10, #DTCM_STACK_SIZE
+    cmp r10, #(DTCM_STACK_SIZE + DTCM_IRQ_STACK_SIZE)
     mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11
     push {r0-r3,lr}
-    mov r0, r12
+    mov r0, r12, lsl #SDC_BLOCK_SHIFT
     bl sdc_loadRomBlockDirect
     ldrh r9, [r0, r9]
     pop {r0-r3,lr}
@@ -197,13 +207,6 @@ arm_func memu_load16RomCacheMiss
         bxeq lr
     mov r9, r9, ror #8
     bx lr
-
-arm_func memu_load16RomHi
-    bic r9, r8, #0x0E000000
-memu_load16RomHiContinue:
-    ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
-    bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))
-    b memu_load16RomContinue
 
 arm_func memu_load16Sram
     ldr r10,= gSaveData

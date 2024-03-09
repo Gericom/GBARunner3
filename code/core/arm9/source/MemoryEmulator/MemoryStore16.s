@@ -69,24 +69,75 @@ arm_func memu_store16Pltt
     bx lr
 
 arm_func memu_store16Vram012
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        addmi r11, r11, #0x3F0000
-        bicmi r10, r10, #(0x8000 << 15)
-
-    add r11, r11, r10, lsr #15
+    bic r11, r8, #0xFE0000
+    tst r11, #0x10000
+        addne r11, r11, #0x3F0000
     strh r9, [r11]
     bx lr
 
-arm_func memu_store16Vram345
+arm_func memu_store16Vram3
     mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
+    mov r10, r8, lsl #15
     cmp r10, #(0x14000 << 15)
         addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram3Finish
     add r11, r11, r10, lsr #15
     strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 4370
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    mov r12, r12, lsl #5
+    strh r9, [r11, r12]
+    bx lr
+
+arm_func memu_store16Vram4
+    mov r11, #0x06000000
+    mov r10, r8, lsl #15
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram4Finish
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 4370
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #19
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    mov r12, r12, lsl #4
+    strh r9, [r11, r12]
+    bx lr
+
+arm_func memu_store16Vram5
+    mov r11, #0x06000000
+    mov r10, r8, lsl #15
+    cmp r10, #(0x14000 << 15)
+        addhs r11, r11, #0x3F0000
+arm_func memu_store16Vram5Finish
+    add r11, r11, r10, lsr #15
+    strh r9, [r11]
+    bxhs lr
+
+    ldr r12,= 6554
+    cmp r10, #(0xA000 << 15)
+        subhs r10, r10, #(0xA000 << 15)
+        addhs r11, r11, #0x6000
+
+    mov r10, r10, lsr #20
+    smulwb r12, r10, r12
+    add r11, r11, #0x40000
+    orr r9, r9, #0x8000
+    add r12, r12, r12, lsl #1
+    mov r12, r12, lsl #6
+    strh r9, [r11, r12]
     bx lr
 
 arm_func memu_store16Oam
@@ -99,8 +150,21 @@ arm_func memu_store16Rom
 
 arm_func memu_store16Sram
     tst r8, #1
-        ldreq r10,= gSaveData
-        moveq r11, r8, lsl #17
-        streqb r9, [r10, r11, lsr #17]!
-        streqb r9, [r10, #1]
+        bxne lr
+    ldr r10,= gSaveData
+    mov r11, r8, lsl #17
+    mov r11, r11, lsr #17
+    ldrh r11, [r10, r11]!
+    and r9, r9, #0xFF
+    orr r9, r9, r9, lsl #8
+    cmp r9, r11
+        bxeq lr
+    ldr r12,= gGbaSaveShared
+    strh r9, [r10]
+    mov r11, #1 // GBA_SAVE_STATE_DIRTY
+    strb r11, [r12]
+    mov r11, #0
+    ldr r12,= emu_vblankIrqSkipSaveCheckInstruction
+    mcr p15, 0, r11, c7, c10, 4 // drain write buffer
+    str r11, [r12] // nop, do not skip the save check when dirty
     bx lr

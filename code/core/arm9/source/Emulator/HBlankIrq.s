@@ -11,13 +11,19 @@
 /// @param r13 Trashed.
 /// @param lr Return address.
 arm_func emu_hblankIrq
+    // Don't tigger hblank irq on scanlines beyond the gba screen
     mov r13, #0x04000000
-    ldrh r13, [r13, #6]
-    cmp r13, #160
-    bxge lr
+    ldrh lr, [r13, #6]
+    cmp lr, #260
+    sublo r13, lr, #160
+    rsblos r13, r13, #31
+    bichs r4, r4, #2 // HBLANK IRQ
+
+    cmp lr, #160
+    bge emu_hblankIrqReturn
 
     ldr sp,= dtcmIrqStackEnd
-    push {r0-r3,r4,r5,r12,lr}
+    push {r0-r3,r4,r5,r12}
 #ifndef GBAR3_TEST
     ldr r5,= dma_state
     ldr r4, [r5] // dmaFlags
@@ -34,4 +40,5 @@ arm_func emu_hblankIrq
         movne r0, #3
         blne dma_dmaTransfer
 #endif
-    pop {r0-r3,r4,r5,r12,pc}
+    pop {r0-r3,r4,r5,r12}
+    b emu_hblankIrqReturn

@@ -28,6 +28,8 @@ bool gbs_writeEnvelope(gbs_envelope_t* env, u16 value)
     env->direction = (value >> 3) & 1;
     env->initVolume = (value >> 4) & 0xF;
     updateDead(env);
+    if (!env->dead)
+         env->nextStep = env->stepTime;
     return (env->initVolume || env->direction) && env->dead != 2;
 }
 

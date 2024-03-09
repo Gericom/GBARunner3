@@ -77,7 +77,7 @@
     .elseif (\index << 2) == GBA_REG_OFFS_DMA3CNT
         .short emu_dma3CntStore32
     .elseif (\index << 2) == GBA_REG_OFFS_TM0CNT
-        .short emu_timerCntStore32
+        .short emu_timer0CntStore32
     .elseif (\index << 2) == GBA_REG_OFFS_TM1CNT
         .short emu_timerCntStore32
     .elseif (\index << 2) == GBA_REG_OFFS_TM2CNT
@@ -90,6 +90,8 @@
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_SIOCNT
         .short emu_regSioCntSioMultiSendStore32
+    .elseif (\index << 2) == GBA_REG_OFFS_KEYINPUT
+        .short emu_regKeyInputKeyControlStore32
     .elseif (\index << 2) == GBA_REG_OFFS_RCNT
         .short emu_ioStore32
     .elseif (\index << 2) == GBA_REG_OFFS_JOYCNT

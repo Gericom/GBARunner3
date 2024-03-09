@@ -18,9 +18,9 @@
     .elseif (\index << 1) == GBA_REG_OFFS_BG1CNT
         .short emu_regBgCnt01Store16
     .elseif (\index << 1) == GBA_REG_OFFS_BG2CNT
-        .short emu_regBgCnt23Store16
+        .short emu_regBgCnt2Store16
     .elseif (\index << 1) == GBA_REG_OFFS_BG3CNT
-        .short emu_regBgCnt23Store16
+        .short emu_regBgCnt3Store16
     .elseif (\index << 1) == GBA_REG_OFFS_WININ
         .short emu_regWinInOutStore16
     .elseif (\index << 1) == GBA_REG_OFFS_WINOUT
@@ -137,7 +137,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_L
         .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM0CNT_H
-        .short emu_timerCntHStore16
+        .short emu_timer0CntHStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_L
         .short emu_timerCntLStore16
     .elseif (\index << 1) == GBA_REG_OFFS_TM1CNT_H
@@ -163,7 +163,7 @@
     .elseif (\index << 1) == GBA_REG_OFFS_SIOMULTI_SEND
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_KEYCNT
-        .short emu_ioStore16
+        .short emu_regKeyControlStore16
     .elseif (\index << 1) == GBA_REG_OFFS_RCNT
         .short emu_ioStore16
     .elseif (\index << 1) == GBA_REG_OFFS_JOYCNT

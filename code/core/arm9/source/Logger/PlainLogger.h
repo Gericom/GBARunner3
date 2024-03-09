@@ -2,13 +2,14 @@
 #include "mini-printf.h"
 #include "ILogger.h"
 #include "IOutputStream.h"
+#include "Cpsr.h"
 
 class PlainLogger : public ILogger
 {
     LogLevel _maxLogLevel;
     IOutputStream* _outputStream;
 
-    // char _logBuffer[512];
+    char _logBuffer[128];
 
 public:
     PlainLogger(LogLevel maxLogLevel, IOutputStream* outputStream)
@@ -18,8 +19,11 @@ public:
     {
         if (level > _maxLogLevel)
             return;
-        char logBuffer[128];
-        mini_vsnprintf(logBuffer, sizeof(logBuffer), fmt, vlist);
-        _outputStream->Write(logBuffer);
+        u32 irqs = arm_disableIrqs();
+        {
+            mini_vsnprintf(_logBuffer, sizeof(_logBuffer), fmt, vlist);
+            _outputStream->Write(_logBuffer);
+        }
+        arm_restoreIrqs(irqs);
     }
 };

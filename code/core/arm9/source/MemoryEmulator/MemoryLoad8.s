@@ -93,22 +93,18 @@ arm_func memu_load8Pltt
     bx lr
 
 arm_func memu_load8Vram012
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        addmi r11, r11, #0x3F0000
-        bicmi r10, r10, #(0x8000 << 15)
-
-    ldrb r9, [r11, r10, lsr #15]
+    bic r11, r8, #0xFE0000
+    tst r11, #0x10000
+        addne r11, r11, #0x3F0000
+    ldrb r9, [r11]
     bx lr
 
 arm_func memu_load8Vram345
-    mov r11, #0x06000000
-    movs r10, r8, lsl #15
-        bicmi r10, r10, #(0x8000 << 15)
-
-    cmp r10, #(0x14000 << 15)
+    bic r11, r8, #0xFE0000
+    sub r10, r11, #0x06000000
+    cmp r10, #0x14000
         addhs r11, r11, #0x3F0000
-    ldrb r9, [r11, r10, lsr #15]
+    ldrb r9, [r11]
     bx lr
 
 arm_func memu_load8Oam
@@ -120,7 +116,7 @@ arm_func memu_load8RomCacheMiss
     ldr r11,= dtcmStackEnd
     // check if we already had a stack
     sub r10, r11, r13
-    cmp r10, #DTCM_STACK_SIZE
+    cmp r10, #(DTCM_STACK_SIZE + DTCM_IRQ_STACK_SIZE)
     mov r10, r13
     // if not begin at the end of the stack
     movhs sp, r11
@@ -133,7 +129,7 @@ arm_func memu_load8RomCacheMiss
     bx lr
 
 arm_func memu_load8RomHi
-    bic r9, r8, #0x0E000000
+    bic r9, r8, #0x06000000
 memu_load8RomHiContinue:
     ldr r11,= (sdc_romBlockToCacheBlock - (0x08000000 >> (SDC_BLOCK_SHIFT - 2)))
     bic r12, r9, #(3 << (SDC_BLOCK_SHIFT - 2))

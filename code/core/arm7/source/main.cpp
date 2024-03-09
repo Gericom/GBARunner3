@@ -1,6 +1,7 @@
 #include "common.h"
 #include <libtwl/ipc/ipcFifoSystem.h>
 #include <libtwl/ipc/ipcSync.h>
+#include <libtwl/sys/sysPower.h>
 #include <libtwl/mem/memSwap.h>
 #include <libtwl/rtos/rtosIrq.h>
 #include <libtwl/rtos/rtosThread.h>
@@ -14,13 +15,19 @@
 #include "IpcServices/FsIpcService.h"
 #include "IpcServices/GbaSoundIpcService.h"
 #include "IpcServices/SystemIpcService.h"
+#include "IpcServices/GbaSaveIpcService.h"
+#include "Arm7State.h"
+#include "ExitMode.h"
 #include "FramerateAdjustment.h"
 
 static FsIpcService sFsIpcService;
 static GbaSoundIpcService sGbaSoundIpcService;
 static SystemIpcService sSystemIpcService;
+static GbaSaveIpcService sGbaSaveIpcService;
 static rtos_event_t sVBlankEvent;
 static volatile u8 sMcuIrqFlag = false;
+static Arm7State sState;
+static ExitMode sExitMode;
 
 static void vblankIrq(u32 irqMask)
 {
@@ -47,20 +54,14 @@ static void checkMcuIrq(void)
     if (irqMask & MCU_IRQ_RESET)
     {
         // power button was released
-        // todo: maybe ensure no sd writes are still pending
-
-        mcu_setWarmBootFlag(true);
-        mcu_hardReset();
-
-        while (1);
+        sExitMode = ExitMode::Reset;
+        sState = Arm7State::ExitRequested;
     }
-    if (irqMask & MCU_IRQ_POWER_OFF)
+    else if (irqMask & MCU_IRQ_POWER_OFF)
     {
         // power button was held long to trigger a power off
-        // todo: maybe ensure no sd writes are still pending
-        pmic_shutdown();
-
-        while (1);
+        sExitMode = ExitMode::PowerOff;
+        sState = Arm7State::ExitRequested;
     }
 }
 
@@ -69,7 +70,23 @@ static void notifyArm7Ready()
     ipc_setArm7SyncBits(7);
 }
 
-int main()
+static void initializeIpcServices()
+{
+    sFsIpcService.Start();
+    sGbaSoundIpcService.Start();
+    sSystemIpcService.Start();
+    sGbaSaveIpcService.Start();
+}
+
+static void initializeVBlankIrq()
+{
+    rtos_createEvent(&sVBlankEvent);
+    rtos_setIrqFunc(RTOS_IRQ_VBLANK, vblankIrq);
+    rtos_enableIrqMask(RTOS_IRQ_VBLANK);
+    gfx_setVBlankIrqEnabled(true);
+}
+
+static void initializeArm7()
 {
     rtos_initIrq();
     rtos_startMainThread();
@@ -82,7 +99,7 @@ int main()
     dmaFillWords(0, (void*)&REG_SOUNDxCNT(0), 0x100);
 
     pmic_setAmplifierEnable(true);
-    powerOn(POWER_SOUND);
+    sys_setSoundPower(true);
 
     readUserSettings();
     pmic_setPowerLedBlink(PMIC_CONTROL_POWER_LED_BLINK_NONE);
@@ -90,17 +107,12 @@ int main()
     sio_setGpioSiIrq(false);
     sio_setGpioMode(RCNT0_L_MODE_GPIO);
 
-    sFsIpcService.Start();
-    sGbaSoundIpcService.Start();
-    sSystemIpcService.Start();
+    initializeIpcServices();
 
     snd_setMasterVolume(127);
     snd_setMasterEnable(true);
 
-    rtos_createEvent(&sVBlankEvent);
-    rtos_setIrqFunc(RTOS_IRQ_VBLANK, vblankIrq);
-    rtos_enableIrqMask(RTOS_IRQ_VBLANK);
-    gfx_setVBlankIrqEnabled(true);
+    initializeVBlankIrq();
 
     if (isDSiMode())
     {
@@ -112,11 +124,73 @@ int main()
     fps_startFramerateAdjustment();
 
     notifyArm7Ready();
+}
 
+static void updateArm7IdleState()
+{
+    checkMcuIrq();
+    sGbaSaveIpcService.Update();
+
+    if (sState == Arm7State::ExitRequested)
+    {
+        snd_setMasterVolume(0); // mute sound
+    }
+}
+
+static bool performExit(ExitMode exitMode)
+{
+    switch (exitMode)
+    {
+        case ExitMode::Reset:
+        {
+            mcu_setWarmBootFlag(true);
+            mcu_hardReset();
+            break;
+        }
+        case ExitMode::PowerOff:
+        {
+            pmic_shutdown();
+            break;
+        }
+    }
+
+    while (true); // wait infinitely for exit
+}
+
+static void updateArm7ExitRequestedState()
+{
+    if (sGbaSaveIpcService.FlushSaveIfDirty())
+    {
+        performExit(sExitMode);
+    }
+}
+
+static void updateArm7()
+{
+    switch (sState)
+    {
+        case Arm7State::Idle:
+        {
+            updateArm7IdleState();
+            break;
+        }
+        case Arm7State::ExitRequested:
+        {
+            updateArm7ExitRequestedState();
+            break;
+        }
+    }
+}
+
+int main()
+{
+    initializeArm7();
+
+    sState = Arm7State::Idle;
     while (true)
     {
         rtos_waitEvent(&sVBlankEvent, true, true);
-        checkMcuIrq();
+        updateArm7();
     }
     
     return 0;
