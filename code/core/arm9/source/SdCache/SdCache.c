@@ -193,6 +193,7 @@ void* sdc_loadRomBlockForPatching(u32 romAddress)
         if (data)
         {
             // if already loaded, but not permanent, invalidate block
+            sdc_romBlockToCacheBlock[romBlock] = NULL;
             sCacheBlockToRomBlock[((u32)data - (u32)&sdc_cache[0][0]) / SDC_BLOCK_SIZE] = SDC_ROM_BLOCK_INVALID;
         }
 
