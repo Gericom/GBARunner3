@@ -116,3 +116,7 @@ memu_store8Table:
     .short memu_store8 // 0D
     .short memu_store8 // 0E
     .short memu_store8 // 0F
+
+.global memu_armTmpUsrReg
+memu_armTmpUsrReg:
+    .word 0

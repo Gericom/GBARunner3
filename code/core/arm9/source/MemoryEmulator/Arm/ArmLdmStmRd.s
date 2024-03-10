@@ -94,6 +94,8 @@ arm_func memu_armLdmRd
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armStmRdTable
 memu_armStmRdTable:
     .word memu_armStmRd

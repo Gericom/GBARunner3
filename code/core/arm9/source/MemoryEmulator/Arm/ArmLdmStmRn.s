@@ -42,6 +42,8 @@ generate memu_armLdmStmRn_w, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armLdmStmRnTable_0
 memu_armLdmStmRnTable_0:
     .word memu_armLdmStmR0_0

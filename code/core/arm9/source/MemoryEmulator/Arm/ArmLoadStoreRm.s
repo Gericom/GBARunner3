@@ -72,6 +72,8 @@ generate memu_armLoadStoreRm_1, 16, 8
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armLoadStoreRmTable_0
 memu_armLoadStoreRmTable_0:
     .word memu_armLoadStoreRlo_0

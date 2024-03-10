@@ -7,6 +7,7 @@
 #include "logger/NocashOutputStream.h"
 #include "logger/NitroEmulatorOutputStream.h"
 #include "logger/NullLogger.h"
+#include "MemoryEmulator/Arm/ArmDispatchTable.h"
 
 ILogger* gLogger;
 
@@ -35,6 +36,7 @@ extern "C" void testMain(int argc, char* argv[])
 
     initLogger();
     LOG_DEBUG("ARM9 Start\n");
+    memu_initializeArmDispatchTable();
     testing::InitGoogleMock(&argc, argv);
     RUN_ALL_TESTS();
 

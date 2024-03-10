@@ -14,6 +14,8 @@ arm_func memu_armLoadStoreImm_1
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armLoadStoreImmTable_0
 memu_armLoadStoreImmTable_0:
     .rept 16

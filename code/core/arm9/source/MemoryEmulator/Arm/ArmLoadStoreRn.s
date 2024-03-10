@@ -16,19 +16,19 @@
                 add r8, r\rn, r9 // add the offset
                 mov r9, r\rn // save old value of Rn in case of aliasing
                 mov r\rn, r8 // writeback
-                cmp r10, #(\rn << 12)
+                cmp r10, #(\rn << 2)
             .elseif \p == 0
                 // lo reg, post
                 mov r8, r\rn
                 add r\rn, r\rn, r9 // writeback
                 mov r9, r8 // save old value of Rn in case of aliasing
-                cmp r10, #(\rn << 12)
+                cmp r10, #(\rn << 2)
             .endif
         .elseif \rn < 15
             stmdb r13, {r\rn}^
             nop
             ldr r8, [r13, #-4]
-            cmp r10, #(\rn << 12)
+            cmp r10, #(\rn << 2)
             .if (\p == 1) && (\w == 0)
                 // hi reg, pre, no writeback
                 add r8, r8, r9 // add the offset
@@ -67,6 +67,8 @@
 generate memu_armLoadStoreRn_pw, 16
 
 .section ".dtcm", "aw"
+
+.balign 64
 
 .global memu_armLoadStoreRnTable_00
 memu_armLoadStoreRnTable_00:

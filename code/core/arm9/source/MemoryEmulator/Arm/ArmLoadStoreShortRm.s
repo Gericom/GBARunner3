@@ -33,6 +33,8 @@ generate memu_armLoadStoreShortRm_u, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armLoadStoreShortRmTable_0
 memu_armLoadStoreShortRmTable_0:
     .word memu_armLoadStoreShortR0_0

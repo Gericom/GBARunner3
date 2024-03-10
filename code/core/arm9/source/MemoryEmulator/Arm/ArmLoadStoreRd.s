@@ -125,6 +125,8 @@ generate memu_armLdrbRd, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armStrRdTable
 memu_armStrRdTable:
     .word memu_armStrR0

@@ -12,7 +12,7 @@ arm_func memu_armDispatch
     str lr, DTCM(memu_inst_addr)
     msr cpsr_c, #0x91 // switch to fiq mode
     ldr r11, DTCM(memu_inst_addr)
-    ldr r12, DTCM(memu_arm_table_addr)
+    ldr r13, DTCM(memu_arm_table_addr)
 
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     cmp r11, #0x08000000
@@ -22,35 +22,22 @@ arm_func memu_armDispatch
     ldr lr, [r11, #-8] // lr = instruction
 
 armDispatchContinue:
-
-@ #ifndef GBAR3_TEST
-@     ldr sp,= dtcmStackEnd
-@     push {r0-r3,r12,lr}
-@     mov r0, lr
-@     .extern logOpcode
-@     ldr r12,= logOpcode
-@     blx r12
-@     pop {r0-r3,r12,lr}
-@ #endif
-
-    mov r13, r12
-    and r8, lr, #0x07F00000
-    tst lr, #0x0E000000
-
-    and r9, lr, #0xE0
-    orreq r8, r9, lsl #20
-    ldr r8, [r12, r8, lsr #17]!
-    ldrsh r10, [r12, #4]
-    ldrsh r11, [r12, #6]
-    // Rm
-    and r9, lr, #0xF
-    ldr r12, [r8, r9, lsl #2]
+    mov r10, #(0xF << 2)
+    and r11, lr, #0x0FF00000
+    mov r9, lr, lsl #25
+    add r12, r13, r9, lsr #30
+    ldrb r8, [r12, r11, lsr #18]!
+    ldrb r11, [r12, #0x280]
+    ldrb r12, [r12, #0x500]
     // Rn
-    and r8, lr, #(0xF << 16)
-    ldr r8, [r10, r8, lsr #14]
+    and r9, r10, lr, lsr #14
+    ldr r8, [r9, -r8, lsl #6] // r8 = Rn handler address
+    // Rm
+    and r9, r10, lr, lsl #2 // r9 = Rm << 2
+    ldr r12, [r9, -r12, lsl #6] // r12 = Rm handler address
     // Rd
-    and r10, lr, #(0xF << 12)
-    ldr r11, [r11, r10, lsr #10]
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
+    ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
 
     bx r12
 

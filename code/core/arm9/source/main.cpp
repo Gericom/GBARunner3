@@ -42,6 +42,7 @@
 #include "Patches/PatchSwi.h"
 #include "Patches/SelfModifyingPatches.h"
 #include "Emulator/BootAnimationSkip.h"
+#include "MemoryEmulator/Arm/ArmDispatchTable.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -489,6 +490,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset((void*)((u32)GFX_BG_MAIN + 0x40000), 0, 128 * 1024); // vram B
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+    memu_initializeArmDispatchTable();
     setupJit();
     dma_init();
     gbas_init();

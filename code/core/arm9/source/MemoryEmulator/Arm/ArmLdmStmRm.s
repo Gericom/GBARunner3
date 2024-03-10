@@ -36,6 +36,8 @@ memu_armLdmStmRm_pu 1, 1
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armLdmStmRmTable_00
 memu_armLdmStmRmTable_00:
     .word memu_armLdmStmRm_00

@@ -67,6 +67,8 @@ generate memu_armSwpbRd, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armSwpRdTable
 memu_armSwpRdTable:
     .word memu_armSwpRdR0
