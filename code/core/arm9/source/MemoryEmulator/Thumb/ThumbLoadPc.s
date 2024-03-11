@@ -10,15 +10,15 @@
 .macro memu_thumbLdrPcRd rd
     .balign 8
     arm_func memu_thumbLdrPcR\rd
-        ldr r10,= memu_inst_addr
+        mov r10, #0
+        ldr r10, [r10, #memu_inst_addr]
         and r8, r11, #0xFF
-        ldr r10, [r10]
         sub r8, r8, #1
         bic r10, r10, #3
         add r8, r10, r8, lsl #2
 
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD32_TABLE_OFFSET] // memu_load32Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load32Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load32Undefined
         blx r10

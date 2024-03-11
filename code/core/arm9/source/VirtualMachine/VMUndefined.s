@@ -22,12 +22,11 @@ arm_func vm_undefined
     and r9, lr, #0x810
     orr r9, r9, r9, lsr #8
     orr r8, r8, r9, lsl #25
-    mov r8, r8, lsr #19
-    ldrsh r8, [r13, r8]
+    ldrb r8, [r13, r8, lsr #20]
     and r9, lr, #0xF
-    // interlock
+    mov r9, r9, lsl #2
     cmp r8, #0
-    ldrne r8, [r8, r9, lsl #2]
+    ldrne r8, [r9, -r8, lsl #6]
     beq vm_armUndefinedNoAsmHandler
     bx r8
 

@@ -80,6 +80,8 @@ ensureJittedIWram:
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global jit_armUndefinedBxRmTable
 jit_armUndefinedBxRmTable:
     .word jit_armUndefinedBxR0

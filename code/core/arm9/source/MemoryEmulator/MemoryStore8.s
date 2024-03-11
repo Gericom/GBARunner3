@@ -2,6 +2,7 @@
 
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 /// @brief Stores an 8-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
@@ -11,33 +12,16 @@
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_store8
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_store8Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-arm_func memu_store8Undefined
-    bx lr
-
-.global memu_itcmStore8Table
-memu_itcmStore8Table:
-    .word memu_store8Undefined // 00
-    .word memu_store8Undefined // 01
-    .word memu_store8Ewram // 02
-    .word memu_store8Iwram // 03
-    .word memu_store8Io // 04
-    .word memu_store8Pltt // 05
-    .word memu_store8Vram012 // 06
-    .word memu_store8Undefined // 07, byte writes to oam are ignored
-    .word memu_store8Rom // 08
-    .word memu_store8Rom // 09
-    .word memu_store8Rom // 0A
-    .word memu_store8Rom // 0B
-    .word memu_store8Rom // 0C
-    .word memu_store8Rom // 0D
-    .word memu_store8Sram // 0E
-    .word memu_store8Sram // 0F
+        bxhs lr
+    bx r10
 
 arm_func memu_store8Ewram
     bic r10, r8, #0x00FC0000
     strb r9, [r10]
+arm_func memu_store8Undefined
     bx lr
 
 arm_func memu_store8Iwram

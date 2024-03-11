@@ -58,6 +58,6 @@ memu_thumbDispatchTable:
     memu_instructionPointer2 %(((~\index)>>3)&31), %(((~\index)>>1)&3), %(((~\index)>>0)&7), %(((~\index)>>8)&7)
 .endm
 
-generate memu_instructionPointer, 0x800
+generate memu_instructionPointer, 0x7B8
 
 .end

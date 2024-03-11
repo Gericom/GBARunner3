@@ -27,6 +27,8 @@ arm_func jit_armUndefinedBL
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global jit_armUndefinedBLTable
 jit_armUndefinedBLTable:
     .word jit_armUndefinedBL

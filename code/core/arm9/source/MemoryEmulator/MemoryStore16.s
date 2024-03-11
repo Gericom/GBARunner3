@@ -2,6 +2,7 @@
 
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 /// @brief Stores a 16-bit value to the given GBA memory address.
 /// @param r0-r7 Preserved.
@@ -12,33 +13,16 @@
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_store16
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_store16Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-arm_func memu_store16Undefined
-    bx lr
-
-.global memu_itcmStore16Table
-memu_itcmStore16Table:
-    .word memu_store16Undefined // 00
-    .word memu_store16Undefined // 01
-    .word memu_store16Ewram // 02
-    .word memu_store16Iwram // 03
-    .word memu_store16Io // 04
-    .word memu_store16Pltt // 05
-    .word memu_store16Vram012 // 06
-    .word memu_store16Oam // 07
-    .word memu_store16Rom // 08
-    .word memu_store16Rom // 09
-    .word memu_store16Rom // 0A
-    .word memu_store16Rom // 0B
-    .word memu_store16Rom // 0C
-    .word memu_store16Rom // 0D
-    .word memu_store16Sram // 0E
-    .word memu_store16Sram // 0F
+        bxhs lr
+    bx r10
 
 arm_func memu_store16Ewram
     bic r10, r8, #0x00FC0000
     strh r9, [r10]
+arm_func memu_store16Undefined
     bx lr
 
 arm_func memu_store16Iwram

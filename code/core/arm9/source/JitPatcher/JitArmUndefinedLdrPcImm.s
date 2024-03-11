@@ -51,6 +51,8 @@ jit_armUndefinedLdrPcImmCommon:
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global jit_armUndefinedLdrPcImmRnTable
 jit_armUndefinedLdrPcImmRnTable:
     .word jit_armUndefinedLdrPcImmR0

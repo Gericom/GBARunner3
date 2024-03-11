@@ -43,8 +43,8 @@ arm_func memu_armStmRd
 
     tst r13, #(1 << 30)
     bne 1f
-    ldr r9,= memu_inst_addr
-    ldr r9, [r9]
+    mov r9, #0
+    ldr r9, [r9, #memu_inst_addr]
     add r9, r9, #4
     add r8, r8, #4
     bl memu_store32

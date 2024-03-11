@@ -178,7 +178,10 @@ void memu_initializeArmDispatchTable()
                 {
                     case 0:
                     {
-                        setSwpSwpbTableEntries(index);
+                        if ((index & INDEX_P_BIT) && !(index & INDEX_U_BIT) && !isWriteback(index) && !isLoad(index))
+                        {
+                            setSwpSwpbTableEntries(index);
+                        }
                         break;
                     }
                     case 1:

@@ -6,6 +6,7 @@
 #include "SdCache/SdCacheDefs.h"
 #include "DtcmStackDefs.inc"
 #include "MemoryEmulator/RomDefs.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 arm_func memu_load32FromC
     push {r8-r11,lr}
@@ -24,38 +25,21 @@ arm_func memu_load32FromC
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_load32
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_load32Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-    b memu_load32Undefined
-
-.global memu_itcmLoad32Table
-memu_itcmLoad32Table:
-    .word memu_load32Bios // 00
-    .word memu_load32Undefined // 01
-    .word memu_load32Ewram // 02
-    .word memu_load32Iwram // 03
-    .word memu_load32Io // 04
-    .word memu_load32Pltt // 05
-    .word memu_load32Vram012 // 06
-    .word memu_load32Oam // 07
-    .word memu_load32Rom // 08
-    .word memu_load32Rom // 09
-    .word memu_load32RomHi // 0A
-    .word memu_load32RomHi // 0B
-    .word memu_load32RomHi // 0C
-    .word memu_load32RomHi // 0D
-    .word memu_load32Sram // 0E
-    .word memu_load32Sram // 0F
+        bhs memu_load32Undefined
+    bx r10
 
 arm_func memu_load32Undefined
-    ldr r10,= memu_inst_addr
+    mov r10, #0
     msr cpsr_c, #0xD7
-    ldr r13,= memu_inst_addr
-    str lr, [r13]
+    mov r13, #0
+    str lr, [r13, #memu_inst_addr]
     mrs r13, spsr
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1
-    ldr r10, [r10]
+    ldr r10, [r10, #memu_inst_addr]
     bcs thumbUndefined32
 
 armUndefined32:

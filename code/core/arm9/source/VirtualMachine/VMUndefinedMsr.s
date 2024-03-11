@@ -111,6 +111,8 @@ vm_updateSpsr:
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global vm_armUndefinedMsrRegCpsrRmTable
 vm_armUndefinedMsrRegCpsrRmTable:
     .word vm_armUndefinedMsrRegCpsrR0

@@ -55,6 +55,8 @@ generate vm_armUndefinedMrsSpsrRm, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global vm_armUndefinedMrsCpsrRmTable
 vm_armUndefinedMrsCpsrRmTable:
     .word vm_armUndefinedMrsCpsrR0

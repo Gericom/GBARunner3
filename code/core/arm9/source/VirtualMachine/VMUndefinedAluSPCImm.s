@@ -77,6 +77,8 @@ vm_finishAlusImmNoIrq:
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global vm_armUndefinedAluSPCImmRnTable
 vm_armUndefinedAluSPCImmRnTable:
     .word vm_armUndefinedAluSPCImmR0

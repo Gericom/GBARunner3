@@ -3,6 +3,7 @@
 
 #include "AsmMacros.inc"
 #include "ThumbMacros.inc"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 .macro memu_thumbLdrRd rd
     .balign 8
@@ -11,8 +12,8 @@
         add r8, r10, r8, lsr #4
 
     arm_func memu_thumbLdrRegR\rd
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD32_TABLE_OFFSET] // memu_load32Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load32Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load32Undefined
         blx r10
@@ -30,8 +31,8 @@ generate memu_thumbLdrRd, 8
         add r8, r10, r8, lsr #5
 
     arm_func memu_thumbLdrhRegR\rd
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD16_TABLE_OFFSET] // memu_load16Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load16Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load16Undefined
         blx r10
@@ -48,8 +49,8 @@ generate memu_thumbLdrhRd, 8
         tst r8, #1
             bne memu_thumbLdrsbRegR\rd\()_afterAddressComputed
 
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD16_TABLE_OFFSET] // memu_load16Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load16Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load16Undefined
         blx r10
@@ -68,8 +69,8 @@ generate memu_thumbLdrshRegRd, 8
         add r8, r10, r8, lsr #6
 
     arm_func memu_thumbLdrbRegR\rd
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD8_TABLE_OFFSET] // memu_load8Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load8Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load8Undefined
         blx r10
@@ -84,8 +85,8 @@ generate memu_thumbLdrbRd, 8
     .balign 8
     arm_func memu_thumbLdrsbRegR\rd
     memu_thumbLdrsbRegR\rd\()_afterAddressComputed:
-        add r9, r9, r8, lsr #23
-        ldrh r10, [r9, #THUMB_LOAD8_TABLE_OFFSET] // memu_load8Table
+        mov r9, r8, lsr #23
+        ldrh r10, [r9, #memu_load8Table]
         cmp r8, #0x10000000
             ldrhs r10,= memu_load8Undefined
         blx r10

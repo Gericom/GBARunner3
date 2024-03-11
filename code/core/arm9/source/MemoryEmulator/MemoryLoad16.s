@@ -6,6 +6,7 @@
 #include "SdCache/SdCacheDefs.h"
 #include "DtcmStackDefs.inc"
 #include "MemoryEmulator/RomDefs.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 /// @brief Loads a 16-bit value from the given GBA memory address.
 ///        When unaligned rotation is applied.
@@ -16,28 +17,11 @@
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_load16
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_load16Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-    b memu_load16Undefined
-
-.global memu_itcmLoad16Table
-memu_itcmLoad16Table:
-    .word memu_load16Bios // 00
-    .word memu_load16Undefined // 01
-    .word memu_load16Ewram // 02
-    .word memu_load16Iwram // 03
-    .word memu_load16Io // 04
-    .word memu_load16Pltt // 05
-    .word memu_load16Vram012 // 06
-    .word memu_load16Oam // 07
-    .word memu_load16Rom // 08
-    .word memu_load16Rom // 09
-    .word memu_load16RomHi // 0A
-    .word memu_load16RomHi // 0B
-    .word memu_load16RomHi // 0C
-    .word memu_load16RomHi // 0D
-    .word memu_load16Sram // 0E
-    .word memu_load16Sram // 0F
+        bhs memu_load16Undefined
+    bx r10
 
 arm_func memu_load16UndefinedZero
     mov r9, #0
@@ -45,14 +29,14 @@ arm_func memu_load16UndefinedZero
 
 arm_func memu_load16Undefined
 arm_func memu_load8Undefined
-    ldr r10,= memu_inst_addr
+    mov r10, #0
     msr cpsr_c, #0xD7
-    ldr r13,= memu_inst_addr
-    str lr, [r13]
+    mov r13, #0
+    str lr, [r13, #memu_inst_addr]
     mrs r13, spsr
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1
-    ldr r10, [r10]
+    ldr r10, [r10, #memu_inst_addr]
     subcs r10, r10, #4
     cmp r10, #0x08000000
         bhs undefinedFromRom16

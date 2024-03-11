@@ -10,7 +10,8 @@
             .if (\p == 1) && (\w == 0)
                 // lo reg, pre, no writeback
                 add r8, r9, r\rn // add the offset
-                msr cpsr_f, #0 // clear Z flag; will cause Rd to be loaded
+                // we assume here that the Z flag is already cleared
+                // which will cause Rd to be loaded
             .elseif (\p == 1) && (\w == 1)
                 // lo reg, pre, writeback
                 add r8, r\rn, r9 // add the offset
@@ -50,12 +51,15 @@
             .endif
         .else
             // rn = pc; writeback is not allowed
-            ldr r8,= memu_inst_addr
-            ldr r8, [r8]
-            msr cpsr_f, #0 // clear Z flag; will cause Rd to be loaded
+            mov r8, #0
+            ldr r8, [r8, #memu_inst_addr]
+            // interlock
             add r8, r8, r9 // add the offset
+            // we assume here that the Z flag is already cleared
+            // which will cause Rd to be loaded
         .endif
-        bx r11
+        ldrb r10, [r11, r8, lsr #24]
+        mov pc, r11, lsr #16
 .endm
 
 .macro memu_armLoadStoreRn_pw rn

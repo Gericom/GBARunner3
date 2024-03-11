@@ -22,7 +22,7 @@ arm_func memu_armDispatch
     ldr lr, [r11, #-8] // lr = instruction
 
 armDispatchContinue:
-    mov r10, #(0xF << 2)
+    movs r10, #(0xF << 2) // also clears Z flag
     and r11, lr, #0x0FF00000
     mov r9, lr, lsl #25
     add r12, r13, r9, lsr #30

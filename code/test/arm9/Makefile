@@ -95,7 +95,7 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
-SFILES += DtcmStack.s MemCopy.s
+SFILES += DtcmStack.s MemCopy.s MemoryLoadStoreRemapTable.s
 CPPFILES += PopCountTable.cpp
  
 #---------------------------------------------------------------------------------

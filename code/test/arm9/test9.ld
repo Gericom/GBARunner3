@@ -172,8 +172,8 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
-		. = 0x1000;
-		KEEP (MemoryLoadStoreTables.o(.dtcm))
+		. = 0xF70;
+		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
 		KEEP (ArmDispatchTable.o(.dtcm))
 		KEEP (ArmLdmStmRd.o(.dtcm))
 		KEEP (ArmLdmStmRm.o(.dtcm))
@@ -185,13 +185,22 @@ SECTIONS
 		KEEP (ArmLoadStoreShortRm.o(.dtcm))
 		KEEP (ArmSwpRd.o(.dtcm))
 		KEEP (ArmSwpRn.o(.dtcm))
-		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
+		KEEP (ArmLoadStoreImm.o(.dtcm))
+		KEEP (ArmLoadStoreRm.o(.dtcm))
+		KEEP (VMUndefinedAluSPCImm.o(.dtcm))
+		KEEP (VMUndefinedMrs.o(.dtcm))
+		KEEP (VMUndefinedMsr.o(.dtcm))
+		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x3328;
+		. = 0x34E8;
+		KEEP (MemoryLoadStoreWordTables.o(.dtcm))
+		. = 0x3668;
 		KEEP (VMUndefinedThumbTable.o(.dtcm))
 		KEEP (VMUndefinedArmTable.o(.dtcm))
-		. = 0x3F28;
+		. = 0x3E68;
 		KEEP (VMDtcm.o(.dtcm))
+		. = 0x3F40;
+		KEEP (MemoryLoadStoreTables.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>ewram :dtcm = 0xff
