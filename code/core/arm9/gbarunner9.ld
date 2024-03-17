@@ -160,7 +160,6 @@ SECTIONS
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
 		. = 0xF70;
-		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
 		KEEP (ArmDispatchTable.o(.dtcm))
 		KEEP (ArmLdmStmRd.o(.dtcm))
 		KEEP (ArmLdmStmRm.o(.dtcm))
@@ -181,8 +180,10 @@ SECTIONS
 		KEEP (JitArmUndefinedBL.o(.dtcm))
 		KEEP (JitArmUndefinedBx.o(.dtcm))
 		KEEP (JitArmUndefinedLdrPcImm.o(.dtcm))
-		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o) .dtcm)
+		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o MemoryLoadStoreRemapTable.o) .dtcm)
 		*(.dtcm.*)
+		. = 0x33E8;
+		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
 		. = 0x34E8;
 		KEEP (MemoryLoadStoreWordTables.o(.dtcm))
 		. = 0x3668;

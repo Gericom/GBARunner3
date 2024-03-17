@@ -9,30 +9,29 @@
 // r8 = value of Rn
 // r9 = 1 << Rn
 // r10 = start offset
-// r11 = 
+// r11 = &memu_armStmRd
 // r12 = number of registers to read
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armStmRd
-    strh lr, 1f
-
     rsb r11, lr, #0
     and r11, r11, lr
     cmp r11, r9
 
     add r11, r8, r12, lsl #2
-    mov r9, r8
-    add r8, r8, r10
-    ldr r10,= memu_loadStoreRemapTable
 
     rsb r12, r12, #15
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    ldrb r10, [r10, r8, lsr #24]
+    mov r9, r8
+    add r8, r8, r10
+
+    mov r10, r8, lsr #24
     sub r11, r11, #4
-    mov r11, r11, lsr #24
-    cmp r11, r8, lsr #24
+    cmp r10, r11, lsr #24
+    ldrb r10, [r10, #memu_loadStoreRemapTable]
+    strh lr, 1f
         ldrne r11,= memu_store32
         ldreq r11, [r10, #memu_store32WordTable]
 
@@ -61,31 +60,31 @@ generate memu_armStmRd_store, 15
 // r8 = value of Rn
 // r9 = 1 << Rn
 // r10 = start offset
-// r11 = 
+// r11 = &memu_armStmRdWithPc
 // r12 = number of registers to read
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armStmRdWithPc
     bic lr, lr, #(1 << 15)
-    strh lr, 1f
 
     rsb r11, lr, #0
     and r11, r11, lr
     cmp r11, r9
 
     add r11, r8, r12, lsl #2
-    mov r9, r8
-    add r8, r8, r10
-    ldr r10,= memu_loadStoreRemapTable
 
     rsb r12, r12, #16
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    ldrb r10, [r10, r8, lsr #24]
+    mov r9, r8
+    add r8, r8, r10
+
+    mov r10, r8, lsr #24
     sub r11, r11, #4
-    mov r11, r11, lsr #24
-    cmp r11, r8, lsr #24
+    cmp r10, r11, lsr #24
+    ldrb r10, [r10, #memu_loadStoreRemapTable]
+    strh lr, 1f
         ldrne r11,= memu_store32
         ldreq r11, [r10, #memu_store32WordTable]
 
@@ -117,16 +116,15 @@ generate memu_armStmRdWithPc_store, 15
 // r8 = value of Rn
 // r9 = 1 << Rn
 // r10 = start offset
-// r11 = 
+// r11 = &memu_armLdmRd
 // r12 = number of registers to read
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armLdmRd
     add r8, r8, r10
-    ldr r10,= memu_loadStoreRemapTable
     bic r8, r8, #3
     mov r9, r8, lsr #24
-    ldrb r10, [r10, r9]
+    ldrb r10, [r9, #memu_loadStoreRemapTable]
     add r11, r8, r12, lsl #2
     sub r11, r11, #4
     cmp r9, r11, lsr #24
@@ -158,16 +156,15 @@ generate memu_armLdmRd_load, 15
 // r8 = value of Rn
 // r9 = 1 << Rn
 // r10 = start offset
-// r11 = 
+// r11 = &memu_armLdmRdWithPc
 // r12 = number of registers to read
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armLdmRdWithPc
     add r8, r8, r10
-    ldr r10,= memu_loadStoreRemapTable
     bic r8, r8, #3
     mov r9, r8, lsr #24
-    ldrb r10, [r10, r9]
+    ldrb r10, [r9, #memu_loadStoreRemapTable]
     add r11, r8, r12, lsl #2
     sub r11, r11, #4
     cmp r9, r11, lsr #24

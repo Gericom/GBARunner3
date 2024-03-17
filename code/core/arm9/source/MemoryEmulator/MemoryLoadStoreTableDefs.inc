@@ -1,5 +1,8 @@
 #pragma once
 
+.global memu_loadStoreRemapTable
+.set memu_loadStoreRemapTable, 0xFFFFF3E8
+
 .global memu_load32WordTable
 .set memu_load32WordTable, 0xFFFFF4E8
 
