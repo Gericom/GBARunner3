@@ -25,8 +25,4 @@ memu_loadStoreRemapTable:
     .byte (1 << 2)
 .endr
 
-.global memu_armTmpUsrReg
-memu_armTmpUsrReg:
-    .word 0
-
 .end

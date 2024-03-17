@@ -11,18 +11,18 @@
         .if \rd < 8
             ldr r10, [r10, #memu_store16WordTable]
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
-            and r9, r9, r13, lsr #16 // r9 &= 0xFFFF
+            and r9, r9, sp, lsr #16 // r9 &= 0xFFFF
         .elseif \rd < 15
             ldr r10, [r10, #memu_store16WordTable]
-            stmnedb r13, {r\rd}^
+            stmnedb sp, {r\rd}^
             nop
-            ldrneh r9, [r13, #-4]
+            ldrneh r9, [sp, #-4]
         .else
             mov r9, #0
             ldr r9, [r9, #memu_inst_addr]
             ldr r10, [r10, #memu_store16WordTable]
             add r9, r9, #4 // pc + 12
-            and r9, r9, r13, lsr #16 // r9 &= 0xFFFF
+            and r9, r9, sp, lsr #16 // r9 &= 0xFFFF
         .endif
         blx r10
         memu_armReturn
@@ -44,8 +44,8 @@ generate memu_armStrhRd, 16
         .if \rd < 8
             mov r\rd, r9
         .elseif \rd < 15
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
         .else
             // ldrh pc is not allowed
         .endif
@@ -71,8 +71,8 @@ generate memu_armLdrhRd, 16
             mov r\rd, r9, asr #16
         .elseif \rd < 15
             mov r9, r9, asr #16
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
         .else
             // ldrsh pc is not allowed
         .endif
@@ -97,8 +97,8 @@ generate memu_armLdrshRd, 16
             mov r\rd, r9, asr #24
         .elseif \rd < 15
             mov r9, r9, asr #24
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
         .else
             // ldrsb pc is not allowed
         .endif

@@ -8,27 +8,28 @@
 .macro jit_armUndefinedLdrPcImmRn rn
     arm_func jit_armUndefinedLdrPcImmR\rn
         // todo: we assume pre increment and no writeback for now
-        ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rn < 8
             mov r8, r\rn
+            b jit_armUndefinedLdrPcImmCommon
         .elseif \rn < 15
-            stmia r13, {r\rn}^
-            nop
-            ldr r8, [r13]
+            stmdb sp, {r\rn}^
+            b jit_armUndefinedLdrPcImmCommonHiReg
         .else
             // pc
             add r8, r11, #4
             cmp r11, #ROM_LINEAR_DS_ADDRESS
-            blo 1f
+            blo jit_armUndefinedLdrPcImmCommon
             cmp r11, #ROM_LINEAR_END_DS_ADDRESS
-            bhs 1f
+            bhs jit_armUndefinedLdrPcImmCommon
             add r8, r8, #(ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS)
-        1:
+            b jit_armUndefinedLdrPcImmCommon
         .endif
-        b jit_armUndefinedLdrPcImmCommon
 .endm
 
 generate jit_armUndefinedLdrPcImmRn, 16
+
+jit_armUndefinedLdrPcImmCommonHiReg:
+    ldr r8, [sp, #-4]
 
 jit_armUndefinedLdrPcImmCommon:
     tst lr, #0x200
@@ -39,8 +40,8 @@ jit_armUndefinedLdrPcImmCommon:
     subeq r8, r8, r9, lsr #5
     bic r8, r8, #3
     bl memu_load32
-    ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    ldr sp,= dtcmStackEnd
+    mov r10, #0
+    ldr r10, [r10, #vm_undefinedSpsr]
     bic r9, r9, #3
     push {r0-r3}
     mov r0, r9

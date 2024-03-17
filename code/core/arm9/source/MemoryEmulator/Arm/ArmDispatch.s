@@ -12,7 +12,7 @@ arm_func memu_armDispatch
     str lr, DTCM(memu_inst_addr)
     msr cpsr_c, #0x91 // switch to fiq mode
     ldr r11, DTCM(memu_inst_addr)
-    ldr r13, DTCM(memu_arm_table_addr)
+    ldr r12, DTCM(memu_arm_table_addr)
 
 #ifdef GBAR3_HICODE_CACHE_MAPPING
     cmp r11, #0x08000000
@@ -25,7 +25,7 @@ armDispatchContinue:
     movs r10, #(0xF << 2) // also clears Z flag
     and r11, lr, #0x0FF00000
     mov r9, lr, lsl #25
-    add r12, r13, r9, lsr #30
+    add r12, r12, r9, lsr #30
     ldrb r8, [r12, r11, lsr #18]!
     ldrb r11, [r12, #0x280]
     ldrb r12, [r12, #0x500]

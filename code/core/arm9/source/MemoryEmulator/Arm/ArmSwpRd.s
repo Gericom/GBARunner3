@@ -11,18 +11,17 @@
             .exitm
         .endif
 
-        str r9, [r13, #-4] // value of rm
+        push {r9} // value of rm
         bl memu_load32
 
         .if \rd < 8
             mov r\rd, r9
-            ldr r9, [r13, #-4] // value of rm
+            pop {r9} // value of rm
         .elseif \rd < 15
-            ldr r10, [r13, #-4] // value of rm
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
             nop
-            mov r9, r10
+            pop {r9} // value of rm
         .else
             // pc is not allowed
         .endif
@@ -42,17 +41,17 @@ generate memu_armSwpRd, 16
             .exitm
         .endif
 
-        str r9, [r13, #-4] // value of rm
+        push {r9} // value of rm
         bl memu_load8
 
         .if \rd < 8
             and r\rd, r9, #0xFF
-            ldr r9, [r13, #-4] // value of rm
+            ldrb r9, [sp], #4 // value of rm
         .elseif \rd < 15
             and r10, r9, #0xFF
-            ldrb r9, [r13, #-4] // value of rm
-            str r10, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            ldrb r9, [sp], #4 // value of rm
+            str r10, [sp, #-4]
+            ldmdb sp, {r\rd}^
             nop
         .else
             // pc is not allowed

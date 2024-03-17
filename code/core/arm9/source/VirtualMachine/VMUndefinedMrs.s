@@ -13,14 +13,14 @@
             .mexit
         .endif
 
-        ldrb r10, [r13, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable + 3)]
-        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+        ldrb r10, [r12, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable + 3)]
+        ldr r9, [r12, #(vm_cpsr - vm_armUndefinedDispatchTable)]
         .if \rm < 8
             orr r\rm, r9, r10, lsl #24
         .elseif \rm < 15
             orr r9, r9, r10, lsl #24
-            str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
-            ldmia r13, {r\rm}^
+            str r9, [r12, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
+            ldmia r12, {r\rm}^
         .endif
         msr cpsr_c, #0xDB
         movs pc, lr
@@ -37,15 +37,14 @@ generate vm_armUndefinedMrsCpsrRm, 16
             .mexit
         .endif
 
-        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+        ldr r9, [r12, #(vm_cpsr - vm_armUndefinedDispatchTable)]!
         and r9, r9, #0xF
-        add r12, r13, r9, lsl #2
+        add r11, r12, r9, lsl #2
         .if \rm < 8
-            ldr r\rm, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
+            ldr r\rm, [r11, #(vm_spsr - vm_cpsr)]
         .elseif \rm < 15
-            ldr r9, [r12, #(vm_spsr - vm_armUndefinedDispatchTable)]
-            str r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]!
-            ldmia r13, {r\rm}^
+            add r11, r11, #(vm_spsr - vm_cpsr)
+            ldmia r11, {r\rm}^
         .endif
         msr cpsr_c, #0xDB
         movs pc, lr

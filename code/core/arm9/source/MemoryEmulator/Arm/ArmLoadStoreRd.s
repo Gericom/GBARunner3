@@ -14,9 +14,9 @@
         .elseif \rd < 15
             ldr r10, [r10, #memu_store32WordTable]
 
-            stmnedb r13, {r\rd}^
+            stmnedb sp, {r\rd}^
             nop
-            ldrne r9, [r13, #-4]
+            ldrne r9, [sp, #-4]
         .else
             mov r9, #0
             ldr r9, [r9, #memu_inst_addr]
@@ -41,9 +41,9 @@ generate memu_armStrRd, 16
         .elseif \rd < 15
             ldr r10, [r10, #memu_store8WordTable]
 
-            stmnedb r13, {r\rd}^
+            stmnedb sp, {r\rd}^
             nop
-            ldrneb r9, [r13, #-4]
+            ldrneb r9, [sp, #-4]
         .else
             mov r9, #0
             ldr r9, [r9, #memu_inst_addr]
@@ -61,6 +61,10 @@ generate memu_armStrbRd, 16
 
 .macro memu_armLdrRd rd
     arm_func memu_armLdrR\rd
+        .if \rd == 15
+            bic r8, r8, #3 // ldr pc force aligns
+        .endif
+
         ldr r10, [r10, #memu_load32WordTable]
         // interlock
         blx r10
@@ -69,8 +73,8 @@ generate memu_armStrbRd, 16
             mov r\rd, r9
             memu_armReturn
         .elseif \rd < 15
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
             memu_armReturn
         .else
             mov r8, #0
@@ -99,8 +103,8 @@ generate memu_armLdrRd, 16
             and r\rd, r9, #0xFF
         .elseif \rd < 15
             and r9, r9, #0xFF
-            str r9, [r13, #-4]
-            ldmdb r13, {r\rd}^
+            str r9, [sp, #-4]
+            ldmdb sp, {r\rd}^
         .else
             // ldrb pc is not allowed
         .endif

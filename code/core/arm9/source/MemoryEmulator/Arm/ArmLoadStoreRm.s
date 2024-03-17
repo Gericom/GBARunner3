@@ -36,9 +36,9 @@ memu_armLoadStoreRlo 1
             orr r9, r9, #0x9000
             orr r9, r9, #9
             strh r9, 1f
-            stmdb r13, {r\rm}^
+            stmdb sp, {r\rm}^
             nop
-            ldr r9, [r13, #-4]
+            ldr r9, [sp, #-4]
             .if \u == 0
                 mov r12, #0
             .else

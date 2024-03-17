@@ -7,12 +7,11 @@
 
 .macro jit_armUndefinedBxRm rm
     arm_func jit_armUndefinedBxR\rm
-        ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rm < 8
             mov r8, r\rm
             b ensureJittedCommon
         .elseif \rm < 15
-            stmia r13, {r\rm}^
+            stmdb sp, {r\rm}^
             b ensureJittedCommonHiReg
         .else
             // pc
@@ -24,14 +23,13 @@
 generate jit_armUndefinedBxRm, 16
 
 ensureJittedCommonHiReg:
-    ldr r8, [r13]
+    ldr r8, [sp, #-4]
 
 ensureJittedCommon:
     cmp r8, #ROM_LINEAR_GBA_ADDRESS
         addhs r8, r8, #(ROM_LINEAR_DS_ADDRESS - ROM_LINEAR_GBA_ADDRESS)
 
-    ldr r10, [r13, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
-    ldr sp,= dtcmStackEnd
+    ldr r10, [r12, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable)]
     tst r8, #1
         orrne r10, r10, #0x20 // thumb bit
     sub r9, r8, #ROM_LINEAR_DS_ADDRESS

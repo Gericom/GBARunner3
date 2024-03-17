@@ -12,9 +12,9 @@
                 mov r9, r\rm
             .endif
         .elseif \rm < 15
-            stmdb r13, {r\rm}^
+            stmdb sp, {r\rm}^
             nop
-            ldr r9, [r13, #-4]
+            ldr r9, [sp, #-4]
             .if \u == 0
                 rsb r9, r9, #0
             .endif

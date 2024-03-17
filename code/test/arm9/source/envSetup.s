@@ -56,25 +56,28 @@ main:
     mcr	p15, 0, r0, c6, c7, 0
     // data permissions
     ldr r0,= 0x33300333
-	mcr p15, 0, r0, c5, c0, 2
+    mcr p15, 0, r0, c5, c0, 2
     // code permissions
-	ldr r0,= 0x30330330
-	mcr p15, 0, r0, c5, c0, 3
+    ldr r0,= 0x30330330
+    mcr p15, 0, r0, c5, c0, 3
     // dcache
-	ldr r0,= 0b10000010
+    ldr r0,= 0b10000010
     mcr p15, 0, r0, c2, c0, 0
     // icache
-	ldr r0,= 0b10000010
+    ldr r0,= 0b10000010
     mcr p15, 0, r0, c2, c0, 1
     // write buffer
-	ldr r0,= 0b10000010
+    ldr r0,= 0b10000010
     mcr p15, 0, r0, c3, c0, 0
 
     // turn back on itcm, dtcm, cache and mpu
     // and use low vectors
     ldr r0,= 0x0005507D
     mcr p15, 0, r0, c1, c0
-    
+
+    msr cpsr_c, #0x91
+    ldr sp,= dtcmStackEnd
+
     // switch to user mode
     msr cpsr, #0x10
 

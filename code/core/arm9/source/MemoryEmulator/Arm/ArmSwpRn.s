@@ -8,9 +8,9 @@
         .if \rn < 8
             mov r8, r\rn
         .elseif \rn < 15
-            stmdb r13, {r\rn}^
+            stmdb sp, {r\rn}^
             nop
-            ldr r8, [r13, #-4]
+            ldr r8, [sp, #-4]
         .else
             // pc is not allowed
         .endif

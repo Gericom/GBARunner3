@@ -3,7 +3,6 @@
 #include "AsmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
 #include "SdCache/SdCacheDefs.h"
-#include "DtcmStackDefs.inc"
 
 memu_loadRom_base:
 

@@ -26,9 +26,9 @@
                 cmp r10, #(\rn << 2)
             .endif
         .elseif \rn < 15
-            stmdb r13, {r\rn}^
+            stmdb sp, {r\rn}^
             nop
-            ldr r8, [r13, #-4]
+            ldr r8, [sp, #-4]
             cmp r10, #(\rn << 2)
             .if (\p == 1) && (\w == 0)
                 // hi reg, pre, no writeback
@@ -38,14 +38,14 @@
                 // hi reg, pre, writeback
                 add r8, r8, r9 // add the offset
                 sub r9, r8, r9
-                str r8, [r13, #-4]
-                ldmdb r13, {r\rn}^
+                str r8, [sp, #-4]
+                ldmdb sp, {r\rn}^
                 nop
             .elseif \p == 0
                 // hi reg, post
                 add r9, r8, r9
-                str r9, [r13, #-4]
-                ldmdb r13, {r\rn}^
+                str r9, [sp, #-4]
+                ldmdb sp, {r\rn}^
                 nop
                 mov r9, r8 // save old value of Rn in case of aliasing
             .endif

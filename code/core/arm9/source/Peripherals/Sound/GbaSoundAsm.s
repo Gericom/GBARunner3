@@ -7,14 +7,12 @@
 arm_func emu_gbaSoundStore8
     mov r11, #1
 gbaSoundStore:
-    mov r10, r13
-    ldr sp,= dtcmStack + 128
-    push {r0-r3,r10,lr}
+    push {r0-r3,lr}
     mov r0, r8
     mov r1, r9
     mov r2, r11
     bl gbas_writeSoundRegister
-    ldmfd sp, {r0-r3,r13,pc}
+    pop {r0-r3,pc}
 
 arm_func emu_gbaSoundStore16
     mov r11, #2

@@ -4,7 +4,6 @@
 #include "VirtualMachine/VMDtcmDefs.inc"
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
-#include "DtcmStackDefs.inc"
 #include "MemoryEmulator/RomDefs.h"
 #include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
@@ -48,18 +47,11 @@ undefined16Continue:
     mov r9, r9, ror #8
     bx lr
 
-undefinedTmpR8:
-    .word 0
-undefinedTmpLr:
-    .word 0
-
 undefinedFromRom16:
-    str r8, undefinedTmpR8
-    str lr, undefinedTmpLr
+    push {r8, lr}
     mov r8, r10
     bl memu_load16Rom
-    ldr r8, undefinedTmpR8
-    ldr lr, undefinedTmpLr
+    pop {r8, lr}
     b undefined16Continue
 
 arm_func memu_load16Bios
@@ -109,16 +101,13 @@ arm_func memu_load16Io
     bx r12
 
 load16IoUnaligned:
-    str lr, unalignedReturn
+    push {lr}
     bic r8, r8, #1
     blx r12
-    ldr lr, unalignedReturn
+    pop {lr}
     mov r9, r9, ror #8
     orr r8, r8, #1
     bx lr
-
-unalignedReturn:
-    .word 0
 
 arm_func memu_load16Pltt
     ldr r10,= gShadowPalette
@@ -174,19 +163,11 @@ memu_load16RomHiContinue:
     bxne lr
 
 arm_func memu_load16RomCacheMiss
-    ldr r11,= dtcmStackEnd
-    // check if we already had a stack
-    sub r10, r11, r13
-    cmp r10, #(DTCM_STACK_SIZE + DTCM_IRQ_STACK_SIZE)
-    mov r10, r13
-    // if not begin at the end of the stack
-    movhs sp, r11
     push {r0-r3,lr}
     mov r0, r12, lsl #SDC_BLOCK_SHIFT
     bl sdc_loadRomBlockDirect
     ldrh r9, [r0, r9]
     pop {r0-r3,lr}
-    mov r13, r10
     tst r8, #1
         bxeq lr
     mov r9, r9, ror #8

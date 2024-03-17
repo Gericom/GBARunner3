@@ -42,7 +42,7 @@
 generate jit_thumbUndefinedBCond, 14
 
 arm_func jit_thumbUndefinedBCondCommonPass
-    stmia sp, {r0-r3}
+    push {r0-r3}
     mov r0, r11 // instruction address
     mov r1, lr  // instruction
     mov r2, #1
@@ -50,13 +50,13 @@ arm_func jit_thumbUndefinedBCondCommonPass
     bl jit_handleThumbBCond
 #endif
     mov r8, r0
-    ldmia sp, {r0-r3}
+    pop {r0-r3}
 #ifndef GBAR3_TEST
     b jit_thumbEnsureJitted
 #endif
 
 arm_func jit_thumbUndefinedBCondCommonNoPass
-    stmia sp, {r0-r3}
+    push {r0-r3}
     mov r0, r11 // instruction address
     mov r1, lr  // instruction
     mov r2, #0
@@ -64,7 +64,7 @@ arm_func jit_thumbUndefinedBCondCommonNoPass
     bl jit_handleThumbBCond
 #endif
     mov r8, r0
-    ldmia sp, {r0-r3}
+    pop {r0-r3}
 #ifndef GBAR3_TEST
     b jit_thumbEnsureJitted
 #endif

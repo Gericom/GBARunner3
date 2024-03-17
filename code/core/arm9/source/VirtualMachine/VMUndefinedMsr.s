@@ -13,35 +13,34 @@
             .mexit
         .endif
 
-        ldr r9, [r13, #(vm_undefinedRegTmp - vm_armUndefinedDispatchTable)]! // dummy read, only used to compute an address
         .if \rm < 8
             mov r8, r\rm
             b vm_updateCpsr
         .elseif \rm < 15
-            stmia r13, {r\rm}^
+            stmdb sp, {r\rm}^
             b vm_updateCpsrHiReg
         .endif
 .endm
 
 vm_updateCpsrHiReg:
-    ldr r8, [r13]
+    ldr r8, [sp, #-4]
 vm_updateCpsr:
-    mov r9, r13
+    mov r9, r12
     tst lr, #0x10000
     beq vm_cpsrNoControlChange // skip updating control part of cpsr
-    ldr r10, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
-    and r13, r10, #0xF
+    tst lr, #0x80000
+    ldr r10, [r9, #(vm_cpsr - vm_armUndefinedDispatchTable)]
+    and lr, r10, #0xF
     and r11, r8, #0xDF // note that the thumb bit is set to 0
     orr r11, r11, #0x10
-    ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_undefinedRegTmp)]
-    strb r11, [r9, #(vm_cpsr - vm_undefinedRegTmp)]
+    ldr r12, [r9, #(vm_modeSwitchTableAddr - vm_armUndefinedDispatchTable)]
+    strb r11, [r9, #(vm_cpsr - vm_armUndefinedDispatchTable)]
     and r11, r11, #0xF
     add r12, r12, r11, lsl #5
-    add r12, r12, r13, lsl #1
+    add r12, r12, lr, lsl #1
     ldrh r12, [r12]
-    tst lr, #0x80000
-    adreq r13, vm_finishCpsrOnlyControl
-    adrne r13, vm_finishCpsrControlAndFlags
+    adreq r11, vm_finishCpsrOnlyControl
+    adrne r11, vm_finishCpsrControlAndFlags
     bx r12
 
 vm_cpsrNoControlChange:
@@ -55,9 +54,9 @@ vm_finishCpsrControlAndFlags:
     bl emu_updateIrqs
 
 vm_finishCpsrWithFlags:
-    ldrb r10, [r9, #(vm_undefinedSpsr - vm_undefinedRegTmp)]
+    ldrb r10, [r9, #(vm_undefinedSpsr - vm_armUndefinedDispatchTable)]
     and r8, r8, #0xF0000000
-    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_undefinedRegTmp)]
+    ldr lr, [r9, #(vm_undefinedInstructionAddr - vm_armUndefinedDispatchTable)]
     orr r10, r10, r8
     msr spsr, r10
     movs pc, lr
@@ -77,13 +76,13 @@ generate vm_armUndefinedMsrRegCpsrRm, 16
             .mexit
         .endif
 
-        ldr r9, [r13, #(vm_cpsr - vm_armUndefinedDispatchTable)]!
+        ldr r9, [r12, #(vm_cpsr - vm_armUndefinedDispatchTable)]!
         .if \rm < 8
             mov r8, r\rm
             b vm_updateSpsr
         .elseif \rm < 15
-            add r12, r13, #(vm_undefinedRegTmp - vm_cpsr)
-            stmia r12, {r\rm}^
+            add r11, r12, #(vm_undefinedRegTmp - vm_cpsr)
+            stmia r11, {r\rm}^
             b vm_updateSpsrHiReg
         .endif
 .endm
@@ -91,10 +90,10 @@ generate vm_armUndefinedMsrRegCpsrRm, 16
 generate vm_armUndefinedMsrRegSpsrRm, 16
 
 vm_updateSpsrHiReg:
-    ldr r8, [r12]
+    ldr r8, [r11]
 vm_updateSpsr:
     and r9, r9, #0xF
-    add r12, r13, r9, lsl #2
+    add r12, r12, r9, lsl #2
     orr r8, r8, #0x10
     ldr r10, [r12, #(vm_spsr - vm_cpsr)]
     mov r11, #0
