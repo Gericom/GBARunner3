@@ -171,14 +171,15 @@ arm_func memu_armLdmRdWithPc
         ldrne r11,= memu_load32
         ldreq r11, [r10, #memu_load32WordTable]
 
-    rsb r9, r12, #15
+    rsb r9, r12, #16
     mov r9, r9, lsl #4
     movs r12, lr, lsl #17
         addeq r9, r9, #8 // no other register than pc
+        bicne lr, lr, #(1 << 15)
         strneh lr, 1f
     str r11, [sp, #-(16 << 2)]!
 
-    add pc, pc, r9, lsl #4
+    add pc, pc, r9
     nop
 
 .macro memu_armLdmRdWithPc_load index
