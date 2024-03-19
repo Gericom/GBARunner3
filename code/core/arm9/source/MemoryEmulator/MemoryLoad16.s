@@ -111,8 +111,7 @@ load16IoUnaligned:
 
 arm_func memu_load16Pltt
     ldr r10,= gShadowPalette
-    mov r9, r8, lsl #22
-    mov r9, r9, lsr #22
+    and r9, r8, sp, lsr #22
     ldrh r9, [r10, r9]
     tst r8, #1
         movne r9, r9, ror #8

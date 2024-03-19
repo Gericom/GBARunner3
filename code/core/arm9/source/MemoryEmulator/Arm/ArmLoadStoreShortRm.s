@@ -21,7 +21,7 @@
         .else
             // pc is not allowed
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 .macro memu_armLoadStoreShortRm_u rm

@@ -7,20 +7,20 @@
 .macro memu_armLdmStmRn rn, w
     arm_func memu_armLdmStmR\rn\()_\w
         .if \rn < 8
-            mov r8, r\rn
+            mov r12, r\rn
         .elseif \rn < 15
             stmdb sp, {r\rn}^
             nop
-            ldr r8, [sp, #-4]
+            ldr r12, [sp, #-4]
         .else
             
         .endif
 
         .if \w == 1
             .if \rn < 8
-                add r\rn, r9, r8
+                add r\rn, r9, r12
             .elseif \rn < 15
-                add r9, r9, r8
+                add r9, r9, r12
                 str r9, [sp, #-4]
                 ldmdb sp, {r\rn}^
                 nop

@@ -136,8 +136,7 @@ arm_func memu_store16Sram
     tst r8, #1
         bxne lr
     ldr r10,= gSaveData
-    mov r11, r8, lsl #17
-    mov r11, r11, lsr #17
+    and r11, r8, sp, lsr #17
     ldrh r11, [r10, r11]!
     and r9, r9, #0xFF
     orr r9, r9, r9, lsl #8

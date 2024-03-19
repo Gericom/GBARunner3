@@ -11,7 +11,7 @@
         orr r9, r9, #0x9000
         strh r9, 1f
         .if \u == 0
-            mov r12, #0
+            mov r8, #0
         .else
             nop
         .endif
@@ -19,11 +19,11 @@
         nop
         1:
         .if \u == 0
-            sub r9, r12, r0, lsl #1 // u=0 -> negate offset
+            sub r9, r8, r0, lsl #1 // u=0 -> negate offset
         .else
             mov r9, r0, lsl #1
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 memu_armLoadStoreRlo 0
@@ -40,22 +40,22 @@ memu_armLoadStoreRlo 1
             nop
             ldr r9, [sp, #-4]
             .if \u == 0
-                mov r12, #0
+                mov r8, #0
             .else
                 // interlock
             .endif
         .else
             // pc is not allowed
-            bx r8
+            mov pc, r12, lsr #16
             .exitm
         .endif
         1:
         .if \u == 0
-            sub r9, r12, r0, lsl #1 // u=0 -> negate offset
+            sub r9, r8, r0, lsl #1 // u=0 -> negate offset
         .else
             mov r9, r0, lsl #1
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 .macro memu_armLoadStoreRm_0 rm

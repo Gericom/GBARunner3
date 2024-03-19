@@ -6,11 +6,11 @@
 #include "VirtualMachine/VMDtcmDefs.inc"
 #include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
-// r8 = value of Rn
+// r8 = number of registers to write
 // r9 = 1 << Rn
 // r10 = start offset
 // r11 = &memu_armStmRd
-// r12 = number of registers to read
+// r12 = value of Rn
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armStmRd
@@ -18,15 +18,14 @@ arm_func memu_armStmRd
     and r11, r11, lr
     cmp r11, r9
 
-    add r11, r8, r12, lsl #2
+    mov r9, r12
+    add r11, r9, r8, lsl #2
 
-    rsb r12, r12, #15
+    rsb r12, r8, #15
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    mov r9, r8
-    add r8, r8, r10
-
+    add r8, r9, r10
     mov r10, r8, lsr #24
     sub r11, r11, #4
     cmp r10, r11, lsr #24
@@ -57,11 +56,11 @@ generate memu_armStmRd_store, 15
     add sp, sp, #(16 << 2)
     memu_armReturn
 
-// r8 = value of Rn
+// r8 = number of registers to write
 // r9 = 1 << Rn
 // r10 = start offset
 // r11 = &memu_armStmRdWithPc
-// r12 = number of registers to read
+// r12 = value of Rn
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armStmRdWithPc
@@ -71,15 +70,14 @@ arm_func memu_armStmRdWithPc
     and r11, r11, lr
     cmp r11, r9
 
-    add r11, r8, r12, lsl #2
+    mov r9, r12
+    add r11, r9, r8, lsl #2
 
-    rsb r12, r12, #16
+    rsb r12, r8, #16
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    mov r9, r8
-    add r8, r8, r10
-
+    add r8, r9, r10
     mov r10, r8, lsr #24
     sub r11, r11, #4
     cmp r10, r11, lsr #24
@@ -113,25 +111,25 @@ generate memu_armStmRdWithPc_store, 15
     add sp, sp, #(16 << 2)
     memu_armReturn
 
-// r8 = value of Rn
+// r8 = number of registers to read
 // r9 = 1 << Rn
 // r10 = start offset
 // r11 = &memu_armLdmRd
-// r12 = number of registers to read
+// r12 = value of Rn
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armLdmRd
-    add r8, r8, r10
-    bic r8, r8, #3
-    mov r9, r8, lsr #24
+    add r12, r12, r10
+    mov r9, r12, lsr #24
     ldrb r10, [r9, #memu_loadStoreRemapTable]
-    add r11, r8, r12, lsl #2
+    add r11, r12, r8, lsl #2
     sub r11, r11, #4
     cmp r9, r11, lsr #24
         ldrne r11,= memu_load32
         ldreq r11, [r10, #memu_load32WordTable]
 
-    rsb r9, r12, #15
+    rsb r9, r8, #15
+    bic r8, r12, #3
     strh lr, 1f
     str r11, [sp, #-(16 << 2)]!
 
@@ -161,17 +159,17 @@ generate memu_armLdmRd_load, 15
 // sp = stack pointer
 // lr = instruction
 arm_func memu_armLdmRdWithPc
-    add r8, r8, r10
-    bic r8, r8, #3
-    mov r9, r8, lsr #24
+    add r12, r12, r10
+    mov r9, r12, lsr #24
     ldrb r10, [r9, #memu_loadStoreRemapTable]
-    add r11, r8, r12, lsl #2
+    add r11, r12, r8, lsl #2
     sub r11, r11, #4
     cmp r9, r11, lsr #24
         ldrne r11,= memu_load32
         ldreq r11, [r10, #memu_load32WordTable]
 
-    rsb r9, r12, #16
+    rsb r9, r8, #16
+    bic r8, r12, #3
     mov r9, r9, lsl #4
     movs r12, lr, lsl #17
         addeq r9, r9, #8 // no other register than pc

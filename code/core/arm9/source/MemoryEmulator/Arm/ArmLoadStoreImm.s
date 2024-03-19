@@ -6,11 +6,11 @@
 arm_func memu_armLoadStoreImm_0
     and r9, lr, sp, lsr #20 // r9 = offset_12
     rsb r9, r9, #0 // u=0 -> negate offset
-    bx r8
+    mov pc, r12, lsr #16
 
 arm_func memu_armLoadStoreImm_1
     and r9, lr, sp, lsr #20 // r9 = offset_12
-    bx r8
+    mov pc, r12, lsr #16
 
 .section ".dtcm", "aw"
 

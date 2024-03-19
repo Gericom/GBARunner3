@@ -23,10 +23,14 @@ extern const void* memu_armLdmStmRmTable_00[16];
 extern const void* memu_armLdmStmRmTable_01[16];
 extern const void* memu_armLdmStmRmTable_10[16];
 extern const void* memu_armLdmStmRmTable_11[16];
-extern const void* memu_armLoadStoreRnTable_00[16];
-extern const void* memu_armLoadStoreRnTable_01[16];
-extern const void* memu_armLoadStoreRnTable_10[16];
-extern const void* memu_armLoadStoreRnTable_11[16];
+extern const void* memu_armLoadRnTable_00[16];
+extern const void* memu_armLoadRnTable_01[16];
+extern const void* memu_armLoadRnTable_10[16];
+extern const void* memu_armLoadRnTable_11[16];
+extern const void* memu_armStoreRnTable_00[16];
+extern const void* memu_armStoreRnTable_01[16];
+extern const void* memu_armStoreRnTable_10[16];
+extern const void* memu_armStoreRnTable_11[16];
 extern const void* memu_armSwpRnTable[16];
 extern const void* memu_armLdmStmRnTable_0[16];
 extern const void* memu_armLdmStmRnTable_1[16];
@@ -90,15 +94,31 @@ static void setLoadStoreShortRmEntry(u32 index)
 
 static void setLoadStoreRnEntry(u32 index)
 {
-    if (index & INDEX_P_BIT)
+    if (isLoad(index))
     {
-        setTableEntry(RN_TABLE, index,
-            isWriteback(index) ? memu_armLoadStoreRnTable_11 : memu_armLoadStoreRnTable_10);
+        if (index & INDEX_P_BIT)
+        {
+            setTableEntry(RN_TABLE, index,
+                isWriteback(index) ? memu_armLoadRnTable_11 : memu_armLoadRnTable_10);
+        }
+        else
+        {
+            setTableEntry(RN_TABLE, index,
+                isWriteback(index) ? memu_armLoadRnTable_01 : memu_armLoadRnTable_00);
+        }
     }
     else
     {
-        setTableEntry(RN_TABLE, index,
-            isWriteback(index) ? memu_armLoadStoreRnTable_01 : memu_armLoadStoreRnTable_00);
+        if (index & INDEX_P_BIT)
+        {
+            setTableEntry(RN_TABLE, index,
+                isWriteback(index) ? memu_armStoreRnTable_11 : memu_armStoreRnTable_10);
+        }
+        else
+        {
+            setTableEntry(RN_TABLE, index,
+                isWriteback(index) ? memu_armStoreRnTable_01 : memu_armStoreRnTable_00);
+        }
     }
 }
 
