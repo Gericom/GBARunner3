@@ -42,6 +42,8 @@
 #include "Patches/PatchSwi.h"
 #include "Patches/SelfModifyingPatches.h"
 #include "Emulator/BootAnimationSkip.h"
+#include "MemoryEmulator/Arm/ArmDispatchTable.h"
+#include "VirtualMachine/VMUndefinedArmTable.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -203,34 +205,22 @@ static void loadGbaRom(const char* romPath)
 
 static void disableSramReads(void)
 {
-    memu_itcmLoad8Table[0xE] = (void*)memu_load8Undefined;
-    memu_itcmLoad8Table[0xF] = (void*)memu_load8Undefined;
-    memu_load8Table[0xE] = (u32)memu_load8Undefined;
-    memu_load8Table[0xF] = (u32)memu_load8Undefined;
-    memu_itcmLoad16Table[0xE] = (void*)memu_load16Undefined;
-    memu_itcmLoad16Table[0xF] = (void*)memu_load16Undefined;
-    memu_load16Table[0xE] = (u32)memu_load16Undefined;
-    memu_load16Table[0xF] = (u32)memu_load16Undefined;
-    memu_itcmLoad32Table[0xE] = (void*)memu_load32Undefined;
-    memu_itcmLoad32Table[0xF] = (void*)memu_load32Undefined;
-    memu_load32Table[0xE] = (u32)memu_load32Undefined;
-    memu_load32Table[0xF] = (u32)memu_load32Undefined;
+    memu_setLoad8Handler(0xE, memu_load8Undefined);
+    memu_setLoad8Handler(0xF, memu_load8Undefined);
+    memu_setLoad16Handler(0xE, memu_load16Undefined);
+    memu_setLoad16Handler(0xF, memu_load16Undefined);
+    memu_setLoad32Handler(0xE, memu_load32Undefined);
+    memu_setLoad32Handler(0xF, memu_load32Undefined);
 }
 
 static void disableSramWrites(void)
 {
-    memu_itcmStore8Table[0xE] = (void*)memu_store8Undefined;
-    memu_itcmStore8Table[0xF] = (void*)memu_store8Undefined;
-    memu_store8Table[0xE] = (u32)memu_store8Undefined;
-    memu_store8Table[0xF] = (u32)memu_store8Undefined;
-    memu_itcmStore16Table[0xE] = (void*)memu_store16Undefined;
-    memu_itcmStore16Table[0xF] = (void*)memu_store16Undefined;
-    memu_store16Table[0xE] = (u32)memu_store16Undefined;
-    memu_store16Table[0xF] = (u32)memu_store16Undefined;
-    memu_itcmStore32Table[0xE] = (void*)memu_store32Undefined;
-    memu_itcmStore32Table[0xF] = (void*)memu_store32Undefined;
-    memu_store32Table[0xE] = (u32)memu_store32Undefined;
-    memu_store32Table[0xF] = (u32)memu_store32Undefined;
+    memu_setStore8Handler(0xE, memu_store8Undefined);
+    memu_setStore8Handler(0xF, memu_store8Undefined);
+    memu_setStore16Handler(0xE, memu_store16Undefined);
+    memu_setStore16Handler(0xF, memu_store16Undefined);
+    memu_setStore32Handler(0xE, memu_store32Undefined);
+    memu_setStore32Handler(0xF, memu_store32Undefined);
 }
 
 static void handleSave(const char* savePath)
@@ -489,6 +479,8 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     memset((void*)((u32)GFX_BG_MAIN + 0x40000), 0, 128 * 1024); // vram B
     memset((void*)GFX_OBJ_MAIN, 0, 32 * 1024);
     memset(emu_ioRegisters, 0, sizeof(emu_ioRegisters));
+    memu_initializeArmDispatchTable();
+    vm_initializeUndefinedArmTable();
     setupJit();
     dma_init();
     gbas_init();

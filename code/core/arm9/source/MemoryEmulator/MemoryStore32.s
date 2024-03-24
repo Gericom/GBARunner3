@@ -2,6 +2,7 @@
 
 #include "AsmMacros.inc"
 #include "GbaIoRegOffsets.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 arm_func memu_store32FromC
     push {r8-r11,lr}
@@ -19,33 +20,16 @@ arm_func memu_store32FromC
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_store32
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_store32Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-arm_func memu_store32Undefined
-    bx lr
-
-.global memu_itcmStore32Table
-memu_itcmStore32Table:
-    .word memu_store32Undefined // 00
-    .word memu_store32Undefined // 01
-    .word memu_store32Ewram // 02
-    .word memu_store32Iwram // 03
-    .word memu_store32Io // 04
-    .word memu_store32Pltt // 05
-    .word memu_store32Vram012 // 06
-    .word memu_store32Oam // 07
-    .word memu_store32Rom // 08
-    .word memu_store32Rom // 09
-    .word memu_store32Rom // 0A
-    .word memu_store32Rom // 0B
-    .word memu_store32Rom // 0C
-    .word memu_store32Rom // 0D
-    .word memu_store32Sram // 0E
-    .word memu_store32Sram // 0F
+        bxhs lr
+    bx r10
 
 arm_func memu_store32Ewram
     bic r10, r8, #0x00FC0000
     str r9, [r10]
+arm_func memu_store32Undefined
     bx lr
 
 arm_func memu_store32Iwram

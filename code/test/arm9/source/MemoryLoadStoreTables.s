@@ -3,8 +3,8 @@
 
 #include "AsmMacros.inc"
 
-.global memu_load32Table
-memu_load32Table:
+// .global memu_load32Table
+// memu_load32Table:
     .short memu_load32 // 00
     .short memu_load32 // 01
     .short memu_load32 // 02
@@ -22,8 +22,8 @@ memu_load32Table:
     .short memu_load32 // 0E
     .short memu_load32 // 0F
 
-.global memu_load16Table
-memu_load16Table:
+// .global memu_load16Table
+// memu_load16Table:
     .short memu_load16 // 00
     .short memu_load16 // 01
     .short memu_load16 // 02
@@ -41,8 +41,8 @@ memu_load16Table:
     .short memu_load16 // 0E
     .short memu_load16 // 0F
 
-.global memu_load8Table
-memu_load8Table:
+// .global memu_load8Table
+// memu_load8Table:
     .short memu_load8 // 00
     .short memu_load8 // 01
     .short memu_load8 // 02
@@ -60,8 +60,8 @@ memu_load8Table:
     .short memu_load8 // 0E
     .short memu_load8 // 0F
 
-.global memu_store32Table
-memu_store32Table:
+// .global memu_store32Table
+// memu_store32Table:
     .short memu_store32 // 00
     .short memu_store32 // 01
     .short memu_store32 // 02
@@ -79,8 +79,8 @@ memu_store32Table:
     .short memu_store32 // 0E
     .short memu_store32 // 0F
 
-.global memu_store16Table
-memu_store16Table:
+// .global memu_store16Table
+// memu_store16Table:
     .short memu_store16 // 00
     .short memu_store16 // 01
     .short memu_store16 // 02
@@ -98,8 +98,8 @@ memu_store16Table:
     .short memu_store16 // 0E
     .short memu_store16 // 0F
 
-.global memu_store8Table
-memu_store8Table:
+// .global memu_store8Table
+// memu_store8Table:
     .short memu_store8 // 00
     .short memu_store8 // 01
     .short memu_store8 // 02

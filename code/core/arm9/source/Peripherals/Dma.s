@@ -51,8 +51,6 @@ arm_func emu_dma3CntStore32
 
 arm_func emu_dmaCntHStore16
     bic r9, r9, #0x1F
-    mov r10, r13
-    ldr sp,= dtcmStackEnd
     ldr r11,= (emu_ioRegisters - 8)
     push {r0-r3,lr}
     and r0, r8, #0xFC
@@ -62,7 +60,6 @@ arm_func emu_dmaCntHStore16
     mov r1, r9
     bl dma_CntHStore16
     pop {r0-r3,lr}
-    mov r13, r10
     b emu_updateIrqs
 
 // called from C code

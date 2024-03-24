@@ -4,95 +4,210 @@
 #include "AsmMacros.inc"
 #include "ArmMacros.inc"
 #include "VirtualMachine/VMDtcmDefs.inc"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
+// r8 = number of registers to write
+// r9 = 1 << Rn
+// r10 = start offset
+// r11 = &memu_armStmRd
+// r12 = value of Rn
+// sp = stack pointer
+// lr = instruction
 arm_func memu_armStmRd
-    mov r9, r8
-    add r8, r8, r10
+    rsb r11, lr, #0
+    and r11, r11, lr
+    cmp r11, r9
 
-    rsb r10, lr, #0
-    and r10, r10, lr
-    cmp r10, r12
+    mov r9, r12
+    add r11, r9, r8, lsl #2
 
-    biceq lr, lr, r10
-    bic r13, r13, lr, lsl #15
-    orr r13, r13, #0x80000000
+    rsb r12, r8, #15
+    mov r12, r12, lsl #4
+    addeq r12, r12, #4 // skip first load of r9
 
-    subne r8, r8, #4
-    bleq memu_store32
+    add r8, r9, r10
+    mov r10, r8, lsr #24
+    sub r11, r11, #4
+    cmp r10, r11, lsr #24
+    ldrb r10, [r10, #memu_loadStoreRemapTable]
+    strh lr, 1f
+        ldrne r11,= memu_store32
+        ldreq r11, [r10, #memu_store32WordTable]
 
-    .macro memu_armStmRd_storeLoReg reg
-        tst r13, #(1 << (\reg + 15))
-        moveq r9, r\reg
-        addeq r8, r8, #4
-        bleq memu_store32
-    .endm
+    movs lr, lr, lsl #16
+1:
+    stmnedb sp, {r0}^ // to be modified
+    nop
+    str r11, [sp, #-(16 << 2)]!
+    add pc, pc, r12
+    nop
 
-    generate memu_armStmRd_storeLoReg, 8
-
-    .macro memu_armStmRd_storeHiReg reg
-        tst r13, #(1 << (\reg + 15))
-        stmeqdb r13, {r\reg}^
-        bne 1f
-        ldr r9, [r13, #-4]
-        add r8, r8, #4
-        bl memu_store32
-    1:
-    .endm
-
-    generate memu_armStmRd_storeHiReg 15, 8
-
-    tst r13, #(1 << 30)
-    bne 1f
-    ldr r9,= memu_inst_addr
-    ldr r9, [r9]
-    add r9, r9, #4
+.macro memu_armStmRd_store index
+    ldr r9, [sp, #(4 + (\index << 2))]
+    blx r11
+.if \index < 14
+    ldr r11, [sp]
     add r8, r8, #4
-    bl memu_store32
-1:
+.endif
+.endm
+
+generate memu_armStmRd_store, 15
+
+    add sp, sp, #(16 << 2)
     memu_armReturn
 
+// r8 = number of registers to write
+// r9 = 1 << Rn
+// r10 = start offset
+// r11 = &memu_armStmRdWithPc
+// r12 = value of Rn
+// sp = stack pointer
+// lr = instruction
+arm_func memu_armStmRdWithPc
+    bic lr, lr, #(1 << 15)
+
+    rsb r11, lr, #0
+    and r11, r11, lr
+    cmp r11, r9
+
+    mov r9, r12
+    add r11, r9, r8, lsl #2
+
+    rsb r12, r8, #16
+    mov r12, r12, lsl #4
+    addeq r12, r12, #4 // skip first load of r9
+
+    add r8, r9, r10
+    mov r10, r8, lsr #24
+    sub r11, r11, #4
+    cmp r10, r11, lsr #24
+    ldrb r10, [r10, #memu_loadStoreRemapTable]
+    strh lr, 1f
+        ldrne r11,= memu_store32
+        ldreq r11, [r10, #memu_store32WordTable]
+
+    movs lr, lr, lsl #16
+1:
+    stmnedb sp, {r0}^ // to be modified
+    nop
+    str r11, [sp, #-(16 << 2)]!
+    add pc, pc, r12
+    nop
+
+.macro memu_armStmRdWithPc_store index
+    ldr r9, [sp, #(4 + (\index << 2))]
+    blx r11
+    ldr r11, [sp]
+    add r8, r8, #4
+.endm
+
+generate memu_armStmRdWithPc_store, 15
+
+    mov r9, #0
+    ldr r9, [r9, #memu_inst_addr]
+    add r9, r9, #4
+    blx r11
+
+    add sp, sp, #(16 << 2)
+    memu_armReturn
+
+// r8 = number of registers to read
+// r9 = 1 << Rn
+// r10 = start offset
+// r11 = &memu_armLdmRd
+// r12 = value of Rn
+// sp = stack pointer
+// lr = instruction
 arm_func memu_armLdmRd
-    bic r13, r13, lr, lsl #15
-    orr r13, r13, #0x80000000
-    add r8, r8, r10
-    bic r8, r8, #3
+    add r12, r12, r10
+    mov r9, r12, lsr #24
+    ldrb r10, [r9, #memu_loadStoreRemapTable]
+    add r11, r12, r8, lsl #2
+    sub r11, r11, #4
+    cmp r9, r11, lsr #24
+        ldrne r11,= memu_load32
+        ldreq r11, [r10, #memu_load32WordTable]
 
-    .macro memu_armLdmRd_storeLoReg reg
-        tst r13, #(1 << (\reg + 15))
-        bne 1f
-        bl memu_load32
-        mov r\reg, r9
-        add r8, r8, #4
-    1:
-    .endm
+    rsb r9, r8, #15
+    bic r8, r12, #3
+    strh lr, 1f
+    str r11, [sp, #-(16 << 2)]!
 
-    generate memu_armLdmRd_storeLoReg, 8
+    add pc, pc, r9, lsl #4
+    nop
 
-    .macro memu_armLdmRd_storeHiReg reg
-        tst r13, #(1 << (\reg + 15))
-        bne 1f
-        bl memu_load32
-        str r9, [r13, #-4]
-        ldmdb r13, {r\reg}^
-        nop
-        add r8, r8, #4
-    1:
-    .endm
+.macro memu_armLdmRd_load index
+    blx r11
+    str r9, [sp, #(4 + (\index << 2))]
+.if \index < 14
+    ldr r11, [sp]
+    add r8, r8, #4
+.endif
+.endm
 
-    generate memu_armLdmRd_storeHiReg 15, 8
-
-    tst r13, #(1 << 30)
-    bne 1f
-    bl memu_load32
-    str r9, [r13, #-4]
-    msr cpsr_c, #0xD7
-    ldr lr,= memu_armTmpUsrReg
-    ldr lr, [lr]
-    movs pc, lr
+generate memu_armLdmRd_load, 15
+    add sp, sp, #(16 << 2)
 1:
+    ldmdb sp, {r0}^ // modified
     memu_armReturn
+
+// r8 = value of Rn
+// r9 = 1 << Rn
+// r10 = start offset
+// r11 = &memu_armLdmRdWithPc
+// r12 = number of registers to read
+// sp = stack pointer
+// lr = instruction
+arm_func memu_armLdmRdWithPc
+    add r12, r12, r10
+    mov r9, r12, lsr #24
+    ldrb r10, [r9, #memu_loadStoreRemapTable]
+    add r11, r12, r8, lsl #2
+    sub r11, r11, #4
+    cmp r9, r11, lsr #24
+        ldrne r11,= memu_load32
+        ldreq r11, [r10, #memu_load32WordTable]
+
+    rsb r9, r8, #16
+    bic r8, r12, #3
+    mov r9, r9, lsl #4
+    movs r12, lr, lsl #17
+        addeq r9, r9, #8 // no other register than pc
+        bicne lr, lr, #(1 << 15)
+        strneh lr, 1f
+    str r11, [sp, #-(16 << 2)]!
+
+    add pc, pc, r9
+    nop
+
+.macro memu_armLdmRdWithPc_load index
+    blx r11
+    str r9, [sp, #(4 + (\index << 2))]
+    ldr r11, [sp]
+    add r8, r8, #4
+.endm
+
+generate memu_armLdmRdWithPc_load, 14
+
+    blx r11
+    str r9, [sp, #(4 + (14 << 2))]
+    ldr r11, [sp], #(16 << 2)
+1:
+    ldmdb sp, {r0}^ // modified
+    nop
+    add r8, r8, #4
+    blx r11
+    str r9, addressToJumpTo
+    msr cpsr_c, #0xD7
+    ldr lr, addressToJumpTo
+    movs pc, lr
+
+addressToJumpTo:
+    .word 0
 
 .section ".dtcm", "aw"
+
+.balign 64
 
 .global memu_armStmRdTable
 memu_armStmRdTable:
@@ -104,14 +219,14 @@ memu_armStmRdTable:
     .word memu_armStmRd
     .word memu_armStmRd
     .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
-    .word memu_armStmRd
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
+    .word memu_armStmRdWithPc
 
 .global memu_armLdmRdTable
 memu_armLdmRdTable:
@@ -123,11 +238,11 @@ memu_armLdmRdTable:
     .word memu_armLdmRd
     .word memu_armLdmRd
     .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
-    .word memu_armLdmRd
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc
+    .word memu_armLdmRdWithPc

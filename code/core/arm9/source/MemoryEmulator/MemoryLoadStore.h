@@ -1,18 +1,20 @@
 #pragma once
 
-extern void* memu_itcmLoad8Table[16];
-extern void* memu_itcmLoad16Table[16];
-extern void* memu_itcmLoad32Table[16];
-extern void* memu_itcmStore8Table[16];
-extern void* memu_itcmStore16Table[16];
-extern void* memu_itcmStore32Table[16];
-
 extern u16 memu_load8Table[16];
 extern u16 memu_load16Table[16];
 extern u16 memu_load32Table[16];
 extern u16 memu_store8Table[16];
 extern u16 memu_store16Table[16];
 extern u16 memu_store32Table[16];
+
+typedef void (*memu_load_store_handler_t)();
+
+extern memu_load_store_handler_t memu_load8WordTable[16];
+extern memu_load_store_handler_t memu_load16WordTable[16];
+extern memu_load_store_handler_t memu_load32WordTable[16];
+extern memu_load_store_handler_t memu_store8WordTable[16];
+extern memu_load_store_handler_t memu_store16WordTable[16];
+extern memu_load_store_handler_t memu_store32WordTable[16];
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +60,42 @@ extern void memu_store32Vram4(void);
 extern void memu_store8Vram5(void);
 extern void memu_store16Vram5(void);
 extern void memu_store32Vram5(void);
+
+static inline void memu_setLoad8Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_load8Table[region] = (u32)handler;
+    memu_load8WordTable[region] = handler;
+}
+
+static inline void memu_setLoad16Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_load16Table[region] = (u32)handler;
+    memu_load16WordTable[region] = handler;
+}
+
+static inline void memu_setLoad32Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_load32Table[region] = (u32)handler;
+    memu_load32WordTable[region] = handler;
+}
+
+static inline void memu_setStore8Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_store8Table[region] = (u32)handler;
+    memu_store8WordTable[region] = handler;
+}
+
+static inline void memu_setStore16Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_store16Table[region] = (u32)handler;
+    memu_store16WordTable[region] = handler;
+}
+
+static inline void memu_setStore32Handler(u32 region, memu_load_store_handler_t handler)
+{
+    memu_store32Table[region] = (u32)handler;
+    memu_store32WordTable[region] = handler;
+}
 
 #ifdef __cplusplus
 }

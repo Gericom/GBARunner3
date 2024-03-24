@@ -12,10 +12,8 @@
 /// @param r13 Preserved
 /// @param lr Return address.
 arm_func emu_regDispCntStore16
-    mov r10, r13
-    ldr sp,= dtcmStack + 128
-    push {r0-r3,r10,lr}
+    push {r0-r3,lr}
     mov r0, r9, lsl #16
     mov r0, r0, lsr #16
     bl emu_regDispCntStore
-    ldmfd sp, {r0-r3,r13,pc}
+    pop {r0-r3,pc}

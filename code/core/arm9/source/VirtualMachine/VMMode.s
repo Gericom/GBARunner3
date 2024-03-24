@@ -16,7 +16,7 @@ vm_regs_11 = vm_regs_und
 vm_regs_15 = vm_regs_sys
 
 arm_func vm_modeSwitchOldEqualsNew
-    bx r13
+    bx r11
 
 // note: ldm sp, {sp,lr}^ is a broken instruction according to arm946e-s errata
 
@@ -93,7 +93,7 @@ arm_func vm_modeSwitchOldEqualsNew
             ldmia lr, {sp,lr}^
             nop
         .endif
-        bx sp
+        bx r11
 .endm
 
 .macro vm_modeSwitchOldToNew_gen index

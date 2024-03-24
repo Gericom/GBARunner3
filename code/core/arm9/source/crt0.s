@@ -105,6 +105,9 @@ vramhi_bss_done:
     msr cpsr_c, #0x92
     ldr sp,= 0x03008000
 
+    msr cpsr_c, #0x91
+    ldr sp,= dtcmStackEnd
+
     msr cpsr_c, #0x9F
     ldr sp,= dtcmStackEnd
 

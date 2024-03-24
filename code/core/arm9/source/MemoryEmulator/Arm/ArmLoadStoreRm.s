@@ -11,19 +11,19 @@
         orr r9, r9, #0x9000
         strh r9, 1f
         .if \u == 0
-            mov r12, #0
+            mov r8, #0
         .else
             nop
         .endif
         nop
-        nop
+        and r10, r10, lr, lsr #10 // r10 = Rd << 2
         1:
         .if \u == 0
-            sub r9, r12, r0, lsl #1 // u=0 -> negate offset
+            sub r9, r8, r0, lsl #1 // u=0 -> negate offset
         .else
             mov r9, r0, lsl #1
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 memu_armLoadStoreRlo 0
@@ -36,26 +36,27 @@ memu_armLoadStoreRlo 1
             orr r9, r9, #0x9000
             orr r9, r9, #9
             strh r9, 1f
-            stmdb r13, {r\rm}^
-            nop
-            ldr r9, [r13, #-4]
+            stmdb sp, {r\rm}^
+            @ nop
+            ldr r9, [sp, #-4]
             .if \u == 0
-                mov r12, #0
+                mov r8, #0
+                and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .else
-                // interlock
+                and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .endif
         .else
             // pc is not allowed
-            bx r8
+            mov pc, r12, lsr #16
             .exitm
         .endif
         1:
         .if \u == 0
-            sub r9, r12, r0, lsl #1 // u=0 -> negate offset
+            sub r9, r8, r0, lsl #1 // u=0 -> negate offset
         .else
             mov r9, r0, lsl #1
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 .macro memu_armLoadStoreRm_0 rm
@@ -71,6 +72,8 @@ generate memu_armLoadStoreRm_0, 16, 8
 generate memu_armLoadStoreRm_1, 16, 8
 
 .section ".dtcm", "aw"
+
+.balign 64
 
 .global memu_armLoadStoreRmTable_0
 memu_armLoadStoreRmTable_0:

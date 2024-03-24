@@ -5,12 +5,12 @@
 
 .macro memu_armSwpRn rn
     arm_func memu_armSwpRnR\rn
+        ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
         .if \rn < 8
             mov r8, r\rn
         .elseif \rn < 15
-            stmdb r13, {r\rn}^
-            nop
-            ldr r8, [r13, #-4]
+            stmdb sp, {r\rn}^
+            ldr r8, [sp, #-4]
         .else
             // pc is not allowed
         .endif
@@ -21,21 +21,39 @@ generate memu_armSwpRn, 16
 
 .section ".dtcm", "aw"
 
+.balign 64
+
 .global memu_armSwpRnTable
 memu_armSwpRnTable:
-    .word memu_armSwpRnR0
-    .word memu_armSwpRnR1
-    .word memu_armSwpRnR2
-    .word memu_armSwpRnR3
-    .word memu_armSwpRnR4
-    .word memu_armSwpRnR5
-    .word memu_armSwpRnR6
-    .word memu_armSwpRnR7
-    .word memu_armSwpRnR8
-    .word memu_armSwpRnR9
-    .word memu_armSwpRnR10
-    .word memu_armSwpRnR11
-    .word memu_armSwpRnR12
-    .word memu_armSwpRnR13
-    .word memu_armSwpRnR14
-    .word memu_armSwpRnR15
+    .short 0
+    .short memu_armSwpRnR0
+    .short 0
+    .short memu_armSwpRnR1
+    .short 0
+    .short memu_armSwpRnR2
+    .short 0
+    .short memu_armSwpRnR3
+    .short 0
+    .short memu_armSwpRnR4
+    .short 0
+    .short memu_armSwpRnR5
+    .short 0
+    .short memu_armSwpRnR6
+    .short 0
+    .short memu_armSwpRnR7
+    .short 0
+    .short memu_armSwpRnR8
+    .short 0
+    .short memu_armSwpRnR9
+    .short 0
+    .short memu_armSwpRnR10
+    .short 0
+    .short memu_armSwpRnR11
+    .short 0
+    .short memu_armSwpRnR12
+    .short 0
+    .short memu_armSwpRnR13
+    .short 0
+    .short memu_armSwpRnR14
+    .short 0
+    .short memu_armSwpRnR15

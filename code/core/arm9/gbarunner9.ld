@@ -159,17 +159,40 @@ SECTIONS
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
 		KEEP (ThumbDtcm.o(.dtcm))
-		. = 0x1000;
-		KEEP (MemoryLoadStoreTables.o(.dtcm))
-		. = 0x10C0;
-		KEEP (ArmDtcm.o(.dtcm))
-		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o) .dtcm)
+		. = 0xF70;
+		KEEP (ArmDispatchTable.o(.dtcm))
+		KEEP (ArmLdmStmRd.o(.dtcm))
+		KEEP (ArmLdmStmRm.o(.dtcm))
+		KEEP (ArmLdmStmRn.o(.dtcm))
+		KEEP (ArmLoadStoreRd.o(.dtcm))
+		KEEP (ArmLoadStoreRn.o(.dtcm))
+		KEEP (ArmLoadStoreShortImm.o(.dtcm))
+		KEEP (ArmLoadStoreShortRd.o(.dtcm))
+		KEEP (ArmLoadStoreShortRm.o(.dtcm))
+		KEEP (ArmSwpRd.o(.dtcm))
+		KEEP (ArmSwpRn.o(.dtcm))
+		KEEP (ArmLoadStoreImm.o(.dtcm))
+		KEEP (ArmLoadStoreRm.o(.dtcm))
+		KEEP (VMUndefinedAluSPCImm.o(.dtcm))
+		KEEP (VMUndefinedMrs.o(.dtcm))
+		KEEP (VMUndefinedMsr.o(.dtcm))
+		KEEP (JitArmUndefinedB.o(.dtcm))
+		KEEP (JitArmUndefinedBL.o(.dtcm))
+		KEEP (JitArmUndefinedBx.o(.dtcm))
+		KEEP (JitArmUndefinedLdrPcImm.o(.dtcm))
+		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o MemoryLoadStoreRemapTable.o) .dtcm)
 		*(.dtcm.*)
-		. = 0x3328;
+		. = 0x33E8;
+		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
+		. = 0x34E8;
+		KEEP (MemoryLoadStoreWordTables.o(.dtcm))
+		. = 0x3668;
 		KEEP (VMUndefinedThumbTable.o(.dtcm))
 		KEEP (VMUndefinedArmTable.o(.dtcm))
-		. = 0x3F28;
+		. = 0x3E68;
 		KEEP (VMDtcm.o(.dtcm))
+		. = 0x3F40;
+		KEEP (MemoryLoadStoreTables.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>vramab :dtcm = 0xff
@@ -191,8 +214,8 @@ SECTIONS
 		KEEP (VMMode.o(.itcm))
 		. = 0x7D8;
 		KEEP (VMSwi.o(.itcm))
-		KEEP (ArmLoadStoreShortRm.o(.itcm))
-		KEEP (IoFallback.o(.itcm))
+		KEEP (RegDispCnt.o(.itcm))
+		KEEP (Input.o(.itcm))
 		. = 0xC00;
 		KEEP (ThumbDispatch.o(.itcm))
 		KEEP (ThumbLoad.o(.itcm))
@@ -204,6 +227,10 @@ SECTIONS
 		KEEP (ArmLoadStoreShortRd.o(.itcm))
 		KEEP (ArmSwpRd.o(.itcm))
 		KEEP (GbaSoundAsm.o(.itcm))
+		KEEP (VMUndefinedMsr.o(.itcm))
+		KEEP (JitArmUndefinedBx.o(.itcm))
+		KEEP (JitArmUndefinedLdrPcImm.o(.itcm))
+		KEEP (EmuIrqs.o(.itcm))
 		. = 0x3000;
 		KEEP (ThumbGetRn.o(.itcm))
 		*(.itcm)

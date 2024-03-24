@@ -8,22 +8,16 @@
 
 static void setVramLoad012(void)
 {
-    memu_itcmLoad8Table[6] = (void*)memu_load8Vram012;
-    memu_load8Table[6] = (u32)memu_load8Vram012;
-    memu_itcmLoad16Table[6] = (void*)memu_load16Vram012;
-    memu_load16Table[6] = (u32)memu_load16Vram012;
-    memu_itcmLoad32Table[6] = (void*)memu_load32Vram012;
-    memu_load32Table[6] = (u32)memu_load32Vram012;
+    memu_setLoad8Handler(6, memu_load8Vram012);
+    memu_setLoad16Handler(6, memu_load16Vram012);
+    memu_setLoad32Handler(6, memu_load32Vram012);
 }
 
 static void setVramLoad345(void)
 {
-    memu_itcmLoad8Table[6] = (void*)memu_load8Vram345;
-    memu_load8Table[6] = (u32)memu_load8Vram345;
-    memu_itcmLoad16Table[6] = (void*)memu_load16Vram345;
-    memu_load16Table[6] = (u32)memu_load16Vram345;
-    memu_itcmLoad32Table[6] = (void*)memu_load32Vram345;
-    memu_load32Table[6] = (u32)memu_load32Vram345;
+    memu_setLoad8Handler(6, memu_load8Vram345);
+    memu_setLoad16Handler(6, memu_load16Vram345);
+    memu_setLoad32Handler(6, memu_load32Vram345);
 }
 
 [[gnu::noinline]]
@@ -37,12 +31,9 @@ static void displayModeChange(u32 oldMode, u32 newMode)
         {
             mem_setVramFMapping(MEM_VRAM_FG_MAIN_OBJ_00000);
             setVramLoad012();
-            memu_itcmStore8Table[6] = (void*)memu_store8Vram012;
-            memu_store8Table[6] = (u32)memu_store8Vram012;
-            memu_itcmStore16Table[6] = (void*)memu_store16Vram012;
-            memu_store16Table[6] = (u32)memu_store16Vram012;
-            memu_itcmStore32Table[6] = (void*)memu_store32Vram012;
-            memu_store32Table[6] = (u32)memu_store32Vram012;
+            memu_setStore8Handler(6, memu_store8Vram012);
+            memu_setStore16Handler(6, memu_store16Vram012);
+            memu_setStore32Handler(6, memu_store32Vram012);
             REG_BG2CNT = *(u16*)&emu_ioRegisters[GBA_REG_OFFS_BG2CNT] & ~0x30;
             break;
         }
@@ -50,12 +41,9 @@ static void displayModeChange(u32 oldMode, u32 newMode)
         {
             mem_setVramFMapping(MEM_VRAM_FG_MAIN_BG_10000);
             setVramLoad345();
-            memu_itcmStore8Table[6] = (void*)memu_store8Vram3;
-            memu_store8Table[6] = (u32)memu_store8Vram3;
-            memu_itcmStore16Table[6] = (void*)memu_store16Vram3;
-            memu_store16Table[6] = (u32)memu_store16Vram3;
-            memu_itcmStore32Table[6] = (void*)memu_store32Vram3;
-            memu_store32Table[6] = (u32)memu_store32Vram3;
+            memu_setStore8Handler(6, memu_store8Vram3);
+            memu_setStore16Handler(6, memu_store16Vram3);
+            memu_setStore32Handler(6, memu_store32Vram3);
             for (u32 i = 0; i < 0x14000; i += 4)
             {
                 memu_store32FromC(0x06000000 + i, *(vu32*)(0x06000000 + i));
@@ -68,12 +56,9 @@ static void displayModeChange(u32 oldMode, u32 newMode)
         {
             mem_setVramFMapping(MEM_VRAM_FG_MAIN_BG_10000);
             setVramLoad345();
-            memu_itcmStore8Table[6] = (void*)memu_store8Vram4;
-            memu_store8Table[6] = (u32)memu_store8Vram4;
-            memu_itcmStore16Table[6] = (void*)memu_store16Vram4;
-            memu_store16Table[6] = (u32)memu_store16Vram4;
-            memu_itcmStore32Table[6] = (void*)memu_store32Vram4;
-            memu_store32Table[6] = (u32)memu_store32Vram4;
+            memu_setStore8Handler(6, memu_store8Vram4);
+            memu_setStore16Handler(6, memu_store16Vram4);
+            memu_setStore32Handler(6, memu_store32Vram4);
             for (u32 i = 0; i < 0x14000; i += 4)
             {
                 memu_store32FromC(0x06000000 + i, *(vu32*)(0x06000000 + i));
@@ -84,12 +69,9 @@ static void displayModeChange(u32 oldMode, u32 newMode)
         {
             mem_setVramFMapping(MEM_VRAM_FG_MAIN_BG_10000);
             setVramLoad345();
-            memu_itcmStore8Table[6] = (void*)memu_store8Vram5;
-            memu_store8Table[6] = (u32)memu_store8Vram5;
-            memu_itcmStore16Table[6] = (void*)memu_store16Vram5;
-            memu_store16Table[6] = (u32)memu_store16Vram5;
-            memu_itcmStore32Table[6] = (void*)memu_store32Vram5;
-            memu_store32Table[6] = (u32)memu_store32Vram5;
+            memu_setStore8Handler(6, memu_store8Vram5);
+            memu_setStore16Handler(6, memu_store16Vram5);
+            memu_setStore32Handler(6, memu_store32Vram5);
             for (u32 i = 0; i < 0x14000; i += 4)
             {
                 memu_store32FromC(0x06000000 + i, *(vu32*)(0x06000000 + i));

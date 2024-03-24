@@ -11,7 +11,10 @@
             b jit_thumbEnsureJitted
         .elseif \rm < 15
             stmdb sp, {r\rm}^
-            b jit_thumbUndefinedMovPcRmCommonHiReg
+            nop
+            ldr r8, [sp, #-4]
+            orr r8, r8, #1
+            b jit_thumbEnsureJitted
         .else
             // pc
             add r8, r11, #5
@@ -20,9 +23,3 @@
 .endm
 
 generate jit_thumbUndefinedMovPcRm, 16
-
-arm_func jit_thumbUndefinedMovPcRmCommonHiReg
-    ldr r8, [sp, #-4]
-    orr r8, r8, #1
-    b jit_thumbEnsureJitted
-

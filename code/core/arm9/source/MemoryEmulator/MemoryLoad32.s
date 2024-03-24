@@ -4,8 +4,8 @@
 #include "VirtualMachine/VMDtcmDefs.inc"
 #include "GbaIoRegOffsets.h"
 #include "SdCache/SdCacheDefs.h"
-#include "DtcmStackDefs.inc"
 #include "MemoryEmulator/RomDefs.h"
+#include "MemoryEmulator/MemoryLoadStoreTableDefs.inc"
 
 arm_func memu_load32FromC
     push {r8-r11,lr}
@@ -24,38 +24,21 @@ arm_func memu_load32FromC
 /// @param r13 Preserved.
 /// @param lr Return address.
 arm_func memu_load32
+    mov r10, r8, lsr #23
+    ldrh r10, [r10, #memu_load32Table]
     cmp r8, #0x10000000
-        ldrlo pc, [pc, r8, lsr #22]
-    b memu_load32Undefined
-
-.global memu_itcmLoad32Table
-memu_itcmLoad32Table:
-    .word memu_load32Bios // 00
-    .word memu_load32Undefined // 01
-    .word memu_load32Ewram // 02
-    .word memu_load32Iwram // 03
-    .word memu_load32Io // 04
-    .word memu_load32Pltt // 05
-    .word memu_load32Vram012 // 06
-    .word memu_load32Oam // 07
-    .word memu_load32Rom // 08
-    .word memu_load32Rom // 09
-    .word memu_load32RomHi // 0A
-    .word memu_load32RomHi // 0B
-    .word memu_load32RomHi // 0C
-    .word memu_load32RomHi // 0D
-    .word memu_load32Sram // 0E
-    .word memu_load32Sram // 0F
+        bhs memu_load32Undefined
+    bx r10
 
 arm_func memu_load32Undefined
-    ldr r10,= memu_inst_addr
+    mov r10, #0
     msr cpsr_c, #0xD7
-    ldr r13,= memu_inst_addr
-    str lr, [r13]
+    mov r13, #0
+    str lr, [r13, #memu_inst_addr]
     mrs r13, spsr
     movs r13, r13, lsl #27
     msr cpsr_c, #0xD1
-    ldr r10, [r10]
+    ldr r10, [r10, #memu_inst_addr]
     bcs thumbUndefined32
 
 armUndefined32:
@@ -79,29 +62,20 @@ thumbUndefined32Continue:
     mov r9, r10, ror r11
     bx lr
 
-undefinedTmpR8:
-    .word 0
-undefinedTmpLr:
-    .word 0
-
 undefinedFromRom32Arm:
-    str r8, undefinedTmpR8
-    str lr, undefinedTmpLr
+    push {r8, lr}
     mov r8, r10
     bl memu_load32Rom
     mov r10, r9
-    ldr r8, undefinedTmpR8
-    ldr lr, undefinedTmpLr
+    pop {r8, lr}
     b armUndefined32Continue
 
 undefinedFromRom32Thumb:
-    str r8, undefinedTmpR8
-    str lr, undefinedTmpLr
+    push {r8, lr}
     mov r8, r10
     bl memu_load16Rom
     mov r11, r9
-    ldr r8, undefinedTmpR8
-    ldr lr, undefinedTmpLr
+    pop {r8, lr}
     b thumbUndefined32Continue
 
 arm_func memu_load32Bios
@@ -144,18 +118,15 @@ arm_func memu_load32Io
 
 load32IoUnaligned:
     orr lr, lr, r12
-    str lr, unalignedReturn
+    push {lr}
     bic r8, r8, #3
     blx r11
-    ldr lr, unalignedReturn
+    pop {lr}
     mov r12, lr, lsl #3
     mov r9, r9, ror r12
     and r12, lr, #3
     orr r8, r8, r12
     bic pc, lr, #3
-
-unalignedReturn:
-    .word 0
 
 arm_func memu_load32Pltt
     ldr r10,= gShadowPalette
@@ -185,20 +156,11 @@ arm_func memu_load32Oam
     bx lr
 
 arm_func memu_load32RomCacheMiss
-    ldr r11,= dtcmStackEnd
-    // check if we already had a stack
-    sub r10, r11, r13
-    cmp r10, #(DTCM_STACK_SIZE + DTCM_IRQ_STACK_SIZE)
-    mov r10, r13
-    // if not begin at the end of the stack
-    movhs sp, r11
     push {r0-r3,lr}
     mov r0, r12
     bl sdc_loadRomBlockDirect
     ldr r9, [r0, r9, lsr #(32 - SDC_BLOCK_SHIFT)]
-    pop {r0-r3,lr}
-    mov r13, r10
-    bx lr
+    pop {r0-r3,pc}
 
 arm_func memu_load32RomHi
     bic r9, r8, #0x06000000

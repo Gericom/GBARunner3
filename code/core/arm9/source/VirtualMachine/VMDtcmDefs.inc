@@ -1,12 +1,12 @@
 #pragma once
 
 .global vm_thumbUndefinedDispatchTable
-.set vm_thumbUndefinedDispatchTable, 0xFFFFF328
+.set vm_thumbUndefinedDispatchTable, 0xFFFFF668
 
 .global vm_armUndefinedDispatchTable
-.set vm_armUndefinedDispatchTable, 0xFFFFF728
+.set vm_armUndefinedDispatchTable, 0xFFFFFA68
 
-#define VM_DTCM_BASE 0xFFFFFF28
+#define VM_DTCM_BASE 0xFFFFFE68
 
 .struct VM_DTCM_BASE
 

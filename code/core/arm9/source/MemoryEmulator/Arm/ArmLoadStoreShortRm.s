@@ -11,17 +11,18 @@
             .else
                 mov r9, r\rm
             .endif
+            and r10, r10, lr, lsr #10 // r10 = Rd << 2
         .elseif \rm < 15
-            stmdb r13, {r\rm}^
-            nop
-            ldr r9, [r13, #-4]
+            stmdb sp, {r\rm}^
+            ldr r9, [sp, #-4]
+            and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .if \u == 0
                 rsb r9, r9, #0
             .endif
         .else
             // pc is not allowed
         .endif
-        bx r8
+        mov pc, r12, lsr #16
 .endm
 
 .macro memu_armLoadStoreShortRm_u rm
@@ -32,6 +33,8 @@
 generate memu_armLoadStoreShortRm_u, 16
 
 .section ".dtcm", "aw"
+
+.balign 64
 
 .global memu_armLoadStoreShortRmTable_0
 memu_armLoadStoreShortRmTable_0:
