@@ -5,11 +5,11 @@
 
 .macro memu_armSwpRn rn
     arm_func memu_armSwpRnR\rn
+        ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
         .if \rn < 8
             mov r8, r\rn
         .elseif \rn < 15
             stmdb sp, {r\rn}^
-            nop
             ldr r8, [sp, #-4]
         .else
             // pc is not allowed

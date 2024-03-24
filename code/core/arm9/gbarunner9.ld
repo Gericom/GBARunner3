@@ -214,7 +214,8 @@ SECTIONS
 		KEEP (VMMode.o(.itcm))
 		. = 0x7B4;
 		KEEP (VMSwi.o(.itcm))
-		KEEP (ArmLoadStoreShortRm.o(.itcm))
+		KEEP (RegDispCnt.o(.itcm))
+		KEEP (Input.o(.itcm))
 		KEEP (IoFallback.o(.itcm))
 		KEEP (PrefetchAbort.o(.itcm))
 		. = 0xC00;
@@ -231,6 +232,10 @@ SECTIONS
 		KEEP (ArmLoadStoreShortRd.o(.itcm))
 		KEEP (ArmSwpRd.o(.itcm))
 		KEEP (GbaSoundAsm.o(.itcm))
+		KEEP (VMUndefinedMsr.o(.itcm))
+		KEEP (JitArmUndefinedBx.o(.itcm))
+		KEEP (JitArmUndefinedLdrPcImm.o(.itcm))
+		KEEP (EmuIrqs.o(.itcm))
 		. = 0x3000;
 		KEEP (ThumbGetRn.o(.itcm))
 		*(.itcm)

@@ -15,7 +15,6 @@
         .elseif \rd < 15
             ldr r10, [r10, #memu_store16WordTable]
             stmnedb sp, {r\rd}^
-            nop
             ldrneh r9, [sp, #-4]
         .else
             mov r9, #0

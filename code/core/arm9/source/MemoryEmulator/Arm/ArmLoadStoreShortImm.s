@@ -4,11 +4,13 @@
 #include "AsmMacros.inc"
 
 arm_func memu_armLoadStoreShortImm0_0
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
     and r8, lr, #0xF00
     sub r9, r9, r8, lsr #4 // u=0 -> negate offset
     mov pc, r12, lsr #16
 
 arm_func memu_armLoadStoreShortImm_0
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
     mov r9, r9, lsr #2
     and r8, lr, #0xF00
     orr r9, r9, r8, lsr #4
@@ -16,11 +18,13 @@ arm_func memu_armLoadStoreShortImm_0
     mov pc, r12, lsr #16
 
 arm_func memu_armLoadStoreShortImm0_1
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
     and r8, lr, #0xF00
     mov r9, r8, lsr #4
     mov pc, r12, lsr #16
 
 arm_func memu_armLoadStoreShortImm_1
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
     mov r9, r9, lsr #2
     and r8, lr, #0xF00
     orr r9, r9, r8, lsr #4

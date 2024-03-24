@@ -10,7 +10,6 @@
             mov r12, r\rn
         .elseif \rn < 15
             stmdb sp, {r\rn}^
-            nop
             ldr r12, [sp, #-4]
         .else
             
@@ -23,7 +22,6 @@
                 add r9, r9, r12
                 str r9, [sp, #-4]
                 ldmdb sp, {r\rn}^
-                nop
             .else
 
             .endif

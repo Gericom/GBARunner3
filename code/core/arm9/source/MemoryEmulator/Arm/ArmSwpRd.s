@@ -20,7 +20,6 @@
         .elseif \rd < 15
             str r9, [sp, #-4]
             ldmdb sp, {r\rd}^
-            nop
             pop {r9} // value of rm
         .else
             // pc is not allowed
@@ -52,7 +51,7 @@ generate memu_armSwpRd, 16
             ldrb r9, [sp], #4 // value of rm
             str r10, [sp, #-4]
             ldmdb sp, {r\rd}^
-            nop
+            @ nop
         .else
             // pc is not allowed
         .endif

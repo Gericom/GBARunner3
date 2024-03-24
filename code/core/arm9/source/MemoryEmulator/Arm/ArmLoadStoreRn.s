@@ -11,58 +11,63 @@
             .if (\p == 1) && (\w == 0)
                 // lo reg, pre, no writeback
                 add r8, r\rn, r9 // add the offset
-                ldrb r10, [r12, r8, lsr #24]
-                // interlock x2
-                ldr r10, [r11, r10]
-                mov lr, r11, lsr #16
+                ldrb r9, [r12, r8, lsr #24]
+                ldr lr, [r10, -r11, lsl #6] // lr = Rd handler address
+                // interlock
+                ldr r10, [r9, lr]
+                mov lr, lr, lsr #16
+                bx r10
             .elseif (\p == 1) && (\w == 1)
                 // lo reg, pre, writeback
                 add r8, r\rn, r9 // add the offset
-                ldrb r10, [r12, r8, lsr #24]
+                ldrb r9, [r12, r8, lsr #24]
+                ldr lr, [r10, -r11, lsl #6] // lr = Rd handler address
                 mov r\rn, r8 // writeback
-                // interlock
-                ldr r10, [r11, r10]
-                mov lr, r11, lsr #16
+                ldr r10, [r9, lr]
+                mov lr, lr, lsr #16
+                bx r10
             .elseif \p == 0
                 // lo reg, post
-                ldrb r10, [r12, r\rn, lsr #24]
+                ldrb r12, [r12, r\rn, lsr #24]
+                ldr lr, [r10, -r11, lsl #6] // lr = Rd handler address
                 mov r8, r\rn
+                ldr r10, [r12, lr]
                 add r\rn, r\rn, r9 // writeback
-                ldr r10, [r11, r10]
-                mov lr, r11, lsr #16
+                mov lr, lr, lsr #16
+                bx r10
             .endif
         .elseif \rn < 15
             stmdb sp, {r\rn}^
-            nop
             ldr r8, [sp, #-4]
-            mov lr, r11, lsr #16
+            ldr lr, [r10, -r11, lsl #6] // lr = Rd handler address
             .if (\p == 1) && (\w == 0)
                 // hi reg, pre, no writeback
                 add r8, r8, r9 // add the offset
                 ldrb r10, [r12, r8, lsr #24]
                 // interlock x2
-                ldr r10, [r11, r10]
-                // interlock
+                ldr r10, [r10, lr]
+                mov lr, lr, lsr #16
+                bx r10
             .elseif (\p == 1) && (\w == 1)
                 // hi reg, pre, writeback
                 add r8, r8, r9 // add the offset
                 ldrb r10, [r12, r8, lsr #24]
                 str r8, [sp, #-4]
                 ldmdb sp, {r\rn}^
-                nop
-                ldr r10, [r11, r10]
-                // interlock
+                ldr r10, [r10, lr]
+                mov lr, lr, lsr #16
+                bx r10
             .elseif \p == 0
                 // hi reg, post
                 ldrb r10, [r12, r8, lsr #24]
                 add r9, r8, r9
                 str r9, [sp, #-4]
-                ldr r10, [r11, r10]
+                ldr r10, [r10, lr]
                 ldmdb sp, {r\rn}^
-                nop
+                mov lr, lr, lsr #16
+                bx r10
             .endif
         .endif
-        bx r10
 .endm
 
 .macro memu_armLoadRn_pw rn
@@ -77,18 +82,19 @@ arm_func memu_armLoadR15
     // rn = pc; writeback is not allowed
     mov r8, #0
     ldr r8, [r8, #memu_inst_addr]
-    // interlock
+    ldr lr, [r10, -r11, lsl #6] // lr = Rd handler address
     add r8, r8, r9 // add the offset
     // we assume here that the Z flag is already cleared
     // which will cause Rd to be loaded
     ldrb r10, [r12, r8, lsr #24]
     // interlock x2
-    ldr r10, [r11, r10]
-    mov lr, r11, lsr #16
+    ldr r10, [r10, lr]
+    mov lr, lr, lsr #16
     bx r10
 
 .macro memu_armStoreRn rn, p, w
     arm_func memu_armStoreR\rn\()_\p\w
+        ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
         .if \rn < 8
             .if (\p == 1) && (\w == 0)
                 // lo reg, pre, no writeback
@@ -154,7 +160,7 @@ arm_func memu_armStoreR15
     // rn = pc; writeback is not allowed
     mov r8, #0
     ldr r8, [r8, #memu_inst_addr]
-    // interlock
+    ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
     add r8, r8, r9 // add the offset
     // we assume here that the Z flag is already cleared
     // which will cause Rd to be loaded

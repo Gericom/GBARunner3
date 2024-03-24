@@ -23,12 +23,11 @@ arm_func memu_armDispatch
 
 armDispatchContinue:
     movs r10, #(0xF << 2) // also clears Z flag
-    and r11, lr, #0x0FF00000
+    and r12, lr, #0x0FF00000
     mov r9, lr, lsl #25
-    add r8, r8, r9, lsr #30
-    ldrb r12, [r8, r11, lsr #18]!
-    ldrb r11, [r8, #0x280]
-    ldrb r8, [r8, #0x500]
+    add r11, r8, r9, lsr #30
+    ldrb r12, [r11, r12, lsr #18]!
+    ldrb r8, [r11, #0x500]
     // Rn
     and r9, r10, lr, lsr #14
     ldr r12, [r9, -r12, lsl #6] // r12 = Rn handler address
@@ -36,9 +35,7 @@ armDispatchContinue:
     and r9, r10, lr, lsl #2 // r9 = Rm << 2
     ldr r8, [r9, -r8, lsl #6] // r8 = Rm handler address
     // Rd
-    and r10, r10, lr, lsr #10 // r10 = Rd << 2
-    ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
-
+    ldrb r11, [r11, #0x280]
     bx r8
 
 #ifdef GBAR3_HICODE_CACHE_MAPPING

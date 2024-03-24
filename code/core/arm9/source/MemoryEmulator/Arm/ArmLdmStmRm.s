@@ -8,10 +8,12 @@
 arm_func memu_armLdmStmRm_\p\u
     //count nr bits
     ldr r9,= gPopCountTable
-    mov r10, lr, lsl #16
-    and r8, r10, #0xFF0000
+    mov r11, lr, lsl #16
+    and r8, r11, #0xFF0000
     ldrb r8, [r9, r8, lsr #16]
-    ldrb r9, [r9, r10, lsr #24]
+    ldrb r9, [r9, r11, lsr #24]
+    and r10, r10, lr, lsr #10 // r10 = Rd << 2
+    ldr r11, [r10, -r11, lsl #6] // r11 = Rd handler address
     add r8, r9, r8
 
     mov r10, #0

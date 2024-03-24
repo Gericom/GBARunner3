@@ -13,14 +13,11 @@
             movne r9, r\rd // if Rd is not equal to Rn, get the value of Rd
         .elseif \rd < 15
             ldr r10, [r10, #memu_store32WordTable]
-
             stmnedb sp, {r\rd}^
-            nop
             ldrne r9, [sp, #-4]
         .else
             mov r9, #0
             ldr r9, [r9, #memu_inst_addr]
-
             ldr r10, [r10, #memu_store32WordTable]
             add r9, r9, #4 // pc + 12
         .endif
@@ -40,9 +37,7 @@ generate memu_armStrRd, 16
             and r9, r9, #0xFF
         .elseif \rd < 15
             ldr r10, [r10, #memu_store8WordTable]
-
             stmnedb sp, {r\rd}^
-            nop
             ldrneb r9, [sp, #-4]
         .else
             mov r9, #0

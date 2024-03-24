@@ -11,10 +11,11 @@
             .else
                 mov r9, r\rm
             .endif
+            and r10, r10, lr, lsr #10 // r10 = Rd << 2
         .elseif \rm < 15
             stmdb sp, {r\rm}^
-            nop
             ldr r9, [sp, #-4]
+            and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .if \u == 0
                 rsb r9, r9, #0
             .endif

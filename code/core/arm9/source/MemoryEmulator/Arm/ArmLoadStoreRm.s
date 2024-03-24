@@ -16,7 +16,7 @@
             nop
         .endif
         nop
-        nop
+        and r10, r10, lr, lsr #10 // r10 = Rd << 2
         1:
         .if \u == 0
             sub r9, r8, r0, lsl #1 // u=0 -> negate offset
@@ -37,12 +37,13 @@ memu_armLoadStoreRlo 1
             orr r9, r9, #9
             strh r9, 1f
             stmdb sp, {r\rm}^
-            nop
+            @ nop
             ldr r9, [sp, #-4]
             .if \u == 0
                 mov r8, #0
+                and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .else
-                // interlock
+                and r10, r10, lr, lsr #10 // r10 = Rd << 2
             .endif
         .else
             // pc is not allowed
