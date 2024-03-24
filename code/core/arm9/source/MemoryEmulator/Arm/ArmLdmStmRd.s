@@ -19,15 +19,15 @@ arm_func memu_armStmRd
     cmp r11, r9
 
     mov r9, r12
-    add r11, r9, r8, lsl #2
 
     rsb r12, r8, #15
+    add r8, r9, r10
+    sub r11, r8, r12, lsl #2
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    add r8, r9, r10
     mov r10, r8, lsr #24
-    sub r11, r11, #4
+    add r11, r11, #(14 * 4)
     cmp r10, r11, lsr #24
     ldrb r10, [r10, #memu_loadStoreRemapTable]
     strh lr, 1f
@@ -71,15 +71,15 @@ arm_func memu_armStmRdWithPc
     cmp r11, r9
 
     mov r9, r12
-    add r11, r9, r8, lsl #2
 
     rsb r12, r8, #16
+    add r8, r9, r10
+    sub r11, r8, r12, lsl #2
     mov r12, r12, lsl #4
     addeq r12, r12, #4 // skip first load of r9
 
-    add r8, r9, r10
     mov r10, r8, lsr #24
-    sub r11, r11, #4
+    add r11, r11, #(15 * 4)
     cmp r10, r11, lsr #24
     ldrb r10, [r10, #memu_loadStoreRemapTable]
     strh lr, 1f
