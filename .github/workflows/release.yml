@@ -1,0 +1,38 @@
+name: Build release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    name: Build with Docker using devkitARM
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Make application
+        run: |
+          make -C code
+      - name: Prepare for build publishing
+        run: |
+          mkdir -p out/_gba/
+          cp -f code/bootstrap/GBARunner3.nds out/
+          cp -r configs out/_gba/
+      - name: Publish build to GH Actions
+        uses: actions/upload-artifact@v4
+        with:
+          path: out
+          name: GBARunner3
+      - name: Package for release
+        run: |
+          cd out && zip -r ../GBARunner3.zip *
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            GBARunner3.zip
