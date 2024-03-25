@@ -15,14 +15,16 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checklibtwl checkbootstrap checktest
+all: checklibtwl checkbootstrap
+
+debug: all checktest
 
 #---------------------------------------------------------------------------------
 checklibtwl:
 	$(MAKE) -C libs/libtwl
 
 #---------------------------------------------------------------------------------
-checkbootstrap:
+checkbootstrap: checklibtwl
 	$(MAKE) -C bootstrap
 
 #---------------------------------------------------------------------------------
