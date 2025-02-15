@@ -9,3 +9,4 @@ build
 *.map
 *.bin
 code/bootstrap/nitrofiles
+settings.sh

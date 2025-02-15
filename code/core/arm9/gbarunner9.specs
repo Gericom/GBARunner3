@@ -5,19 +5,19 @@
 %rename link blocksds_link
 
 *cpp:
--D__NDS__ -D__BLOCKSDS__ -DARM7 %(blocksds_cpp)
+-D__NDS__ -D__BLOCKSDS__ -DARM9 %(blocksds_cpp)
 
 *cc1_cpu:
--mcpu=arm7tdmi
+-mcpu=arm946e-s+nofp
 
 *cc1plus:
 %(cpp) %(blocksds_cc1plus)
 
 *link:
-%(blocksds_link) -T gbarunner7.ld%s --gc-sections --no-warn-rwx-segments
+%(blocksds_link) -T gbarunner9.ld --gc-sections --no-warn-rwx-segments --use-blx
 
 *startfile:
-%:getenv(BLOCKSDS /sys/crts/ds_arm7_crt0%O)
+build/arm9/source/crt0.s%O
 
 *lib:
 %(libgcc)

@@ -1,165 +1,242 @@
-#---------------------------------------------------------------------------------
-.SUFFIXES:
-#---------------------------------------------------------------------------------
+# SPDX-License-Identifier: CC0-1.0
+#
+# SPDX-FileContributor: Antonio Niño Díaz, 2023
 
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+export BLOCKSDS			?= /opt/blocksds/core
+export BLOCKSDSEXT		?= /opt/blocksds/external
+
+export WONDERFUL_TOOLCHAIN	?= /opt/wonderful
+ARM_NONE_EABI_PATH	?= $(WONDERFUL_TOOLCHAIN)/toolchain/gcc-arm-none-eabi/bin/
+
+# Defines passed to all files
+# ---------------------------
+
+DEFINES		:= -DLIBTWL_ARM9
+
+# Libraries
+# ---------
+
+LIBTWL_DIR	:= $(CURDIR)/../../libs/libtwl
+LIBNDS_DIR	:= $(CURDIR)/../../libs/libnds
+LIBS		:= -lnds9arm -ltwl9
+LIBDIRS		:= $(LIBTWL_DIR)/libtwl9 $(LIBTWL_DIR)/common \
+		   $(LIBNDS_DIR) $(LIBTWL_DIR)
+
+# Build artifacts
+# ---------------
+
+NAME			:= arm9
+OUTPUT			:= $(NAME).bin
+BUILDDIR		:= build/$(NAME)
+ELF				:= build/$(NAME).elf
+DUMP			:= build/$(NAME).dump
+MAP				:= build/$(NAME).map
+SOUNDBANKDIR	:= $(BUILDDIR)/maxmod
+
+# Source code paths
+# -----------------
+
+SOURCEDIRS	:= source ../../libs/mini-printf
+INCLUDEDIRS	:= source ../common $(BUILDDIR) ../../libs/mini-printf
+GFXDIRS		:=
+BINDIRS		:=
+AUDIODIRS	:=
+
+# Tools
+# -----
+
+PREFIX		:= $(ARM_NONE_EABI_PATH)arm-none-eabi-
+CC			:= $(PREFIX)gcc
+CXX			:= $(PREFIX)g++
+LD			:= $(PREFIX)gcc
+OBJCOPY		:= $(PREFIX)objcopy
+OBJDUMP		:= $(PREFIX)objdump
+MKDIR		:= mkdir
+RM			:= rm -rf
+
+# Verbose flag
+# ------------
+
+ifeq ($(VERBOSE),1)
+V		:=
+else
+V		:= @
 endif
 
-%.size.o: %.size.cpp
-	$(SILENTMSG) $(notdir $<)
-	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.size.d $(CXXFLAGS) -mthumb -Os -c $< -o $@ $(ERROR_FILTER)
+# Source files
+# ------------
 
-include $(DEVKITARM)/ds_rules
-
-#---------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
-# SPECS is the directory containing the important build and link files
-#---------------------------------------------------------------------------------
-export TARGET		:=	$(shell basename $(CURDIR))
-BUILD		:=	build
-SOURCES		:=	source \
-				../common \
-				source/Application \
-				source/Application/Settings \
-				source/Application/Settings/Enums \
-				source/Application/Settings/Json \
-				source/Core \
-				source/Core/Heap \
-				source/Emulator \
-				source/Fat \
-				source/Gui \
-				source/Gui/Animation \
-				source/JitPatcher \
-				source/Logger \
-				source/MemoryEmulator \
-				source/MemoryEmulator/Arm \
-				source/MemoryEmulator/Thumb \
-				source/Patches \
-				source/Peripherals \
-				source/Peripherals/Graphics \
-				source/Peripherals/Interrupts \
-				source/Peripherals/Sound \
-				source/Save \
-				source/SdCache \
-				source/VirtualMachine \
-				../../libs/mini-printf
-DATA		:=	data
-INCLUDES	:=	include source ../common ../../libs/mini-printf
-
-
-#---------------------------------------------------------------------------------
-# options for code generation
-#---------------------------------------------------------------------------------
-ARCH	:=	-marm -mthumb-interwork -march=armv5te -mtune=arm946e-s \
-			-DLIBTWL_ARM9 -DARM9
-
-CFLAGS	:=	-g -Wall -O2\
-			 -fomit-frame-pointer\
-			-ffunction-sections -fdata-sections\
-			-ffast-math \
-			-Werror=return-type \
-			$(ARCH)
-
-CFLAGS	+=	$(INCLUDE)
-
-CXXFLAGS	:= $(CFLAGS) -std=gnu++23 -Wno-volatile -fno-rtti -fno-exceptions -fno-threadsafe-statics\
-				-Wsuggest-override -Werror=suggest-override
-
-ASFLAGS	:=	-g $(ARCH) $(INCLUDE)
-LDFLAGS	=	-T ../gbarunner9.ld -g $(ARCH) -Wl,-Map,$(notdir $*.map),--use-blx,--no-warn-rwx-segments,--gc-sections -ffunction-sections -fdata-sections
-
-LIBS	:= -ltwl9 -lnds9
-
-#---------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level containing
-# include and lib
-#---------------------------------------------------------------------------------
-LIBDIRS	:=	$(LIBNDS)  $(CURDIR)/../../libs/libtwl/libtwl9 $(CURDIR)/../../libs/libtwl/common
- 
-  
-#---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
-# rules for different file extensions
-#---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-#---------------------------------------------------------------------------------
- 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
-export DEPSDIR	:=	$(CURDIR)/$(BUILD)
-
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
-
-#---------------------------------------------------------------------------------
-# use CXX for linking C++ projects, CC for standard C
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(CPPFILES)),)
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CC)
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CXX)
-#---------------------------------------------------------------------------------
+ifneq ($(BINDIRS),)
+    SOURCES_BIN	:= $(shell find -L $(BINDIRS) -name "*.bin")
+    INCLUDEDIRS	+= $(addprefix $(BUILDDIR)/,$(BINDIRS))
 endif
-#---------------------------------------------------------------------------------
+ifneq ($(GFXDIRS),)
+    SOURCES_PNG	:= $(shell find -L $(GFXDIRS) -name "*.png")
+    INCLUDEDIRS	+= $(addprefix $(BUILDDIR)/,$(GFXDIRS))
+endif
+ifneq ($(AUDIODIRS),)
+    SOURCES_AUDIO	:= $(shell find -L $(AUDIODIRS) -regex '.*\.\(it\|mod\|s3m\|wav\|xm\)')
+    ifneq ($(SOURCES_AUDIO),)
+        INCLUDEDIRS	+= $(SOUNDBANKDIR)
+    endif
+endif
 
-export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
-			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
+SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
+SOURCES_CPP	:= $(shell find -L $(SOURCEDIRS) -name "*.cpp")
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+# Compiler and linker flags
+# -------------------------
 
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+ARCH		:= -marm -mthumb-interwork -march=armv5te -mtune=arm946e-s
 
-.PHONY: $(BUILD) clean all
- 
-#---------------------------------------------------------------------------------
-all: $(BUILD)
+SPECS		:= gbarunner9.specs
 
-$(BUILD):
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
- 
-#---------------------------------------------------------------------------------
-clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
- 
- 
-#---------------------------------------------------------------------------------
+WARNFLAGS	:= -Wall
+
+ifeq ($(SOURCES_CPP),)
+	LIBS	+= -lc
 else
- 
-DEPENDS	:=	$(OFILES:.o=.d)
- 
-#---------------------------------------------------------------------------------
-# main targets
-#---------------------------------------------------------------------------------
-$(OUTPUT).bin	:	$(OUTPUT).elf
-$(OUTPUT).elf	:	$(OFILES)
+	LIBS	+= -lstdc++ -lc
+endif
 
+INCLUDEFLAGS	:= $(foreach path,$(INCLUDEDIRS),-I$(path)) \
+		   $(foreach path,$(LIBDIRS),-I$(path)/include)
 
-#---------------------------------------------------------------------------------
-%.bin: %.elf
-	@$(OBJCOPY) -O binary $< $@
+LIBDIRSFLAGS	:= $(foreach path,$(LIBDIRS),-L$(path)/lib)
+
+ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(INCLUDEFLAGS) \
+		   $(ARCH) -ffunction-sections -fdata-sections \
+		   -specs=$(SPECS)
+
+CFLAGS		+= -std=gnu17 $(WARNFLAGS) $(DEFINES) $(INCLUDEFLAGS) \
+		   $(ARCH) -O2 -ffunction-sections -fdata-sections \
+		   -specs=$(SPECS)
+
+CXXFLAGS	+= -std=gnu++23 $(WARNFLAGS) $(DEFINES) $(INCLUDEFLAGS) \
+		   $(ARCH) -O2 -ffunction-sections -fdata-sections \
+		   -fno-exceptions -fno-rtti \
+		   -specs=$(SPECS)
+
+LDFLAGS		:= $(ARCH) $(LIBDIRSFLAGS) -Wl,-Map,$(MAP) $(DEFINES) \
+		   -Wl,--start-group $(LIBS) -Wl,--end-group -specs=$(SPECS) \
+		   -nostartfiles
+
+# Intermediate build files
+# ------------------------
+
+OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_BIN))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_PNG)))
+
+HEADERS_ASSETS	:= $(patsubst %.bin,%_bin.h,$(addprefix $(BUILDDIR)/,$(SOURCES_BIN))) \
+		   $(patsubst %.png,%.h,$(addprefix $(BUILDDIR)/,$(SOURCES_PNG)))
+
+ifneq ($(SOURCES_AUDIO),)
+    OBJS_ASSETS		+= $(SOUNDBANKDIR)/soundbank.c.o
+    HEADERS_ASSETS	+= $(SOUNDBANKDIR)/soundbank.h
+endif
+
+OBJS_SOURCES	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_S))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CPP)))
+
+OBJS		:= $(OBJS_ASSETS) $(OBJS_SOURCES)
+
+DEPS		:= $(OBJS:.o=.d)
+
+# Targets
+# -------
+
+.PHONY: all clean dump
+
+all: $(OUTPUT)
+
+$(OUTPUT) : $(ELF)
+	@$(MKDIR) -p $(@D)
+	$(OBJCOPY) -O binary $< $@
 	@echo built ... $(notdir $@)
- 
 
--include $(DEPENDS)
+$(ELF): $(OBJS)
+	@echo "  LD.9    $@"
+	$(V)$(LD) -o $@ $(OBJS) $(LDFLAGS)
 
- 
-#---------------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------------
+$(DUMP): $(ELF)
+	@echo "  OBJDUMP.9 $@"
+	$(V)$(OBJDUMP) -h -C -S $< > $@
+
+dump: $(DUMP)
+
+clean:
+	@echo "  CLEAN.9"
+	$(V)$(RM) $(ELF) $(DUMP) $(MAP) $(BUILDDIR) $(OUTPUT)
+
+# Rules
+# -----
+
+$(BUILDDIR)/%.s.o : %.s
+	@echo "  AS.9    $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(CC) $(ASFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILDDIR)/%.c.o : %.c
+	@echo "  CC.9    $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILDDIR)/%.arm.c.o : %.arm.c
+	@echo "  CC.9    $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(CC) $(CFLAGS) -MMD -MP -marm -mlong-calls -c -o $@ $<
+
+$(BUILDDIR)/%.cpp.o : %.cpp
+	@echo "  CXX.9   $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILDDIR)/%.arm.cpp.o : %.arm.cpp
+	@echo "  CXX.9   $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(CXX) $(CXXFLAGS) -MMD -MP -marm -mlong-calls -c -o $@ $<
+
+$(BUILDDIR)/%.bin.o $(BUILDDIR)/%_bin.h : %.bin
+	@echo "  BIN2C.9 $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(BLOCKSDS)/tools/bin2c/bin2c $< $(@D)
+	$(V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.bin.o $(BUILDDIR)/$*_bin.c
+
+$(BUILDDIR)/%.bin.o $(BUILDDIR)/%_bin.h : $(BUILDDIR)/%.bin
+	@echo "  BIN2C.9 $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(BLOCKSDS)/tools/bin2c/bin2c $< $(@D)
+	$(V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.bin.o $(BUILDDIR)/$*_bin.c
+
+$(BUILDDIR)/%.png.o $(BUILDDIR)/%.h : %.png %.grit
+	@echo "  GRIT.9  $<"
+	@$(MKDIR) -p $(@D)
+	$(V)$(BLOCKSDS)/tools/grit/grit $< -ftc -W1 -o$(BUILDDIR)/$*
+	$(V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.png.o $(BUILDDIR)/$*.c
+	$(V)touch $(BUILDDIR)/$*.png.o $(BUILDDIR)/$*.h
+
+$(SOUNDBANKDIR)/soundbank.h: $(SOURCES_AUDIO)
+	@echo "  MMUTIL  $^"
+	@$(MKDIR) -p $(@D)
+	@$(BLOCKSDS)/tools/mmutil/mmutil $^ -d \
+		-o$(SOUNDBANKDIR)/soundbank.bin -h$(SOUNDBANKDIR)/soundbank.h
+
+$(SOUNDBANKDIR)/soundbank.c.o: $(SOUNDBANKDIR)/soundbank.h
+	@echo "  BIN2C   soundbank.bin"
+	$(V)$(BLOCKSDS)/tools/bin2c/bin2c $(SOUNDBANKDIR)/soundbank.bin \
+		$(SOUNDBANKDIR)
+	@echo "  CC.9    soundbank_bin.c"
+	$(V)$(CC) $(CFLAGS) -MMD -MP -c -o $(SOUNDBANKDIR)/soundbank.c.o \
+		$(SOUNDBANKDIR)/soundbank_bin.c
+
+# All assets must be built before the source code
+# -----------------------------------------------
+
+$(SOURCES_S) $(SOURCES_C) $(SOURCES_CPP): $(HEADERS_ASSETS)
+
+# Include dependency files if they exist
+# --------------------------------------
+
+-include $(DEPS)

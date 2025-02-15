@@ -4,13 +4,17 @@
 #include "dldi.h"
 #include "FsIpcService.h"
 
+#ifndef __BLOCKSDS__
 extern "C" int sdmmc_sd_startup();
+#endif
 
 void FsIpcService::Start()
 {
     if (isDSiMode())
     {
+        #ifndef __BLOCKSDS__
         sdmmc_sd_startup();
+        #endif
     }
     ThreadIpcService::Start();
 }

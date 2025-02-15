@@ -1,69 +1,123 @@
-#---------------------------------------------------------------------------------
-.SUFFIXES:
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+# SPDX-License-Identifier: CC0-1.0
+#
+# SPDX-FileContributor: Antonio Niño Díaz, 2023
+
+BLOCKSDS	?= /opt/blocksds/core
+BLOCKSDSEXT	?= /opt/blocksds/external
+
+NAME		:= gbarunner3
+
+GAME_TITLE	:= GBARunner 3
+GAME_SUBTITLE	:=
+GAME_AUTHOR	:= Gericom
+GAME_ICON	:= icon.bmp
+
+# Tools
+# -----
+
+MAKE		:= make
+RM			:= rm -rf
+
+# Verbose flag
+# ------------
+
+ifeq ($(VERBOSE),1)
+V			:=
+else
+V			:= @
 endif
 
-export TARGET	:=	GBARunner3
-export TOPDIR	:=	$(CURDIR)
+# DLDI and internal SD slot of DSi
+# --------------------------------
+
+# Root folder of the SD image
+SDROOT		:= sdroot
+# Name of the generated image it "DSi-1.sd" for no$gba in DSi mode
+SDIMAGE		:= image.bin
+
+# Source code paths
+# -----------------
 
 # specify a directory which contains the nitro filesystem
 # this is relative to the Makefile
 ifdef GBAR3_ISNITRO
-NITRO_FILES	:= nitrofiles
+NITROFSDIR	:= nitrofiles
 else
-NITRO_FILES	:= 
+NITROFSDIR	:=
 endif
 
-# These set the information text in the nds file
-GAME_TITLE     := GBARunner 3
-GAME_SUBTITLE1 := By Gericom
-GAME_SUBTITLE2 :=
+# Directories
+# -----------
 
-include $(DEVKITARM)/ds_rules
+ARM7COREDIR	:= ../core/arm7
+ARM9COREDIR	:= ../core/arm9
+ARM9DIR		:= arm9
 
-.PHONY: checkcorearm9 checkarm7 checkarm9 clean
+# Build artfacts
+# --------------
+
+ROM			:= $(NAME).nds
+
+.PHONY: all checkcorearm9 checkcorearm7 checkarm9 clean sdimage
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checkcorearm9 checkarm7 checkarm9 $(TARGET).nds
+all: checkcorearm9 checkcorearm7 checkarm9 $(ROM)
 
 #---------------------------------------------------------------------------------
 checkcorearm9:
-	$(MAKE) -C ../core/arm9
-	cp ../core/arm9/arm9.bin arm9/data/gbarunner9.bin
+	$(V)+$(MAKE) -C $(ARM9COREDIR)
+	cp $(ARM9COREDIR)/arm9.bin arm9/data/gbarunner9.bin
 
 #---------------------------------------------------------------------------------
-checkarm7:
-	$(MAKE) -C ../core/arm7
+checkcorearm7:
+	$(V)+$(MAKE) -C $(ARM7COREDIR)
 	
 #---------------------------------------------------------------------------------
-checkarm9:
-	$(MAKE) -C arm9
+checkarm9: checkcorearm9
+	$(V)+$(MAKE) -C $(ARM9DIR) --no-print-directory
 
 #---------------------------------------------------------------------------------
-$(TARGET).nds	: $(NITRO_FILES) ../core/arm7/$(TARGET).elf arm9/$(TARGET).elf
-	ndstool	-c $(TARGET).nds -7 ../core/arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
-	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
-	$(_ADDFILES)
-ifdef GBAR3_ISNITRO
-	dlditool FatInNitroFS.dldi $(TARGET).nds
+ifneq ($(strip $(NITROFSDIR)),)
+# Additional arguments for ndstool
+NDSTOOL_ARGS	:= -d $(NITROFSDIR)
+
+# Make the NDS ROM depend on the filesystem only if it is needed
+$(ROM): $(NITROFSDIR)
 endif
 
 #---------------------------------------------------------------------------------
-../core/arm7/$(TARGET).elf:
-	$(MAKE) -C ../core/arm7
+
+# Combine the title strings
+ifeq ($(strip $(GAME_SUBTITLE)),)
+    GAME_FULL_TITLE := $(GAME_TITLE);$(GAME_AUTHOR)
+else
+    GAME_FULL_TITLE := $(GAME_TITLE);$(GAME_SUBTITLE);$(GAME_AUTHOR)
+endif
+
+#---------------------------------------------------------------------------------
+$(ROM) : $(ARM7COREDIR)/build/arm7.elf $(ARM9DIR)/build/arm9.elf
+	@echo "  NDSTOOL $@"
+	$(V)$(BLOCKSDS)/tools/ndstool/ndstool -c $@ \
+		-7 $(ARM7COREDIR)/build/arm7.elf -9 $(ARM9DIR)/build/arm9.elf \
+		-b $(GAME_ICON) "$(GAME_FULL_TITLE)" \
+		$(NDSTOOL_ARGS)
+
+sdimage:
+	@echo "  MKFATIMG $(SDIMAGE) $(SDROOT)"
+	$(V)$(BLOCKSDS)/tools/mkfatimg/mkfatimg -t $(SDROOT) $(SDIMAGE)
+
+#---------------------------------------------------------------------------------
+$(ARM7COREDIR)/build/arm7.elf: checkcorearm7
 	
 #---------------------------------------------------------------------------------
-arm9/$(TARGET).elf:
-	$(MAKE) -C arm9
+$(ARM9DIR)/build/arm9.elf: checkarm9
 
 #---------------------------------------------------------------------------------
 clean:
-	$(MAKE) -C ../core/arm9 clean
-	$(MAKE) -C arm9 clean
-	$(MAKE) -C ../core/arm7 clean
-	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
+	$(V)+$(MAKE) -C $(ARM9COREDIR) clean
+	$(V)+$(MAKE) -C $(ARM7COREDIR) clean
+	$(V)+$(MAKE) -C $(ARM9DIR) clean
+	$(V)$(RM) $(ROM) $(NAME).arm7 $(NAME).arm9
 	rm -f arm9/data/gbarunner9.bin
