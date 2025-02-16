@@ -12,6 +12,9 @@
 
 ILogger* gLogger;
 
+[[gnu::section(".vramhi.bss")]]
+u32 gGbaBios[16 * 1024 / 4] alignas(256);
+
 static void initLogger()
 {
     std::unique_ptr<IOutputStream> outputStream;
