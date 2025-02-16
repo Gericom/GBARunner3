@@ -14,10 +14,10 @@
 %(cpp) %(blocksds_cc1plus)
 
 *link:
-%(blocksds_link) -T test9.mem -T test9.ld --gc-sections --no-warn-rwx-segments --use-blx
+%(blocksds_link) -T gbarunner9.ld --gc-sections --no-warn-rwx-segments --use-blx
 
 *startfile:
-%:getenv(BLOCKSDS /sys/crts/ds_arm9_crt0%O)
+build/arm9/source/crt0.s%O
 
 *lib:
 %(libgcc)

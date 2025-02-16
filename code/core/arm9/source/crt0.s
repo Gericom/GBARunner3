@@ -34,8 +34,8 @@ _start:
     bl setupMemoryProtection
     pop {r12}
 
-    // turn back on itcm, dtcm, cache and mpu
-    // and use low vectors and armv4t backwards compatibility
+    // turn back on itcm, dtcm, cache and mpu,
+    // use low vectors and armv4t backwards compatibility
     ldr r0,= 0x0005D07D
     mcr p15, 0, r0, c1, c0
 

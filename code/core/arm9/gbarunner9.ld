@@ -101,7 +101,7 @@ SECTIONS
 		wildcard.  The wildcard also means that it doesn't matter which
 		directory crtbegin.o is in.  */
 		KEEP (*crtbegin.o(.ctors))
-		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
+		KEEP (*(EXCLUDE_FILE (*crtend*.o) .ctors))
 		KEEP (*(SORT(.ctors.*)))
 		KEEP (*(.ctors))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
@@ -110,7 +110,7 @@ SECTIONS
 	.dtors :
 	{
 		KEEP (*crtbegin.o(.dtors))
-		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
+		KEEP (*(EXCLUDE_FILE (*crtend*.o) .dtors))
 		KEEP (*(SORT(.dtors.*)))
 		KEEP (*(.dtors))
 		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
@@ -158,41 +158,41 @@ SECTIONS
 	{
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
-		KEEP (ThumbDtcm.o(.dtcm))
+		KEEP (*ThumbDtcm*.o(.dtcm))
 		. = 0xF70;
-		KEEP (ArmDispatchTable.o(.dtcm))
-		KEEP (ArmLdmStmRd.o(.dtcm))
-		KEEP (ArmLdmStmRm.o(.dtcm))
-		KEEP (ArmLdmStmRn.o(.dtcm))
-		KEEP (ArmLoadStoreRd.o(.dtcm))
-		KEEP (ArmLoadStoreRn.o(.dtcm))
-		KEEP (ArmLoadStoreShortImm.o(.dtcm))
-		KEEP (ArmLoadStoreShortRd.o(.dtcm))
-		KEEP (ArmLoadStoreShortRm.o(.dtcm))
-		KEEP (ArmSwpRd.o(.dtcm))
-		KEEP (ArmSwpRn.o(.dtcm))
-		KEEP (ArmLoadStoreImm.o(.dtcm))
-		KEEP (ArmLoadStoreRm.o(.dtcm))
-		KEEP (VMUndefinedAluSPCImm.o(.dtcm))
-		KEEP (VMUndefinedMrs.o(.dtcm))
-		KEEP (VMUndefinedMsr.o(.dtcm))
-		KEEP (JitArmUndefinedB.o(.dtcm))
-		KEEP (JitArmUndefinedBL.o(.dtcm))
-		KEEP (JitArmUndefinedBx.o(.dtcm))
-		KEEP (JitArmUndefinedLdrPcImm.o(.dtcm))
-		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o MemoryLoadStoreRemapTable.o) .dtcm)
+		KEEP (*ArmDispatchTable*.o(.dtcm))
+		KEEP (*ArmLdmStmRd*.o(.dtcm))
+		KEEP (*ArmLdmStmRm*.o(.dtcm))
+		KEEP (*ArmLdmStmRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreRd*.o(.dtcm))
+		KEEP (*ArmLoadStoreRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortImm*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortRd*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortRm*.o(.dtcm))
+		KEEP (*ArmSwpRd*.o(.dtcm))
+		KEEP (*ArmSwpRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreImm*.o(.dtcm))
+		KEEP (*ArmLoadStoreRm*.o(.dtcm))
+		KEEP (*VMUndefinedAluSPCImm*.o(.dtcm))
+		KEEP (*VMUndefinedMrs*.o(.dtcm))
+		KEEP (*VMUndefinedMsr*.o(.dtcm))
+		KEEP (EXCLUDE_FILE(*JitArmUndefinedBL*.o *JitArmUndefinedBX*.o) *JitArmUndefinedB*.o(.dtcm))
+		KEEP (*JitArmUndefinedBL*.o(.dtcm))
+		KEEP (*JitArmUndefinedBx*.o(.dtcm))
+		KEEP (*JitArmUndefinedLdrPcImm*.o(.dtcm))
+		*(EXCLUDE_FILE(*VMDtcm*.o *VMUndefinedThumbTable*.o *VMUndefinedArmTable*.o *MemoryLoadStoreTables*.o *MemoryLoadStoreWordTables*.o *MemoryLoadStoreRemapTable*.o) .dtcm)
 		*(.dtcm.*)
 		. = 0x33E8;
-		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
+		KEEP (*MemoryLoadStoreRemapTable*.o(.dtcm))
 		. = 0x34E8;
-		KEEP (MemoryLoadStoreWordTables.o(.dtcm))
+		KEEP (*MemoryLoadStoreWordTables*.o(.dtcm))
 		. = 0x3668;
-		KEEP (VMUndefinedThumbTable.o(.dtcm))
-		KEEP (VMUndefinedArmTable.o(.dtcm))
+		KEEP (*VMUndefinedThumbTable*.o(.dtcm))
+		KEEP (*VMUndefinedArmTable*.o(.dtcm))
 		. = 0x3E68;
-		KEEP (VMDtcm.o(.dtcm))
+		KEEP (*VMDtcm*.o(.dtcm))
 		. = 0x3F40;
-		KEEP (MemoryLoadStoreTables.o(.dtcm))
+		KEEP (*MemoryLoadStoreTables*.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>vramab :dtcm = 0xff
@@ -201,42 +201,42 @@ SECTIONS
 	{
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
-		KEEP (vectors.o(.itcm))
+		KEEP (*vectors*.o(.itcm))
 		. = 0x20;
-		KEEP (VMUndefined.o(.itcm))
+		KEEP (EXCLUDE_FILE(*VMUndefinedThumbTable*.o *VMUndefinedArmTable*.o *VMUndefinedMsr*.o *VMUndefinedMrs*.o *VMUndefinedAluSPCImm*.o *VMUndefinedInstructions*.o) *VMUndefined*.o(.itcm))
 		. = 0xB8;
-		KEEP (VMIrq.o(.itcm))
+		KEEP (*VMIrq*.o(.itcm))
 		. = 0x390;
-		KEEP (MemoryLoadRom.o(.itcm))
+		KEEP (*MemoryLoadRom*.o(.itcm))
 		. = 0x400;
-		KEEP (ArmDispatch.o(.itcm))
+		KEEP (EXCLUDE_FILE(*ArmDispatchTable*.o) *ArmDispatch*.o(.itcm))
 		. = 0x450;
-		KEEP (VMMode.o(.itcm))
+		KEEP (*VMMode*.o(.itcm))
 		. = 0x7B4;
-		KEEP (VMSwi.o(.itcm))
-		KEEP (RegDispCnt.o(.itcm))
-		KEEP (Input.o(.itcm))
-		KEEP (IoFallback.o(.itcm))
-		KEEP (PrefetchAbort.o(.itcm))
+		KEEP (*VMSwi*.o(.itcm))
+		KEEP (EXCLUDE_FILE(*RegDispCntAsm*.o) *RegDispCnt*.o(.itcm))
+		KEEP (*Input*.o(.itcm))
+		KEEP (*IoFallback*.o(.itcm))
+		KEEP (*PrefetchAbort*.o(.itcm))
 		. = 0xC00;
-		KEEP (ThumbDispatch.o(.itcm))
-		KEEP (ThumbLoad.o(.itcm))
-		KEEP (ThumbStore.o(.itcm))
-		KEEP (ThumbLdmStm.o(.itcm))
-		KEEP (ThumbLoadPc.o(.itcm))
-		KEEP (MemCopy.o(.itcm))
-		KEEP (JitThumbEnsureJitted.o(.itcm))
-		KEEP (JitThumbUndefinedBx.o(.itcm))
+		KEEP (*ThumbDispatch*.o(.itcm))
+		KEEP (EXCLUDE_FILE(*ThumbLoadPc*.o) *ThumbLoad*.o(.itcm))
+		KEEP (*ThumbStore*.o(.itcm))
+		KEEP (*ThumbLdmStm*.o(.itcm))
+		KEEP (*ThumbLoadPc*.o(.itcm))
+		KEEP (*MemCopy*.o(.itcm))
+		KEEP (*JitThumbEnsureJitted*.o(.itcm))
+		KEEP (*JitThumbUndefinedBx*.o(.itcm))
 		. = 0x2000;
-		KEEP (ThumbGetRnRm.o(.itcm))
-		KEEP (ArmLoadStoreShortRd.o(.itcm))
-		KEEP (ArmSwpRd.o(.itcm))
-		KEEP (GbaSoundAsm.o(.itcm))
-		KEEP (VMUndefinedMsr.o(.itcm))
-		KEEP (JitArmUndefinedBx.o(.itcm))
-		KEEP (JitArmUndefinedLdrPcImm.o(.itcm))
+		KEEP (*ThumbGetRnRm*.o(.itcm))
+		KEEP (*ArmLoadStoreShortRd*.o(.itcm))
+		KEEP (*ArmSwpRd*.o(.itcm))
+		KEEP (*GbaSoundAsm*.o(.itcm))
+		KEEP (*VMUndefinedMsr*.o(.itcm))
+		KEEP (*JitArmUndefinedBx*.o(.itcm))
+		KEEP (*JitArmUndefinedLdrPcImm*.o(.itcm))
 		. = 0x3000;
-		KEEP (ThumbGetRn.o(.itcm))
+		KEEP (*ThumbGetRn*.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);
@@ -250,6 +250,39 @@ SECTIONS
 		*(.ewram.bss*)
 		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
 	} >ewram :NONE
+
+    .tbss ALIGN(4) :
+    {
+         __tbss_start = ABSOLUTE(.);
+        *(.tbss .tbss.* .gnu.linkonce.tb.*)
+        *(.tcommon)
+        . = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+         __tbss_end = ABSOLUTE(.);
+    } >ewram :main = 0
+
+    __tbss_size = __tbss_end - __tbss_start ;
+
+    .tdata ALIGN(4) :
+    {
+        __tdata_start = ABSOLUTE(.);
+        *(.tdata .tdata.* .gnu.linkonce.td.*)
+        . = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+        __tdata_end = ABSOLUTE(.);
+        __data_end = . ;
+    } >ewram :main = 0xff
+
+    __tdata_size = __tdata_end - __tdata_start ;
+
+    /* Space reserved for the thread local storage of main() */
+    .tls ALIGN(4) (NOLOAD) :
+    {
+        __tls_start = ABSOLUTE(.);
+        . = . + __tdata_size + __tbss_size;
+         __tls_end = ABSOLUTE(.);
+        __end__ = ABSOLUTE(.);
+    } >ewram :NONE
+
+    __tls_size = __tls_end - __tls_start ;
 
 	__ewram_bss_end = . ;
 	__ewram_bss_end__ = . ;

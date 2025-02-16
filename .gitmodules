@@ -1,3 +1,6 @@
 [submodule "code/libs/libtwl"]
 	path = code/libs/libtwl
 	url = https://github.com/Gericom/libtwl
+[submodule "code/libs/libnds"]
+	path = code/libs/libnds
+	url = https://github.com/Lorenzooone/libnds.git

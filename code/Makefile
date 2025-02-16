@@ -1,21 +1,13 @@
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
-endif
 
-export TARGET	:=	$(shell basename $(CURDIR))
-export TOPDIR	:=	$(CURDIR)
-
-include $(DEVKITARM)/ds_rules
-
-.PHONY: checklibtwl checkbootstrap checktest clean
+.PHONY: all checklibtwl checklibnds checkbootstrap checktest clean
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checklibtwl checkbootstrap
+all: checklibtwl checklibnds checkbootstrap
 
 debug: all checktest
 
@@ -24,7 +16,11 @@ checklibtwl:
 	$(MAKE) -C libs/libtwl
 
 #---------------------------------------------------------------------------------
-checkbootstrap: checklibtwl
+checklibnds:
+	$(MAKE) -C libs/libnds arm9_arm
+
+#---------------------------------------------------------------------------------
+checkbootstrap: checklibtwl checklibnds
 	$(MAKE) -C bootstrap
 
 #---------------------------------------------------------------------------------
@@ -34,5 +30,6 @@ checktest:
 #---------------------------------------------------------------------------------
 clean:
 	$(MAKE) -C libs/libtwl clean
+	$(MAKE) -C libs/libnds clean
 	$(MAKE) -C bootstrap clean
 	$(MAKE) -C test clean

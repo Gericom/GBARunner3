@@ -7,16 +7,36 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_start)
 
+/* User-configurable symbols. */
+
+/* DTCM data area size. */
+/* If zero, DTCM data is placed at the beginning of the DTCM block, rather than the end. */
+PROVIDE(__dtcm_data_size = 0);
+ASSERT((__dtcm_data_size & 3) == 0, "__dtcm_data_size must be a multiple of 4");
+
+/* DLDI driver area size. */
+PROVIDE(__dldi_size = 16384);
+
+/* ARM user stack size. Used only for stack smash validation at link time. */
+PROVIDE(__usr_stack_size = 0);
+ASSERT((__usr_stack_size & 3) == 0, "__usr_stack_size must be a multiple of 4");
+
 __ewram_end	=	ORIGIN(ewram) + LENGTH(ewram);
 __eheap_end	=	ORIGIN(ewram) + LENGTH(ewram);
 
-__dtcm_top	=	ORIGIN(dtcm) + LENGTH(dtcm);
+__dtcm_start	=	ORIGIN(dtcm); /* Start of DTCM area. Must point to the beginning of DTCM memory. */
+__dtcm_top	=	ORIGIN(dtcm) + LENGTH(dtcm); /* Top of DTCM area. */
 __irq_flags	=	__dtcm_top - 0x08;
 __irq_vector	=	__dtcm_top - 0x04;
 
 __sp_svc	=	ewramStackEnd;
 __sp_irq	=	ewramStackEnd - 0x80;
 __sp_usr	=	ewramStackEnd - 0x100;
+
+__dtcm_data_start = __dtcm_data_size > 0 ? __sp_usr : ORIGIN(dtcm); /* Start of DTCM data section. */
+__dtcm_data_top = __dtcm_data_size > 0 ? __sp_irq - __irq_stack_size : __sp_usr - __usr_stack_size; /* Top of DTCM data section. */
+
+__dldi_log2_size = LOG2CEIL(__dldi_size + 1) - 1;
 
 PHDRS {
 	main    PT_LOAD FLAGS(7);
@@ -37,6 +57,21 @@ SECTIONS
 		KEEP (*(.crt0))
 		. = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
 	} >ewram :main = 0x00
+
+    /* Create DLDI driver area. It should be zero-byte if DLDI code
+       is not present, but set to an user-provided size if it is
+           present. */
+    .dldi :
+    {
+        __dldi_start = .;
+        *(.dldi)
+        . = ALIGN(4);
+
+        __dldi_data_end = .;
+        __dldi_end = __dldi_data_end > __dldi_start ? __dldi_start + __dldi_size : __dldi_start;
+        . = __dldi_end;
+        . = ALIGN(4);
+    } >ewram :main = 0x00
 
 	.plt : { *(.plt) } >ewram :main = 0xff
 
@@ -167,41 +202,46 @@ SECTIONS
 
 	__bss_vma = . ;
 
-	.dtcm :
+	.dtcm __dtcm_data_start :
 	{
 		__dtcm_lma = LOADADDR(.dtcm);
 		__dtcm_start = ABSOLUTE(.);
-		KEEP (ThumbDtcm.o(.dtcm))
+		KEEP (*ThumbDtcm*.o(.dtcm))
 		. = 0xF70;
-		KEEP (ArmDispatchTable.o(.dtcm))
-		KEEP (ArmLdmStmRd.o(.dtcm))
-		KEEP (ArmLdmStmRm.o(.dtcm))
-		KEEP (ArmLdmStmRn.o(.dtcm))
-		KEEP (ArmLoadStoreRd.o(.dtcm))
-		KEEP (ArmLoadStoreRn.o(.dtcm))
-		KEEP (ArmLoadStoreShortImm.o(.dtcm))
-		KEEP (ArmLoadStoreShortRd.o(.dtcm))
-		KEEP (ArmLoadStoreShortRm.o(.dtcm))
-		KEEP (ArmSwpRd.o(.dtcm))
-		KEEP (ArmSwpRn.o(.dtcm))
-		KEEP (ArmLoadStoreImm.o(.dtcm))
-		KEEP (ArmLoadStoreRm.o(.dtcm))
-		KEEP (VMUndefinedAluSPCImm.o(.dtcm))
-		KEEP (VMUndefinedMrs.o(.dtcm))
-		KEEP (VMUndefinedMsr.o(.dtcm))
-		*(EXCLUDE_FILE(VMDtcm.o VMUndefinedThumbTable.o VMUndefinedArmTable.o MemoryLoadStoreTables.o MemoryLoadStoreWordTables.o MemoryLoadStoreRemapTable.o) .dtcm)
+		KEEP (*ArmDispatchTable*.o(.dtcm))
+		KEEP (*ArmLdmStmRd*.o(.dtcm))
+		KEEP (*ArmLdmStmRm*.o(.dtcm))
+		KEEP (*ArmLdmStmRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreRd*.o(.dtcm))
+		KEEP (*ArmLoadStoreRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortImm*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortRd*.o(.dtcm))
+		KEEP (*ArmLoadStoreShortRm*.o(.dtcm))
+		KEEP (*ArmSwpRd*.o(.dtcm))
+		KEEP (*ArmSwpRn*.o(.dtcm))
+		KEEP (*ArmLoadStoreImm*.o(.dtcm))
+		KEEP (*ArmLoadStoreRm*.o(.dtcm))
+		KEEP (*VMUndefinedAluSPCImm*.o(.dtcm))
+		KEEP (*VMUndefinedMrs*.o(.dtcm))
+		KEEP (*VMUndefinedMsr*.o(.dtcm))
+		*(EXCLUDE_FILE(*VMDtcm*.o *VMUndefinedThumbTable*.o *VMUndefinedArmTable*.o *MemoryLoadStoreTables*.o *MemoryLoadStoreWordTables*.o *MemoryLoadStoreRemapTable*.o) .dtcm)
 		*(.dtcm.*)
+		__sbss_start = ABSOLUTE(.);
+		__sbss_start__ = ABSOLUTE(.);
+		*(.sbss)
+		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+		__sbss_end = ABSOLUTE(.);
 		. = 0x33E8;
-		KEEP (MemoryLoadStoreRemapTable.o(.dtcm))
+		KEEP (*MemoryLoadStoreRemapTable*.o(.dtcm))
 		. = 0x34E8;
-		KEEP (MemoryLoadStoreWordTables.o(.dtcm))
+		KEEP (*MemoryLoadStoreWordTables*.o(.dtcm))
 		. = 0x3668;
-		KEEP (VMUndefinedThumbTable.o(.dtcm))
-		KEEP (VMUndefinedArmTable.o(.dtcm))
+		KEEP (*VMUndefinedThumbTable*.o(.dtcm))
+		KEEP (*VMUndefinedArmTable*.o(.dtcm))
 		. = 0x3E68;
-		KEEP (VMDtcm.o(.dtcm))
+		KEEP (*VMDtcm*.o(.dtcm))
 		. = 0x3F40;
-		KEEP (MemoryLoadStoreTables.o(.dtcm))
+		KEEP (*MemoryLoadStoreTables*.o(.dtcm))
 		. = ALIGN(4);
 		__dtcm_end = ABSOLUTE(.);
 	} >dtcm AT>ewram :dtcm = 0xff
@@ -210,31 +250,31 @@ SECTIONS
 	{
 		__itcm_lma = LOADADDR(.itcm);
 		__itcm_start = ABSOLUTE(.);
-		KEEP (vectors.o(.itcm))
+		KEEP (*vectors*.o(.itcm))
 		. = 0x20;
-		KEEP (VMUndefined.o(.itcm))
+		KEEP (EXCLUDE_FILE(*VMUndefinedThumbTable*.o *VMUndefinedArmTable*.o *VMUndefinedMsr*.o *VMUndefinedMrs*.o *VMUndefinedAluSPCImm*.o *VMUndefinedInstructions*.o) *VMUndefined*.o(.itcm))
 		. = 0xB8;
-		KEEP (VMIrq.o(.itcm))
+		KEEP (*VMIrq*.o(.itcm))
 		. = 0x400;
-		KEEP (ArmDispatch.o(.itcm))
+		KEEP (EXCLUDE_FILE(*ArmDispatchTable*.o) *ArmDispatch*.o(.itcm))
 		. = 0x450;
-		KEEP (VMMode.o(.itcm))
+		KEEP (*VMMode*.o(.itcm))
 		. = 0x7B4;
-		KEEP (VMSwi.o(.itcm))
-		KEEP (ArmLoadStoreShortRm.o(.itcm))
-		KEEP (IoFallback.o(.itcm))
+		KEEP (*VMSwi*.o(.itcm))
+		KEEP (*ArmLoadStoreShortRm*.o(.itcm))
+		KEEP (*IoFallback*.o(.itcm))
 		. = 0xC00;
-		KEEP (ThumbDispatch.o(.itcm))
-		KEEP (ThumbLoad.o(.itcm))
-		KEEP (ThumbStore.o(.itcm))
-		KEEP (ThumbLdmStm.o(.itcm))
-		KEEP (ThumbLoadPc.o(.itcm))
+		KEEP (*ThumbDispatch*.o(.itcm))
+		KEEP (EXCLUDE_FILE(*ThumbLoadPc*.o) *ThumbLoad*.o(.itcm))
+		KEEP (*ThumbStore*.o(.itcm))
+		KEEP (*ThumbLdmStm*.o(.itcm))
+		KEEP (*ThumbLoadPc*.o(.itcm))
 		. = 0x2000;
-		KEEP (ThumbGetRnRm.o(.itcm))
-		KEEP (ArmLoadStoreShortRd.o(.itcm))
-		KEEP (ArmSwpRd.o(.itcm))
+		KEEP (*ThumbGetRnRm*.o(.itcm))
+		KEEP (*ArmLoadStoreShortRd*.o(.itcm))
+		KEEP (*ArmSwpRd*.o(.itcm))
 		. = 0x3000;
-		KEEP (ThumbGetRn.o(.itcm))
+		KEEP (*ThumbGetRn*.o(.itcm))
 		*(.itcm)
 		*.itcm*(.text .stub .text.*)
 		. = ALIGN(4);
@@ -248,15 +288,62 @@ SECTIONS
 		. = ALIGN(4);
 		__vectors_end = ABSOLUTE(.);
 	} >vectors AT>ewram :vectors = 0xff
-	
-	.sbss __dtcm_end (NOLOAD): 
+
+	.ewram.bss (NOLOAD):
 	{
-		__sbss_start = ABSOLUTE(.);
-		__sbss_start__ = ABSOLUTE(.);
-		*(.sbss)
+		__ewram_bss_start = ABSOLUTE(.);
+		__ewram_bss_start__ = ABSOLUTE(.);
+		*(.ewram.bss*)
 		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
-		__sbss_end = ABSOLUTE(.);
-	} >dtcm :NONE
+	} >ewram :NONE
+
+    .tbss ALIGN(4) :
+    {
+         __tbss_start = ABSOLUTE(.);
+        *(.tbss .tbss.* .gnu.linkonce.tb.*)
+        *(.tcommon)
+        . = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+         __tbss_end = ABSOLUTE(.);
+    } >ewram :main = 0
+
+    __tbss_size = __tbss_end - __tbss_start ;
+
+    .tdata ALIGN(4) :
+    {
+        __tdata_start = ABSOLUTE(.);
+        *(.tdata .tdata.* .gnu.linkonce.td.*)
+        . = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+        __tdata_end = ABSOLUTE(.);
+        __data_end = . ;
+    } >ewram :main = 0xff
+
+    __tdata_size = __tdata_end - __tdata_start ;
+
+    /* Space reserved for the thread local storage of main() */
+    .tls ALIGN(4) (NOLOAD) :
+    {
+        __tls_start = ABSOLUTE(.);
+        . = . + __tdata_size + __tbss_size;
+         __tls_end = ABSOLUTE(.);
+        __end__ = ABSOLUTE(.);
+    } >ewram :NONE
+
+    __tls_size = __tls_end - __tls_start ;
+
+	__ewram_bss_end = . ;
+	__ewram_bss_end__ = . ;
+	__heap_start = . ;
+
+	.vramhi.bss (NOLOAD):
+	{
+		__vramhi_bss_start = ABSOLUTE(.);
+		__vramhi_bss_start__ = ABSOLUTE(.);
+		*(.vramhi.bss*)
+		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+	} >ewram :NONE
+
+	__vramhi_bss_end = . ;
+	__vramhi_bss_end__ = . ;
 
 	.bss __bss_vma (NOLOAD): 
 	{
@@ -299,6 +386,13 @@ SECTIONS
 		__twl_bss_end__ = ABSOLUTE(.);
 		__twl_end__ = ABSOLUTE(.);
 	} :NONE
+
+    HIDDEN(__itcm_size = __itcm_end - __itcm_start);
+    HIDDEN(__dtcm_size = __dtcm_end - __dtcm_data_start);
+    HIDDEN(__arm9i_size__ = __arm9i_end__ - __arm9i_start__);
+    HIDDEN(__bss_size__ = __bss_end__ - __bss_start__);
+    HIDDEN(__sbss_size = __sbss_end - __sbss_start);
+    HIDDEN(__twl_bss_size__ = __twl_bss_end__ - __twl_bss_start__);
 
 	/* Stabs debugging sections.  */
 	.stab 0 : { *(.stab) }

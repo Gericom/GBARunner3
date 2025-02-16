@@ -1,8 +1,23 @@
-%rename link                old_link
+%include <picolibc.specs>
+
+%rename cc1plus blocksds_cc1plus
+%rename cpp blocksds_cpp
+%rename link blocksds_link
+
+*cpp:
+-D__NDS__ -D__BLOCKSDS__ -DARM7 %(blocksds_cpp)
+
+*cc1_cpu:
+-mcpu=arm7tdmi
+
+*cc1plus:
+%(cpp) %(blocksds_cc1plus)
 
 *link:
-%(old_link) -T ../gbarunner7.ld%s --gc-sections --no-warn-rwx-segments
+%(blocksds_link) -T gbarunner7.ld%s --gc-sections --no-warn-rwx-segments
 
 *startfile:
-ds_arm7_crt0%O%s crti%O%s crtbegin%O%s
+%:getenv(BLOCKSDS /sys/crts/ds_arm7_crt0%O)
 
+*lib:
+%(libgcc)

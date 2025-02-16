@@ -1,55 +1,104 @@
-#---------------------------------------------------------------------------------
-.SUFFIXES:
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+# SPDX-License-Identifier: CC0-1.0
+#
+# SPDX-FileContributor: Antonio Niño Díaz, 2023
+
+BLOCKSDS	?= /opt/blocksds/core
+BLOCKSDSEXT	?= /opt/blocksds/external
+
+NAME		:= gbarunner3tests
+
+GAME_TITLE	:= GBARunner 3
+GAME_SUBTITLE	:= Tests
+GAME_AUTHOR	:= Gericom
+GAME_ICON	:= icon.bmp
+
+# Tools
+# -----
+
+MAKE		:= make
+RM			:= rm -rf
+
+# Verbose flag
+# ------------
+
+ifeq ($(VERBOSE),1)
+V			:=
+else
+V			:= @
 endif
 
-export TARGET	:=	$(shell basename $(CURDIR))
-export TOPDIR	:=	$(CURDIR)
+# DLDI and internal SD slot of DSi
+# --------------------------------
 
-# specify a directory which contains the nitro filesystem
-# this is relative to the Makefile
-NITRO_FILES	:=
+# Root folder of the SD image
+SDROOT		:= sdroot
+# Name of the generated image it "DSi-1.sd" for no$gba in DSi mode
+SDIMAGE		:= image.bin
 
-# These set the information text in the nds file
-GAME_TITLE     := GBARunner 3
-GAME_SUBTITLE1 := Tests
-GAME_SUBTITLE2 := By Gericom
+# Directories
+# -----------
 
-include $(DEVKITARM)/ds_rules
+ARM7DIR		:= arm7
+ARM9DIR		:= arm9
 
-.PHONY: checkarm7 checkarm9 clean
+# Build artfacts
+# --------------
+
+ROM			:= $(NAME).nds
+
+.PHONY: all checkarm7 checkarm9 clean sdimage
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all: checkarm7 checkarm9 $(TARGET).nds
+all: checkarm7 checkarm9 $(ROM)
 
 #---------------------------------------------------------------------------------
 checkarm7:
-	$(MAKE) -C arm7
+	$(V)+$(MAKE) -C $(ARM7DIR) --no-print-directory
 	
 #---------------------------------------------------------------------------------
 checkarm9:
-	$(MAKE) -C arm9
+	$(V)+$(MAKE) -C $(ARM9DIR) --no-print-directory
 
 #---------------------------------------------------------------------------------
-$(TARGET).nds	: $(NITRO_FILES) arm7/$(TARGET).elf arm9/$(TARGET).elf
-	ndstool	-c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
-	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
-	$(_ADDFILES)
+ifneq ($(strip $(NITROFSDIR)),)
+# Additional arguments for ndstool
+NDSTOOL_ARGS	:= -d $(NITROFSDIR)
+
+# Make the NDS ROM depend on the filesystem only if it is needed
+$(ROM): $(NITROFSDIR)
+endif
 
 #---------------------------------------------------------------------------------
-arm7/$(TARGET).elf:
-	$(MAKE) -C arm7
+
+# Combine the title strings
+ifeq ($(strip $(GAME_SUBTITLE)),)
+    GAME_FULL_TITLE := $(GAME_TITLE);$(GAME_AUTHOR)
+else
+    GAME_FULL_TITLE := $(GAME_TITLE);$(GAME_SUBTITLE);$(GAME_AUTHOR)
+endif
+
+#---------------------------------------------------------------------------------
+$(ROM) : $(ARM7DIR)/build/arm7.elf $(ARM9DIR)/build/arm9.elf
+	@echo "  NDSTOOL $@"
+	$(V)$(BLOCKSDS)/tools/ndstool/ndstool -c $@ \
+		-7 $(ARM7DIR)/build/arm7.elf -9 $(ARM9DIR)/build/arm9.elf \
+		-b $(GAME_ICON) "$(GAME_FULL_TITLE)" \
+		$(NDSTOOL_ARGS)
+
+sdimage:
+	@echo "  MKFATIMG $(SDIMAGE) $(SDROOT)"
+	$(V)$(BLOCKSDS)/tools/mkfatimg/mkfatimg -t $(SDROOT) $(SDIMAGE)
+
+#---------------------------------------------------------------------------------
+$(ARM7DIR)/build/arm7.elf: checkarm7
 	
 #---------------------------------------------------------------------------------
-arm9/$(TARGET).elf:
-	$(MAKE) -C arm9
+$(ARM9DIR)/build/arm9.elf: checkarm9
 
 #---------------------------------------------------------------------------------
 clean:
-	$(MAKE) -C arm9 clean
-	$(MAKE) -C arm7 clean
-	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
+	$(V)+$(MAKE) -C $(ARM7DIR) clean
+	$(V)+$(MAKE) -C $(ARM9DIR) clean
+	$(V)$(RM) $(ROM) $(NAME).arm7 $(NAME).arm9

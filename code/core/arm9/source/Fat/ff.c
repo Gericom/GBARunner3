@@ -19,6 +19,7 @@
 /----------------------------------------------------------------------------*/
 
 #include "common.h"
+#include <string.h>
 #include <libtwl/mem/memSwap.h>
 #include "MemCopy.h"
 #include "ff.h"			/* Declarations of FatFs API */
