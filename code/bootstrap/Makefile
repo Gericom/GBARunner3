@@ -16,10 +16,13 @@ else
 NITRO_FILES	:= 
 endif
 
+# GAME_ICON is the image used to create the game icon, leave blank to use default rule
+GAME_ICON := $(CURDIR)/icon.bmp
+
 # These set the information text in the nds file
-GAME_TITLE     := GBARunner 3
+GAME_TITLE     := GBARunner3
 GAME_SUBTITLE1 := By Gericom
-GAME_SUBTITLE2 :=
+GAME_SUBTITLE2 := ""
 
 include $(DEVKITARM)/ds_rules
 
