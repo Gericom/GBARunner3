@@ -5,6 +5,16 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
+ifneq (,$(shell which python3))
+PYTHON	:= python3
+else ifneq (,$(shell which python2))
+PYTHON	:= python2
+else ifneq (,$(shell which python))
+PYTHON	:= python
+else
+$(error "Python not found in PATH, please install it.")
+endif
+
 export TARGET	:=	GBARunner3
 export TOPDIR	:=	$(CURDIR)
 
@@ -51,6 +61,7 @@ $(TARGET).nds	: $(NITRO_FILES) ../core/arm7/$(TARGET).elf arm9/$(TARGET).elf
 	ndstool	-c $(TARGET).nds -7 ../core/arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
 	-b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
 	$(_ADDFILES)
+	$(PYTHON) AnimatedBannerPatch.py $@ icon.bin
 ifdef GBAR3_ISNITRO
 	dlditool FatInNitroFS.dldi $(TARGET).nds
 endif
