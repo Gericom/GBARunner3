@@ -150,7 +150,7 @@ Example config file, needs to be stored inside `/_gba/GBARunner3.json`:
 In addition to the global `GBARunner3.json` file, **per-game settings** are also supported.
 
 To use per-game configurations:
-- Create a separate JSON file for each game and place it in the `_gba/configs/` directory.
+- Create a separate JSON file for each game and place it in the `_gba/configs/` folder.
 - Name the file using the game's **Title ID (TID)** and **Revision number (REV)** in the format:
 ```bash
 TIDREV.json
@@ -188,6 +188,8 @@ Valid BIOS should match:
 - Sound stereo desync/crackling randomly. A temporary fix in some games is to perform an in-game save.
 - Some ROMs require manual JIT patches, which anyone can contribute.
 - NES Classics Series and Famicom Mini Series ROMs won't work, due to current software limitations.
+- Some GBA Video titles don't work yet, due to current software limitations.
+- 64MB Roms, such as some GBA Movie tiles, are not yet supported.
 
 ## FAQ
 
@@ -226,7 +228,7 @@ GBARunner3 is licensed under the [zLib license](LICENSE). -->
 ## Credits
 
 - **Gericom** – Main developer.
-- **profi200** – DSi SD driver, color correction LUT feature.
+- **profi200** – DSi SD driver, color correction LUT base functions.
 - **Dartz150** – Logo, splash and testing.
 - **VeaNika** – Testing and QA.
 - **hunterk and Pokefan531** - Libretro color correction shaders.
