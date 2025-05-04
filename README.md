@@ -37,8 +37,8 @@ GBARunner3 aims to address these issues by providing a cleaner, more maintainabl
 - Compatible with modern devkitARM versions (pre-Calico).
 - Better sound emulation on DS and DSi.
 - Support for “hi-code” (higher ROM region execution up to 2MB).
-- JIT patching for higher compatibility.
-- Option to disable unused screen for lower power usage.
+- Real time and manual JIT patching for higher compatibility.
+- Option to disable the unused screen for lower power usage.
 - Have more control over the running game.
 
 ### Planned / Requested Features
@@ -78,7 +78,7 @@ GBARunner3 aims to address these issues by providing a cleaner, more maintainabl
 - A valid GBA BIOS (see [this guide](https://wiki.ds-homebrew.com/gbarunner2/bios.html))
 
 **Steps:**
-1. Place your GBARunner3.nds in `\_nds\TWiLightMenu\emulators\`.
+1. Place your GBARunner3.nds in `/_nds/TWiLightMenu/emulators/`.
 2. Place your GBA BIOS in `_gba/` renamed as `bios.bin`
 3. Place the config folder in `_gba/configs/`
 4. Launch TwilightMenu++ and navigate to your GBA ROMs location and launch them.
@@ -101,6 +101,10 @@ GBARunner3 aims to address these issues by providing a cleaner, more maintainabl
 > Bonus feature: This frontend will automatically boot to `roms/gba` if it exists.
 
 ## Configuration via `GBARunner3.json`
+
+<!-- 
+TODO: Add direct feed screenshots and photos.
+ -->
 
 Example config file, needs to be stored inside `/_gba/GBARunner3.json`:
 ```json
@@ -125,26 +129,41 @@ Example config file, needs to be stored inside `/_gba/GBARunner3.json`:
 ```
 
 #### runSettings - Settings related to GBARunner3 "emulation" performance.
-- `enableWramICache`: `[Boolean]` Enables WRAM instruction cache (disable it if the ROM uses self-modifying code).
-- `enableEwramDCache`: `[Boolean]` Enables EWRAM data cache, fixes sound in some games.
-- `skipBiosIntro`: `[Boolean]` Skips the GBA boot animation.
+- `enableWramICache`: 
+    - `[Boolean]` Enables WRAM instruction cache (disable it if the ROM uses self-modifying code).
+- `enableEwramDCache`: 
+    - `[Boolean]` Enables EWRAM data cache, fixes sound in some games.
+- `skipBiosIntro`: 
+    - `[Boolean]` Skips the GBA boot animation.
 
 #### displaySettings - Settings related to how the Display is presented in GBARunner3.
-- `gbaScreen`: `"top"`, `"bottom"`, Specifies the DS screen to display the GBA game on.
-- `gbaColorCorrection`: `"Agb001"`, `"none"`, Specifies the type of true color correction to use. Currently only a single color matrix is supported (AGB-001), others may be added later.
-- `gbaScreenBrightness`: `1~16`, Specifies the master brightness setting to use for the display the GBA game on. Should be a value between 1 (darkest) and 16 (brightest).
-- `enableCenterAndMask`: `[Boolean]` Hides the DS overscan, caused by GBARunner3 rendering games with DS resolution (adds 1 frame of latency).
-- `centerOffsetX`: `0~8`, Horizontal centering offset to be used when enableCenterAndMask is true.
-- `centerOffsetY`: `0~16`, Vertical centering offset to be used when enableCenterAndMask is true.
-- `maskWidth`: `0~256`, 240 matches GBA screen width. Width of the visible screen area when enableCenterAndMask is true.
-- `maskHeight`: `0~192`, 160 matches the GBA screen height. Height of the visible screen area when enableCenterAndMask is true.
+- `gbaScreen`: Specifies the DS screen to display the GBA game on.
+    - `"top"`
+    - `"bottom"`
+- `gbaColorCorrection`: Specifies the type of true color correction to use. Others may be added later.
+    - `"Agb001"`: Resembles how the screen of the GBA (AGB-001) model looks.
+    - `"none"`: No color correction is applied.
+- `gbaScreenBrightness`: 
+    - `1 ~ 16`, Specifies the master brightness setting to use for the display the GBA game on. Should be a value between 1 (darkest) and 16 (brightest).
+- `enableCenterAndMask`: 
+    - `[Boolean]` Hides the DS overscan, caused by GBARunner3 rendering games with DS resolution (adds 1 frame of latency).
+- `centerOffsetX`: 
+    - `0 ~ 8`, Horizontal centering offset to be used when enableCenterAndMask is true.
+- `centerOffsetY`: 
+    - `0 ~ 16`, Vertical centering offset to be used when enableCenterAndMask is true.
+- `maskWidth`: 
+    - `0 ~ 256`, 240 matches GBA screen width. Width of the visible screen area when enableCenterAndMask is true.
+- `maskHeight`: 
+    - `0 ~ 192`, 160 matches the GBA screen height. Height of the visible screen area when enableCenterAndMask is true.
 - `borderImage`: Custom border image used when enableCenterAndMask is true.
     - `"default"`, needs to be `256x192 8bpp bmp`, renamed as `border.bmp` inside `_gba/` folder. 
     - `"game"`, needs to be renamed as the game internal ID (e.g. `BPEE.bmp`), and placed inside `_gba/borders`.
     - `"none"`, disables the Game Border.
 
 #### gameSettings - Game related settings
-- `saveType`: `"Auto"`, `"none"`, used for some anti-piracy bypass.
+- `saveType`: Specifies if game saving is performed.
+    - `"Auto"`: Default, saving works as expected.
+    - `"none"`: Used to bypass some AP measures.
 
 ### Per-game Settings
 In addition to the global `GBARunner3.json` file, **per-game settings** are also supported.
@@ -168,11 +187,14 @@ BPEE01.json
 ```
 If no matching per-game config is found, GBARunner3 will fall back to the global `GBARunner3.json` configuration.
 
-## Compatibility List
-
-Help to test games, you can add your testing reports to the official [Compatibility Sheet](https://docs.google.com/spreadsheets/d/1PTf9kW7L3MTIUU5WXvOnvSLTmgNG4K-CzDNe2U8Rd6Y/edit?usp=sharing), ask for access to "Kaisaan" using your Google Account.
-
 ## Troubleshooting
+
+### Important Note on "Hicode" and ROM Compatibility
+To ensure optimal performance, GBARunner3 loads the GBA ROM directly into the Nintendo DS’s RAM memory. Due to hardware limitations (with only 4MB of main RAM available on the DS), only the first 2MB of the ROM is loaded linearly into memory at startup.
+
+In most games, this is sufficient, as the remaining data in the ROM is typically accessed on demand through SD card cache fetches initiated by the running code. However, some titles include additional executable code located beyond the initial 2MB range. That code is referred to as **"hicode"**. Because this extra code is not loaded into RAM, games that rely on it will fail to execute, causing GBARunner3 to halt.
+
+As a result, ROMs that contain hicode are currently incompatible with GBARunner3 unless specifically adapted, using the `cache-hicode` branch. Please refer to the [Compatibility](#compatibility-list) for details
 
 ### BIOS Checksums
 
@@ -193,17 +215,20 @@ Valid BIOS should match:
 
 ## FAQ
 
-**Q: Does [romhack name] work?**  
-A: You need to test it yourself. Development and support focuses on vanilla GBA games.
-
 **Q: Why does my rom not run?**  
-A: Most romhacks append code after the first 2MB. Use the [cache-hicode branch](https://github.com/Gericom/GBARunner3/tree/feature/cache-hicode) in such cases.
+A: Most romhacks append code after the first 2MB (hicode). Use the [cache-hicode branch](https://github.com/Gericom/GBARunner3/tree/feature/cache-hicode) in such cases.
+
+**Q: What's "hicode"**  
+A: Read [the details here.](#troubleshooting)
 
 **Q: I still get a white screen using the hicode-cache branch!**  
 A: Likely needs manual JIT patches or self-modifying code patches.
 
 **Q: Can I make such patches?**  
 A: Yes, if you're familiar with no$GBA debugger or ARM7 debugging tools, seek for help in the Discord Server.
+
+**Q: Does [romhack name] work?**  
+A: You need to test it yourself. Development and support focuses on vanilla GBA games.
 
 **Q: Can I still use GBARunner2?**  
 A: Yes, both GBARunner2 and GBAREunner3 can coexist.
@@ -221,6 +246,10 @@ A: Pokémon Unbound works! [Follow this guide](https://discord.com/channels/1289
 - Improve documentation and optimize existing code.
 - Suggestions and ideas are also welcome.
 
+## Compatibility List
+
+Help to test games, you can add your testing reports to the official [Compatibility Sheet](https://docs.google.com/spreadsheets/d/1PTf9kW7L3MTIUU5WXvOnvSLTmgNG4K-CzDNe2U8Rd6Y/edit?usp=sharing), ask for access to "Kaisaan" using your Google Account.
+
 <!-- ## License
 
 GBARunner3 is licensed under the [zLib license](LICENSE). -->
@@ -228,9 +257,9 @@ GBARunner3 is licensed under the [zLib license](LICENSE). -->
 ## Credits
 
 - **Gericom** – Main developer.
-- **profi200** – DSi SD driver, color correction LUT base functions.
-- **Dartz150** – Logo, splash and testing.
-- **VeaNika** – Testing and QA.
+- **profi200** – DSi SD driver code and color correction LUT base functions code.
+- **Dartz150** – Logo and splash design, manual JIT patches and thorough testing.
+- **VeaNika** – Thorough DS mode testing and manual JIT patches.
 - **hunterk and Pokefan531** - Libretro color correction shaders.
 - **endrift** - mGBA developer.
 - [DSi mode Hacking! Discord server](https://discord.gg/fCzqcWteC4) users who keep testing GBARunner3!
