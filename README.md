@@ -87,15 +87,15 @@ GBARunner3 aims to address these issues by providing a cleaner, more maintainabl
 ### Flashcart Kernel Users (via gbar3-frontend)
 
 **Requirements:**
-- [gbar3-frontend-TWiLight.nds](https://github.com/flashcarts/gbar3-frontend/releases)
+- [gbar3-frontend.nds](https://github.com/flashcarts/gbar3-frontend/releases)
 - A valid GBA BIOS (see [this guide](https://wiki.ds-homebrew.com/gbarunner2/bios.html))
 
 **Steps:**
 1. Place your GBARunner3.nds in your SD card root.
 2. Place your GBA BIOS in `_gba/` renamed as `bios.bin`
 3. Place the config folder in `_gba/configs/`
-4. Put `gbar3-frontend-TWiLight.nds` anywhere.
-5. Launch `gbar3-frontend-TWiLight.nds`, navigate to your GBA ROMs location and launch them.
+4. Put `gbar3-frontend.nds` anywhere.
+5. Launch `gbar3-frontend.nds`, navigate to your GBA ROMs location and launch them.
 6. You should see the GBARunner3 splash animation, followed by the GBA BIOS animation with the Nintendo logo.
 
 > Bonus feature: This frontend will automatically boot to `roms/gba` if it exists.
