@@ -5,11 +5,11 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-ifneq (,$(shell which python3))
+ifneq (,$(shell command -v python3 2>/dev/null))
 PYTHON	:= python3
-else ifneq (,$(shell which python2))
+else ifneq (,$(shell command -v python2 2>/dev/null))
 PYTHON	:= python2
-else ifneq (,$(shell which python))
+else ifneq (,$(shell command -v python 2>/dev/null))
 PYTHON	:= python
 else
 $(error "Python not found in PATH, please install it.")
