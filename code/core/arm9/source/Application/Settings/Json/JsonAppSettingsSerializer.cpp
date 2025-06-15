@@ -11,6 +11,7 @@
 #define KEY_DISPLAY_SETTINGS                        "displaySettings"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN             "gbaScreen"
 #define KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION   "gbaColorCorrection"
+#define KEY_DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA      "gbaDisplayGamma"
 #define KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS  "gbaScreenBrightness"
 #define KEY_DISPLAY_SETTINGS_ENABLE_CENTER_AND_MASK "enableCenterAndMask"
 #define KEY_DISPLAY_SETTINGS_CENTER_OFFSET_X        "centerOffsetX"
@@ -20,9 +21,13 @@
 #define KEY_DISPLAY_SETTINGS_BORDER_IMAGE           "borderImage"
 
 #define KEY_RUN_SETTINGS                                    "runSettings"
+#define KEY_RUN_SETTINGS_ENABLE_JIT                         "enableJit"
 #define KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES                "jitPatchAddresses"
+#define KEY_RUN_SETTINGS_ENABLE_ROM_ICACHE                  "enableRomICache"
 #define KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE                 "enableWramICache"
+#define KEY_RUN_SETTINGS_ENABLE_IWRAM_DCACHE                "enableIWramDCache"
 #define KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE                "enableEWramDCache"
+#define KEY_RUN_SETTINGS_ARM9_CLOCK_SPEED                   "forceDSModeArm9Clock"
 #define KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES     "selfModifyingPatchAddresses"
 #define KEY_RUN_SETTINGS_SKIP_BIOS_INTRO                    "skipBiosIntro"
 
@@ -34,6 +39,16 @@
 
 #define ENUM_STRING_GBA_COLOR_CORRECTION_NONE       "none"
 #define ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001    "agb001"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_AGS_101    "ags101"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_OXY_001    "oxy001"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_NTR_001    "ntr001"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_USG_001    "usg001"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_PSP_01G    "psp01g"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_NSO_IPS    "nswIps"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_NSO_OLED   "nswOle"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_VBA        "vbaEmu"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_NOCASH     "noCash"
+#define ENUM_STRING_GBA_COLOR_CORRECTION_MGBA       "mGba01"
 
 #define ENUM_STRING_GBA_BORDER_IMAGE_NONE           "none"
 #define ENUM_STRING_GBA_BORDER_IMAGE_DEFAULT        "default"
@@ -66,6 +81,26 @@ static bool tryParseGbaColorCorrection(const char* gbaColorCorrectionString, Gba
         gbaColorCorrection = GbaColorCorrection::None;
     else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_AGB_001))
         gbaColorCorrection = GbaColorCorrection::Agb001;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_AGS_101))
+        gbaColorCorrection = GbaColorCorrection::Ags101;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_OXY_001))
+        gbaColorCorrection = GbaColorCorrection::Oxy001;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_NTR_001))
+        gbaColorCorrection = GbaColorCorrection::Ntr001;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_USG_001))
+        gbaColorCorrection = GbaColorCorrection::Usg001;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_PSP_01G))
+        gbaColorCorrection = GbaColorCorrection::Psp01g;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_NSO_IPS))
+        gbaColorCorrection = GbaColorCorrection::NswIps;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_NSO_OLED))
+        gbaColorCorrection = GbaColorCorrection::NswOle;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_VBA))
+        gbaColorCorrection = GbaColorCorrection::VbaEmu;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_NOCASH))
+        gbaColorCorrection = GbaColorCorrection::NoCash;
+    else if (!strcasecmp(gbaColorCorrectionString, ENUM_STRING_GBA_COLOR_CORRECTION_MGBA))
+        gbaColorCorrection = GbaColorCorrection::mGba01;
     else
         return false;
 
@@ -116,6 +151,11 @@ static void readDisplaySettings(const JsonObjectConst& json, DisplaySettings& di
 
     tryParseGbaScreen(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN], displaySettings.gbaScreen);
     tryParseGbaColorCorrection(json[KEY_DISPLAY_SETTINGS_GBA_COLOR_CORRECTION], displaySettings.gbaColorCorrection);
+    if (json[KEY_DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA].is<int>())
+    {
+        displaySettings.gbaDisplayGamma = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA].as<int>(),
+            DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA_MIN, DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA_MAX);
+    }
     if (json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].is<int>())
     {
         displaySettings.gbaScreenBrightness = std::clamp(json[KEY_DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS].as<int>(),
@@ -194,10 +234,13 @@ static void readRunSettings(const JsonObjectConst& json, RunSettings& runSetting
 {
     if (json.isNull())
         return;
-
     tryParseJitPatchAddresses(json[KEY_RUN_SETTINGS_JIT_PATCH_ADDRESSES], runSettings);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_JIT], runSettings.enableJit);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_ROM_ICACHE], runSettings.enableRomInstructionCache);
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_WRAM_ICACHE], runSettings.enableWramInstructionCache);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_IWRAM_DCACHE], runSettings.enableIWramDataCache);
     readBoolSetting(json[KEY_RUN_SETTINGS_ENABLE_EWRAM_DCACHE], runSettings.enableEWramDataCache);
+    readBoolSetting(json[KEY_RUN_SETTINGS_ARM9_CLOCK_SPEED], runSettings.forceDSModeArm9ClockSpeed);
     tryParseSelfModifyingPatchAddresses(json[KEY_RUN_SETTINGS_SELF_MODIFYING_PATCH_ADDRESSES], runSettings);
     readBoolSetting(json[KEY_RUN_SETTINGS_SKIP_BIOS_INTRO], runSettings.skipBiosIntro);
 }

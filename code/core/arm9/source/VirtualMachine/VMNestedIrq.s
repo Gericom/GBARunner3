@@ -7,6 +7,10 @@
 #define IRQ_RETURN_FOR_NESTED_IRQ_ENABLE    0xE2 // always condition for subs pc, r13, #4
 #define IRQ_RETURN_FOR_NESTED_IRQ_DISABLE   0x92 // LS condition for sublss pc, r13, #4
 
+.global gIrqYieldingEnabled
+gIrqYieldingEnabled:
+    .word 0
+
 nestedIrqLevel:
     .word 0
 
@@ -51,6 +55,17 @@ arm_func vm_disableNestedIrqs
 
 yieldGbaIrqsGbaMode:
     swi 0x7F0000 // swiVMReturnFromYield
+
+arm_func vm_disableIrqYielding
+    mov r1, #0
+    adr r2, gIrqYieldingEnabled
+    swp r0, r1, [r2]
+    bx lr
+
+arm_func vm_restoreIrqYielding
+    adr r1, gIrqYieldingEnabled
+    str r0, [r1]
+    bx lr
 
 .section ".itcm", "ax"
 

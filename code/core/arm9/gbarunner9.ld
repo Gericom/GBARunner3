@@ -22,6 +22,7 @@ PHDRS
 	main    PT_LOAD FLAGS(7);
 	itcm    PT_LOAD FLAGS(7);
 	dtcm    PT_LOAD FLAGS(7);
+	ewram   PT_LOAD FLAGS(7);
 }
 
 __heap_end = ORIGIN(ewram) + LENGTH(ewram);
@@ -242,6 +243,15 @@ SECTIONS
 		. = ALIGN(4);
 		__itcm_end = ABSOLUTE(.);
 	} >itcm AT>vramab :itcm = 0xff
+
+	.ewram :
+	{
+	    __ewram_lma = LOADADDR(.ewram);
+	    __ewram_start = ABSOLUTE(.);
+	    *(.ewram)
+	    . = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+	    __ewram_end = ABSOLUTE(.);
+	} >ewram AT>vramab :ewram
 
 	.ewram.bss (NOLOAD):
 	{

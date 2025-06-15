@@ -5,6 +5,7 @@
             "0x080001D8",
             "0x0815A56C",
             "0x0815A578"
-        ]
+        ],
+        "forceDSModeArm9Clock": true
     }
 }

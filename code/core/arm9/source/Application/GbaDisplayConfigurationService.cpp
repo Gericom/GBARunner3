@@ -6,7 +6,7 @@
 #include <libtwl/gfx/gfxBackground.h>
 #include <libtwl/sys/sysPower.h>
 #include "DsDefinitions.h"
-#include "ColorLut.h"
+#include "GbaColorCorrection/ColorLut.h"
 #include "SystemIpc.h"
 #include "GbaDisplayConfigurationService.h"
 
@@ -125,7 +125,14 @@ void GbaDisplayConfigurationService::SetupGbaScreen(const DisplaySettings& displ
 
 void GbaDisplayConfigurationService::SetupColorCorrection(const DisplaySettings& displaySettings)
 {
-    if (displaySettings.gbaColorCorrection == GbaColorCorrection::None)
+    const ColorProfile* colorSetting = cprof_getColorProfile(displaySettings.gbaColorCorrection);
+    const auto gammaSetting = displaySettings.gbaDisplayGamma;
+
+    if (colorSetting)
+    {
+        clut_initColorCorrection(colorSetting, gammaSetting);
+    }
+    else
     {
         clut_disableColorCorrection();
     }

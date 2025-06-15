@@ -21,7 +21,7 @@ MEMORY {
 	iwram  : ORIGIN = 0x03800000, LENGTH = 64K
 
 	twl_ewram : ORIGIN = 0x02e80000, LENGTH = 512K - 64K
-	twl_iwram : ORIGIN = 0x03000000, LENGTH = 256K
+	twl_iwram : ORIGIN = 0x037c0000, LENGTH = 256K
 }
 
 __iwram_start	=	ORIGIN(iwram);

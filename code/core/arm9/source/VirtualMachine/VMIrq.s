@@ -22,12 +22,12 @@ arm_func vm_irq
     str lr, DTCM(vm_irqSavedLR)
     str r4, [r13, #0x214]
 
-    tst r4, #(1 << 16) // ARM7 IRQ
-        bne emu_arm7Irq
-arm_func emu_arm7IrqReturn
     tst r4, #2 // HBLANK IRQ
         bne emu_hblankIrq
 arm_func emu_hblankIrqReturn
+    tst r4, #(1 << 16) // ARM7 IRQ
+        bne emu_arm7Irq
+arm_func emu_arm7IrqReturn
     tst r4, #1 // VBLANK IRQ
         bne emu_vblankIrq
 arm_func emu_vblankIrqReturn

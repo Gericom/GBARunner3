@@ -6,6 +6,9 @@
 #define DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MIN  1
 #define DISPLAY_SETTINGS_GBA_SCREEN_BRIGHTNESS_MAX  16
 
+#define DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA_MIN      0
+#define DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA_MAX      4
+
 class DisplaySettings
 {
 public:
@@ -14,6 +17,10 @@ public:
 
     /// @brief Specifies the type of color correction to use.
     GbaColorCorrection gbaColorCorrection = GbaColorCorrection::None;
+
+    /// @brief Specifies the precomputed display gamma setting if color correction is enabled.
+    ///        Should be a value between 0 (brightest) and 4 (darkest).
+    u16 gbaDisplayGamma = DISPLAY_SETTINGS_GBA_DISPLAY_GAMMA_MIN;
 
     /// @brief Specifies the master brightness setting to use for the display the GBA game on.
     ///        Should be a value between 1 (darkest) and 16 (brightest).

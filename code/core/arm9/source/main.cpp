@@ -32,7 +32,7 @@
 #include "Application/Settings/AppSettingsService.h"
 #include "GbaHeader.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
-#include "ColorLut.h"
+#include "GbaColorCorrection/ColorLut.h"
 #include "MemoryProtectionConfiguration.h"
 #include "MemoryProtectionUnit.h"
 #include "MemoryEmulator/RomDefs.h"
@@ -44,6 +44,7 @@
 #include "Emulator/BootAnimationSkip.h"
 #include "MemoryEmulator/Arm/ArmDispatchTable.h"
 #include "VirtualMachine/VMUndefinedArmTable.h"
+#include "arm9Clock.h"
 
 #define DEFAULT_ROM_FILE_PATH           "/rom.gba"
 #define BIOS_FILE_PATH                  "/_gba/bios.bin"
@@ -307,16 +308,24 @@ static void setupJit()
     jit_init();
 
     const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
-    if (runSettings.jitPatchAddresses && runSettings.jitPatchAddressCount > 0)
+    if (runSettings.enableJit)
     {
-        // manual jit patches
-        applyGameJitPatches();
-        jit_disable();
+        if (runSettings.jitPatchAddresses && runSettings.jitPatchAddressCount > 0)
+        {
+            // manual jit patches
+            applyGameJitPatches();
+            jit_disable();
+        }
+        else
+        {
+            // jit enabled
+            applyBiosJitPatches();
+        }
     }
     else
     {
-        // jit enabled
-        applyBiosJitPatches();
+        // jit disabled
+        jit_disable();
     }
 }
 
@@ -327,11 +336,37 @@ static void setupWramInstructionCache()
     mpu_setRegionInstructionCacheEnable(MPU_REGION_GBA_EWRAM, runSettings.enableWramInstructionCache);
 }
 
+static void setupRomInstructionCache()
+{
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    mpu_setRegionInstructionCacheEnable(MPU_REGION_MAIN_MEMORY_GBA_ROM, runSettings.enableRomInstructionCache);
+}
+
+static void setupIWramDataCache()
+{
+    const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+    mpu_setRegionDataCacheEnable(MPU_REGION_GBA_IWRAM, runSettings.enableIWramDataCache);
+    mpu_setRegionDataBufferability(MPU_REGION_GBA_IWRAM, false);
+}
+
 static void setupEWramDataCache()
 {
     const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
     mpu_setRegionDataCacheEnable(MPU_REGION_GBA_EWRAM, runSettings.enableEWramDataCache);
     mpu_setRegionDataBufferability(MPU_REGION_GBA_EWRAM, false);
+}
+
+static void setupArm9Clock()
+{
+    if (Environment::IsDsiMode())
+    {
+        const auto& runSettings = gAppSettingsService.GetAppSettings().runSettings;
+        ScfgArm9Clock arm9Clock = runSettings.forceDSModeArm9ClockSpeed
+            ? ScfgArm9Clock::Nitro67MHz    // Force DS mode clock if true
+            : ScfgArm9Clock::Twl134MHz;
+
+        scfg_setArm9Clock(arm9Clock);
+    }
 }
 
 static void loadGameSpecificSettings()
@@ -488,7 +523,10 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     dc_flushRange(gGbaBios, sizeof(gGbaBios));
     ic_invalidateAll();
     setupWramInstructionCache();
+    setupRomInstructionCache();
+    setupIWramDataCache();
     setupEWramDataCache();
+    setupArm9Clock();
 
     rtos_setIrqMask(RTOS_IRQ_VBLANK);
     rtos_ackIrqMask(~0u);

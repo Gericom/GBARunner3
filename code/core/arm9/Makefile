@@ -32,6 +32,7 @@ SOURCES		:=	source \
 				source/Core/Heap \
 				source/Emulator \
 				source/Fat \
+				source/GbaColorCorrection \
 				source/Gui \
 				source/Gui/Animation \
 				source/JitPatcher \

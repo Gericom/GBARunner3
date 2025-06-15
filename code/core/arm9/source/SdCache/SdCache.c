@@ -29,7 +29,8 @@ static u16 sCacheBlockToRomBlock[SDC_BLOCK_COUNT];
 ///        total number of cache blocks when some blocks are permanently loaded.
 static u32 sBlockCount;
 
-static u32 sTabuBlock;
+static u32 sTabuLevel;
+static u32 sTabuBlocks[2];
 vu32 gSdCacheIrqForbiddenRomBlockReplacementRange;
 
 static DWORD sClusterTable[512];
@@ -43,12 +44,25 @@ static u32 getBlockToReplace(void)
 {
     sRandomState = sRandomState * 1566083941u + 2531011u;
     u32 maxPlusOne = sBlockCount;
-    if (sTabuBlock != SDC_BLOCK_INVALID)
+    if (sTabuBlocks[0] != SDC_BLOCK_INVALID)
+    {
+        maxPlusOne--;
+    }
+    if (sTabuLevel > 0 && sTabuBlocks[1] != SDC_BLOCK_INVALID)
     {
         maxPlusOne--;
     }
     u32 block = ((sRandomState >> 16) * maxPlusOne) >> 16;
-    return block == sTabuBlock ? (sBlockCount - 1) : block;
+    if (block == sTabuBlocks[0])
+    {
+        block = maxPlusOne;
+    }
+    else if (sTabuLevel > 0 && block == sTabuBlocks[1])
+    {
+        block = maxPlusOne + 1;
+    }
+
+    return block;
 }
 
 static bool isCurrentlyFetching(void)
@@ -178,9 +192,11 @@ static void* loadRomBlock(u32 romBlock, u32 cacheBlock)
         sCurrentFetch.cacheBlock = cacheBlock;
     }
 
-    if ((arm_getCpsr() & 0x1F) != 0x12)
+    bool decreaseTabuLevel = false;
+    if ((arm_getCpsr() & 0x1F) != 0x12 && sTabuLevel < 2)
     {
-        sTabuBlock = cacheBlock;
+        sTabuBlocks[sTabuLevel++] = cacheBlock;
+        decreaseTabuLevel = true;
     }
 
     arm_restoreIrqs(irqs);
@@ -196,6 +212,11 @@ static void* loadRomBlock(u32 romBlock, u32 cacheBlock)
     else
     {
         fillOutOfBoundsCacheBlock(romBlock, cacheBlock);
+    }
+
+    if (decreaseTabuLevel)
+    {
+        sTabuLevel--;
     }
 
     return &sdc_cache[cacheBlock][0];
@@ -248,6 +269,10 @@ void sdc_init(void)
     sCurrentFetch.cacheBlock = SDC_BLOCK_INVALID;
     sCurrentFetch.romBlock = SDC_ROM_BLOCK_INVALID;
     gSdCacheIrqForbiddenRomBlockReplacementRange = 0;
+    sTabuLevel = 0;
+    sTabuBlocks[0] = SDC_BLOCK_INVALID;
+    sTabuBlocks[1] = SDC_BLOCK_INVALID;
+    gIrqYieldingEnabled = true;
 
     sClusterTable[0] = sizeof(sClusterTable) / sizeof(DWORD);
     gFile.cltbl = sClusterTable;

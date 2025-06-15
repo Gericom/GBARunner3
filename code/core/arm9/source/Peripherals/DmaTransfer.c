@@ -489,7 +489,7 @@ ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u
         src = src + ROM_LINEAR_GBA_ADDRESS - ROM_LINEAR_DS_ADDRESS;
     }
     u32 dst = dmaIoBase->dst;
-    triggerDmaIrqIfEnabled(channel, control);
+    bool irqYieldingState = vm_disableIrqYielding();
     if (channel == 3)
     {
         vm_enableNestedIrqs();
@@ -516,6 +516,8 @@ ITCM_CODE static void dmaStartImmediate(int channel, GbaDmaChannel* dmaIoBase, u
     {
         vm_disableNestedIrqs();
     }
+    triggerDmaIrqIfEnabled(channel, control);
+    vm_restoreIrqYielding(irqYieldingState);
 }
 
 ITCM_CODE static void dmaStart(int channel, GbaDmaChannel* dmaIoBase, u32 control)

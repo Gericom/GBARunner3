@@ -29,42 +29,65 @@ u32 fs_waitForCompletion(FsWaitToken* waitToken, bool keepIrqsDisabled)
 {
     u32 irqs;
 #ifdef GBAR3_IRQ_YIELDING
-    irqs = arm_disableIrqs();
-#endif
-    while (true)
+    if (gIrqYieldingEnabled)
     {
-    #ifndef GBAR3_IRQ_YIELDING
         irqs = arm_disableIrqs();
-    #endif
-        if (waitToken && waitToken->transactionComplete)
+        vm_disableIrqYielding();
+        while (true)
         {
-            break;
+            if (waitToken && waitToken->transactionComplete)
+            {
+                break;
+            }
+            FsWaitToken* currentWaitToken = sCurrentWaitToken;
+            if (!currentWaitToken)
+            {
+                break;
+            }
+            else if (isArm7FsOperationComplete())
+            {
+                currentWaitToken->transactionComplete = true;
+                sCurrentWaitToken = nullptr;
+                break;
+            }
+            if (!(irqs & 0x80) && !vm_yieldGbaIrqs())
+            {
+                arm_restoreIrqs(irqs);
+                irqs = arm_disableIrqs();
+            }
         }
-        FsWaitToken* currentWaitToken = sCurrentWaitToken;
-        if (!currentWaitToken)
-        {
-            break;
-        }
-        else if (isArm7FsOperationComplete())
-        {
-            currentWaitToken->transactionComplete = true;
-            sCurrentWaitToken = nullptr;
-            break;
-        }
-    #ifdef GBAR3_IRQ_YIELDING
-        if (!(irqs & 0x80) && !vm_yieldGbaIrqs())
-        {
-            arm_restoreIrqs(irqs);
-            irqs = arm_disableIrqs();
-        }
-    #else
-        arm_restoreIrqs(irqs);
-    #endif
+        vm_restoreIrqYielding(true);
     }
+    else
+#endif
+    {
+        while (true)
+        {
+            irqs = arm_disableIrqs();
+            if (waitToken && waitToken->transactionComplete)
+            {
+                break;
+            }
+            FsWaitToken* currentWaitToken = sCurrentWaitToken;
+            if (!currentWaitToken)
+            {
+                break;
+            }
+            else if (isArm7FsOperationComplete())
+            {
+                currentWaitToken->transactionComplete = true;
+                sCurrentWaitToken = nullptr;
+                break;
+            }
+            arm_restoreIrqs(irqs);
+        }
+    }
+
     if (!keepIrqsDisabled)
     {
         arm_restoreIrqs(irqs);
     }
+
     return irqs;
 }
 

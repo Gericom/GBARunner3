@@ -1,0 +1,15 @@
+{
+    "runSettings": {
+        "jitPatchAddresses": [
+            "0x080000CC",
+            "0x080000D8",
+            "0x08F9F6F4",
+            "0x08F9F7C4",
+            "0x08F9F7D4",
+            "0x08F9F7EC",
+            "0x08F9F7F8",
+            "0x08F9F804"
+        ],
+        "forceDSModeArm9Clock": true
+    }
+}
