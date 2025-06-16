@@ -1,0 +1,26 @@
+{
+    "runSettings": {
+        "enableJit": true,
+        "enableRomICache": true,
+        "enableWramICache": true,
+        "enableIWramDCache": false,
+        "enableEwramDCache": true,
+        "forceDSModeArm9Clock": false,
+        "skipBiosIntro": false
+    },
+    "displaySettings": {
+        "gbaScreen": "top",
+        "gbaColorCorrection": "Oxy001",
+        "gbaDisplayGamma": 0,
+        "gbaScreenBrightness": 16,
+        "enableCenterAndMask": true,
+        "centerOffsetX": 8,
+        "centerOffsetY": 16,
+        "maskWidth": 240,
+        "maskHeight": 160,
+        "borderImage": "default"
+    },
+    "gameSettings": {
+        "saveType": "Auto"
+    }
+}
