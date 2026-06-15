@@ -13,6 +13,9 @@ struct
     u32 hicodeBlockMask;
 } gHicodeState;
 
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
+u32 gHicodeUndefinedData[2048 / 4];
+
 static inline u32 mpu_getRegion4(void)
 {
     u32 config;
@@ -147,6 +150,9 @@ void hic_initialize(void)
     {
         gHicodeUndefinedData[i] = HICODE_UNDEFINED_INSTRUCTION;
     }
+
+    // Flush the data cache so that instruction prefetch loads correct values from main memory
+    dc_flushRange(gHicodeUndefinedData, 2048);
 
     u32 irqs = arm_disableIrqs();
     {

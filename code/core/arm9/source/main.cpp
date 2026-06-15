@@ -29,6 +29,7 @@
 #include "Peripherals/Sound/GbaSound9.h"
 #include "Patches/HarvestMoonPatches.h"
 #include "Patches/BadMixerPatch.h"
+#include "Patches/GpoPatcher.h"
 #include "Application/Settings/AppSettingsService.h"
 #include "GbaHeader.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
@@ -53,11 +54,11 @@
 #define SETTINGS_FILE_PATH              "/_gba/gbarunner3.json"
 #define GAME_SETTINGS_FILE_PATH_FORMAT  "/_gba/configs/%c%c%c%c%02X.json"
 
-[[gnu::section(".ewram.bss")]]
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
 FATFS gFatFs;
-[[gnu::section(".ewram.bss")]]
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
 FIL gFile;
-[[gnu::section(".ewram.bss")]]
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
 GbaHeader gRomHeader;
 
 [[gnu::section(".vramhi.bss")]]
@@ -73,7 +74,7 @@ u32 memu_biosOpcodes[4]
 };
 
 static NitroEmulatorOutputStream sIsNitroOutput;
-[[gnu::section(".ewram.bss")]]
+[[gnu::section(".ewram.bss"), gnu::aligned(32)]]
 static PlainLogger sPlainLogger { LogLevel::All, &sIsNitroOutput };
 static NullLogger sNullLogger;
 ILogger* gLogger;
@@ -195,9 +196,15 @@ static void loadGbaRom(const char* romPath)
     memset(&gFile, 0, sizeof(gFile));
     f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
+    bool gpoActive = gpo_init(romPath);
     f_read(&gFile, &gRomHeader, sizeof(GbaHeader), &br);
     f_lseek(&gFile, ROM_LINEAR_GBA_ADDRESS - 0x08000000);
     f_read(&gFile, (void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, &br);
+    if (gpoActive)
+    {
+        u32 clusterSize = gFile.obj.fs->csize * 512;
+        gpo_patchLinearChunk(clusterSize, ROM_LINEAR_SIZE);
+    }
 
     HarvestMoonPatches().TryApplyPatches(gRomHeader.gameCode);
     if (BadMixerPatch().TryApplyPatch())

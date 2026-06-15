@@ -51,11 +51,6 @@ notHicodeMiss:
     ldr r11, [r8]
     b vm_undefinedArmInstructionInLR
 
-.bss
-
-// will be filled with HICODE_UNDEFINED_INSTRUCTION for fast prefetching
-.global gHicodeUndefinedData
-gHicodeUndefinedData:
-.space 2048
-
 #endif
+
+
