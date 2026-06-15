@@ -2,12 +2,14 @@
 #include "common.h"
 #include "Fat/ff.h"
 
-#define GPO_MAGIC "GPO\0"
+#define GPO_MAGIC "GPO1"
+#define GPO_MAGIC_PLACEHOLDER "GPOT"
 
 struct GpoHeader
 {
     char magic[4];
     u32 romSize;
+    u32 patchedRomSize;      // effective ROM size after patch; 0 means same as romSize
     u32 ipsSize;
     u32 ipsTimestamp;
     u32 clusterSize;

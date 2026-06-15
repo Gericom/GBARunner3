@@ -167,30 +167,55 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
         f_close(&sVerifyFile);
         return false;
     }
+
+    if (memcmp(sVerifyHeader.magic, GPO_MAGIC, 4) != 0)  { f_close(&sVerifyFile); return false; }
+    if (sVerifyHeader.romSize      != romSize)            { f_close(&sVerifyFile); return false; }
+    if (sVerifyHeader.ipsSize      != ipsSize)            { f_close(&sVerifyFile); return false; }
+    if (sVerifyHeader.ipsTimestamp != ipsTime)            { f_close(&sVerifyFile); return false; }
+    if (sVerifyHeader.clusterSize  != clusterSize)        { f_close(&sVerifyFile); return false; }
+
+    // Compute P_rom: patched ROM cluster count, scoped to ROM region only
+    u32 totalRomClusters = (romSize + clusterSize - 1) / clusterSize;
+    u32 P_rom = 0;
+    for (u32 c = 0; c < totalRomClusters; c++)
+        if (c < 8192 && (sVerifyHeader.bitmask[c / 32] & (1u << (c % 32))))
+            P_rom++;
+
+    // Compute E: extension cluster count
+    u32 pRS = sVerifyHeader.patchedRomSize > 0
+        ? sVerifyHeader.patchedRomSize : romSize;
+    u32 patchedTotalClusters = (pRS + clusterSize - 1) / clusterSize;
+    u32 E = patchedTotalClusters > totalRomClusters
+        ? patchedTotalClusters - totalRomClusters : 0;
+
+    // GPO file must contain: 1 header cluster + P_rom patched clusters + E extension clusters
+    u32 expectedSize = (1 + P_rom + E) * clusterSize;
+    bool sizeOk = f_size(&sVerifyFile) >= expectedSize;
     f_close(&sVerifyFile);
-
-    if (memcmp(sVerifyHeader.magic, GPO_MAGIC, 4) != 0)
-        return false;
-    if (sVerifyHeader.romSize != romSize)
-        return false;
-    if (sVerifyHeader.ipsSize != ipsSize)
-        return false;
-    if (sVerifyHeader.ipsTimestamp != ipsTime)
-        return false;
-    if (sVerifyHeader.clusterSize != clusterSize)
-        return false;
-
-    return true;
+    return sizeOk;
 }
 
 [[gnu::section(".ewram")]] static bool createGpo(const char* romPath, const char* ipsPath, const char* gpoPath, u32 romSize, u32 ipsSize, u32 ipsTime, u32 clusterSize)
 {
-    if (f_open(&sRomFile, romPath, FA_READ | FA_OPEN_EXISTING) != FR_OK) return false;
-    if (f_open(&sIpsFile, ipsPath, FA_READ | FA_OPEN_EXISTING) != FR_OK) { f_close(&sRomFile); return false; }
+    if (clusterSize < sizeof(GpoHeader)) return false;
+
+    if (f_open(&sRomFile,      romPath, FA_READ  | FA_OPEN_EXISTING) != FR_OK) return false;
+    if (f_open(&sIpsFile,      ipsPath, FA_READ  | FA_OPEN_EXISTING) != FR_OK) { f_close(&sRomFile); return false; }
     if (f_open(&sWriteGpoFile, gpoPath, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) { f_close(&sRomFile); f_close(&sIpsFile); return false; }
 
-    memcpy(sCreateHeader.magic, GPO_MAGIC, 4);
+    auto cleanupAndAbort = [&]() -> bool {
+        f_close(&sRomFile);
+        f_close(&sIpsFile);
+        f_close(&sWriteGpoFile);
+        f_unlink(gpoPath);
+        return false;
+    };
+
+    // Write placeholder magic; will be promoted to GPO_MAGIC only on final committed rewrite.
+    // If power is lost mid-creation, verifyGpo rejects "GPOT" and triggers a clean rebuild next boot.
+    memcpy(sCreateHeader.magic, GPO_MAGIC_PLACEHOLDER, 4);
     sCreateHeader.romSize = romSize;
+    sCreateHeader.patchedRomSize = 0;  // filled in after Pass 1
     sCreateHeader.ipsSize = ipsSize;
     sCreateHeader.ipsTimestamp = ipsTime;
     sCreateHeader.clusterSize = clusterSize;
@@ -199,31 +224,38 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
     char ipsHeader[5];
     UINT br;
     if (f_read(&sIpsFile, ipsHeader, 5, &br) != FR_OK || br != 5 || memcmp(ipsHeader, "PATCH", 5) != 0)
-    {
-        f_close(&sRomFile); f_close(&sIpsFile); f_close(&sWriteGpoFile);
-        return false;
-    }
+        return cleanupAndAbort();
 
-    u32 blocksPerCluster = clusterSize / 4096;
-    if (blocksPerCluster == 0) blocksPerCluster = 1;
+    u32 maxHunkExtent = 0;
+    bool eofReached = false;
 
-    // Scan IPS to identify patched clusters
+    // Pass 1: scan IPS to identify patched clusters and find max hunk extent
     while (true)
     {
         u8 offsetBuf[3];
         if (f_read(&sIpsFile, offsetBuf, 3, &br) != FR_OK || br != 3) break;
-        u32 offset = (offsetBuf[0] << 16) | (offsetBuf[1] << 8) | offsetBuf[2];
-        if (offset == 0x454F46)
+        u32 offset = ((u32)offsetBuf[0] << 16) | ((u32)offsetBuf[1] << 8) | offsetBuf[2];
+
+        // SNESTool EOF ambiguity fix: treat 0x454F46 as EOF only if <= 3 bytes remain.
+        // A real hunk at this offset would need at least 2 size bytes + 1 data byte.
+        if (offset == 0x454F46 && (ipsSize - (u32)f_tell(&sIpsFile)) <= 3)
+        {
+            eofReached = true;
             break;
+        }
 
         u8 sizeBuf[2];
         if (f_read(&sIpsFile, sizeBuf, 2, &br) != FR_OK || br != 2) break;
-        u32 size = (sizeBuf[0] << 8) | sizeBuf[1];
+        u32 size = ((u32)sizeBuf[0] << 8) | sizeBuf[1];
 
         if (size > 0)
         {
+            if (offset + size > maxHunkExtent) maxHunkExtent = offset + size;
+
             u32 startBlock = offset / 4096;
-            u32 endBlock = (offset + size - 1) / 4096;
+            u32 endBlock   = (offset + size - 1) / 4096;
+            u32 blocksPerCluster = clusterSize / 4096;
+            if (blocksPerCluster == 0) blocksPerCluster = 1;
             for (u32 b = startBlock; b <= endBlock; b++)
             {
                 u32 c = b / blocksPerCluster;
@@ -231,22 +263,24 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
                     sCreateHeader.bitmask[c / 32] |= (1u << (c % 32));
             }
             if (f_lseek(&sIpsFile, f_tell(&sIpsFile) + size) != FR_OK)
-            {
-                f_close(&sRomFile); f_close(&sIpsFile); f_close(&sWriteGpoFile);
-                return false;
-            }
+                return cleanupAndAbort();
         }
         else
         {
             u8 countBuf[2];
             if (f_read(&sIpsFile, countBuf, 2, &br) != FR_OK || br != 2) break;
-            u32 count = (countBuf[0] << 8) | countBuf[1];
-            
+            u32 count = ((u32)countBuf[0] << 8) | countBuf[1];
+            if (count == 0) return cleanupAndAbort();  // corrupt RLE: infinite loop guard
+
             u8 val;
             if (f_read(&sIpsFile, &val, 1, &br) != FR_OK || br != 1) break;
 
+            if (offset + count > maxHunkExtent) maxHunkExtent = offset + count;
+
             u32 startBlock = offset / 4096;
-            u32 endBlock = (offset + count - 1) / 4096;
+            u32 endBlock   = (offset + count - 1) / 4096;
+            u32 blocksPerCluster = clusterSize / 4096;
+            if (blocksPerCluster == 0) blocksPerCluster = 1;
             for (u32 b = startBlock; b <= endBlock; b++)
             {
                 u32 c = b / blocksPerCluster;
@@ -256,118 +290,209 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
         }
     }
 
-    // Write header
-    UINT bw;
-    f_write(&sWriteGpoFile, &sCreateHeader, sizeof(sCreateHeader), &bw);
+    if (!eofReached) return cleanupAndAbort();
 
-    // Pad header to clusterSize using sTempBuf (already EWRAM static)
+    // Truncate field: IPS may have 3 optional bytes after EOF marker specifying new ROM size
+    u32 truncateValue = 0;
+    {
+        FSIZE_t remaining = ipsSize - f_tell(&sIpsFile);
+        if (remaining == 3)
+        {
+            u8 truncBuf[3];
+            if (f_read(&sIpsFile, truncBuf, 3, &br) == FR_OK && br == 3)
+                truncateValue = ((u32)truncBuf[0] << 16) | ((u32)truncBuf[1] << 8) | truncBuf[2];
+        }
+    }
+
+    // Effective ROM size after patch
+    u32 patchedRomSize = truncateValue > 0
+        ? truncateValue
+        : (maxHunkExtent > romSize ? maxHunkExtent : romSize);
+    sCreateHeader.patchedRomSize = patchedRomSize;
+
+    u32 totalRomClusters     = (romSize        + clusterSize - 1) / clusterSize;
+    u32 patchedTotalClusters = (patchedRomSize  + clusterSize - 1) / clusterSize;
+
+    // Clear bitmask bits outside [0, min(totalRomClusters, patchedTotalClusters)).
+    // Extension clusters do not use the bitmask; truncated-away clusters must not either.
+    u32 cleanBound = totalRomClusters < patchedTotalClusters
+        ? totalRomClusters : patchedTotalClusters;
+    for (u32 c = cleanBound; c < 8192; c++)
+        sCreateHeader.bitmask[c / 32] &= ~(1u << (c % 32));
+
+    // Write placeholder header (GPOT magic); promoted to GPO1 only at the end
+    UINT bw;
+    if (f_write(&sWriteGpoFile, &sCreateHeader, sizeof(sCreateHeader), &bw) != FR_OK
+        || bw != sizeof(sCreateHeader))
+        return cleanupAndAbort();
+
+    // Pad header cluster to clusterSize
     memset(sTempBuf, 0, sizeof(sTempBuf));
     u32 paddingBytes = clusterSize - sizeof(sCreateHeader);
     while (paddingBytes > 0)
     {
-        u32 chunk = paddingBytes > sizeof(sTempBuf) ? sizeof(sTempBuf) : paddingBytes;
-        f_write(&sWriteGpoFile, sTempBuf, chunk, &bw);
+        u32 chunk = paddingBytes > sizeof(sTempBuf) ? (u32)sizeof(sTempBuf) : paddingBytes;
+        if (f_write(&sWriteGpoFile, sTempBuf, chunk, &bw) != FR_OK || bw != chunk)
+            return cleanupAndAbort();
         paddingBytes -= chunk;
     }
 
-    // Write original GBA ROM clusters for patched clusters
-    u32 totalClusters = (romSize + clusterSize - 1) / clusterSize;
-    for (u32 c = 0; c < totalClusters; c++)
+    // Range A: copy ROM clusters that the IPS touches, up to min(totalRomClusters, patchedTotalClusters)
+    u32 rangeALimit = totalRomClusters < patchedTotalClusters
+        ? totalRomClusters : patchedTotalClusters;
+    for (u32 c = 0; c < rangeALimit; c++)
     {
-        if (sCreateHeader.bitmask[c / 32] & (1u << (c % 32)))
+        if (c >= 8192 || !(sCreateHeader.bitmask[c / 32] & (1u << (c % 32))))
+            continue;
+
+        if (f_lseek(&sRomFile, (FSIZE_t)c * clusterSize) != FR_OK)
+            return cleanupAndAbort();
+
+        u32 remaining = clusterSize;
+        while (remaining > 0)
         {
-            f_lseek(&sRomFile, c * clusterSize);
+            u32 chunk = remaining > sizeof(sTempBuf) ? (u32)sizeof(sTempBuf) : remaining;
+            memset(sTempBuf, 0xFF, chunk);  // pre-fill so short reads yield open-bus 0xFF
+            if (f_read(&sRomFile, sTempBuf, chunk, &br) != FR_OK)
+                return cleanupAndAbort();
+            if (f_write(&sWriteGpoFile, sTempBuf, chunk, &bw) != FR_OK || bw != chunk)
+                return cleanupAndAbort();
+            remaining -= chunk;
+        }
+    }
+
+    // Range B: extension clusters (past original ROM end), filled with 0xFF open-bus value.
+    // The IPS apply phase (Pass 2) will overwrite the relevant bytes afterward.
+    if (patchedTotalClusters > totalRomClusters)
+    {
+        memset(sTempBuf, 0xFF, sizeof(sTempBuf));
+        for (u32 c = totalRomClusters; c < patchedTotalClusters; c++)
+        {
             u32 remaining = clusterSize;
             while (remaining > 0)
             {
-                u32 chunk = remaining > 4096 ? 4096 : remaining;
-                memset(sTempBuf, 0xFF, chunk);
-                f_read(&sRomFile, sTempBuf, chunk, &br);
-                f_write(&sWriteGpoFile, sTempBuf, chunk, &bw);
+                u32 chunk = remaining > sizeof(sTempBuf) ? (u32)sizeof(sTempBuf) : remaining;
+                if (f_write(&sWriteGpoFile, sTempBuf, chunk, &bw) != FR_OK || bw != chunk)
+                    return cleanupAndAbort();
                 remaining -= chunk;
             }
         }
     }
 
-    // Apply patches to GPO
-    f_lseek(&sIpsFile, 5);
+    // Pass 2: Apply IPS patches to GPO file
+    if (f_lseek(&sIpsFile, 5) != FR_OK) return cleanupAndAbort();
 
-    auto writePatchToGpo = [&](u32 romOffset, const u8* data, u32 dataSize) {
+    // Precompute patched ROM cluster count (scoped to ROM region only; extension clusters use no bitmask bits)
+    u32 patchedRomClusterCount = 0;
+    for (u32 c = 0; c < totalRomClusters; c++)
+        if (c < 8192 && (sCreateHeader.bitmask[c / 32] & (1u << (c % 32))))
+            patchedRomClusterCount++;
+
+    // writePatchToGpo: apply a contiguous data buffer to the GPO file at the right cluster offset.
+    // Returns false on any I/O error (caller must cleanupAndAbort).
+    auto writePatchToGpo = [&](u32 romOffset, const u8* data, u32 dataSize) -> bool {
         u32 startCluster = romOffset / clusterSize;
-        u32 endCluster = (romOffset + dataSize - 1) / clusterSize;
+        u32 endCluster   = (romOffset + dataSize - 1) / clusterSize;
         for (u32 c = startCluster; c <= endCluster; c++)
         {
-            if (c >= 8192) continue;
-            if (!(sCreateHeader.bitmask[c / 32] & (1u << (c % 32)))) continue;
+            if (c >= patchedTotalClusters) continue;  // truncation guard
 
-            u32 patchedClusterIndex = 0;
-            for (u32 i = 0; i < c / 32; i++)
-                patchedClusterIndex += gPopCountTable.PopCount(sCreateHeader.bitmask[i]);
-            patchedClusterIndex += gPopCountTable.PopCount(sCreateHeader.bitmask[c / 32] & ((1u << (c % 32)) - 1));
-            
             u32 clusterStartOffset = c * clusterSize;
-            u32 clusterEndOffset = clusterStartOffset + clusterSize;
-            
+            u32 clusterEndOffset   = clusterStartOffset + clusterSize;
             u32 patchStart = romOffset > clusterStartOffset ? romOffset : clusterStartOffset;
-            u32 patchEnd = (romOffset + dataSize) < clusterEndOffset ? (romOffset + dataSize) : clusterEndOffset;
-            
-            if (patchStart < patchEnd)
+            u32 patchEnd   = (romOffset + dataSize) < clusterEndOffset
+                             ? (romOffset + dataSize) : clusterEndOffset;
+            if (patchStart >= patchEnd) continue;
+
+            u32 gpoIdx;
+            if (c >= totalRomClusters)
             {
-                u32 targetFileOffset = clusterSize + patchedClusterIndex * clusterSize + (patchStart - clusterStartOffset);
-                f_lseek(&sWriteGpoFile, targetFileOffset);
-                f_write(&sWriteGpoFile, data + (patchStart - romOffset), patchEnd - patchStart, &bw);
+                // Extension cluster: sequential after all patched ROM clusters in GPO
+                gpoIdx = patchedRomClusterCount + (c - totalRomClusters);
             }
+            else
+            {
+                // c < 8192 guard: small-cluster SD cards can have totalRomClusters > 8192
+                if (c >= 8192 || !(sCreateHeader.bitmask[c / 32] & (1u << (c % 32)))) continue;
+                gpoIdx = 0;
+                for (u32 i = 0; i < c / 32; i++)
+                    gpoIdx += gPopCountTable.PopCount(sCreateHeader.bitmask[i]);
+                gpoIdx += gPopCountTable.PopCount(sCreateHeader.bitmask[c / 32] & ((1u << (c % 32)) - 1));
+            }
+
+            u32 targetFileOffset = clusterSize + gpoIdx * clusterSize + (patchStart - clusterStartOffset);
+            UINT bw2;
+            if (f_lseek(&sWriteGpoFile, targetFileOffset) != FR_OK) return false;
+            if (f_write(&sWriteGpoFile, data + (patchStart - romOffset), patchEnd - patchStart, &bw2) != FR_OK
+                || bw2 != (patchEnd - patchStart)) return false;
         }
+        return true;
     };
 
-    auto writeRleToGpo = [&](u32 romOffset, u8 val, u32 count) {
+    // writeRleToGpo: apply an RLE hunk to the GPO file.
+    // Returns false on any I/O error.
+    auto writeRleToGpo = [&](u32 romOffset, u8 val, u32 count) -> bool {
         u32 startCluster = romOffset / clusterSize;
-        u32 endCluster = (romOffset + count - 1) / clusterSize;
+        u32 endCluster   = (romOffset + count - 1) / clusterSize;
         for (u32 c = startCluster; c <= endCluster; c++)
         {
-            if (c >= 8192) continue;
-            if (!(sCreateHeader.bitmask[c / 32] & (1u << (c % 32)))) continue;
+            if (c >= patchedTotalClusters) continue;  // truncation guard
 
-            u32 patchedClusterIndex = 0;
-            for (u32 i = 0; i < c / 32; i++)
-                patchedClusterIndex += gPopCountTable.PopCount(sCreateHeader.bitmask[i]);
-            patchedClusterIndex += gPopCountTable.PopCount(sCreateHeader.bitmask[c / 32] & ((1u << (c % 32)) - 1));
-            
             u32 clusterStartOffset = c * clusterSize;
-            u32 clusterEndOffset = clusterStartOffset + clusterSize;
-            
+            u32 clusterEndOffset   = clusterStartOffset + clusterSize;
             u32 patchStart = romOffset > clusterStartOffset ? romOffset : clusterStartOffset;
-            u32 patchEnd = (romOffset + count) < clusterEndOffset ? (romOffset + count) : clusterEndOffset;
-            
-            if (patchStart < patchEnd)
+            u32 patchEnd   = (romOffset + count) < clusterEndOffset
+                             ? (romOffset + count) : clusterEndOffset;
+            if (patchStart >= patchEnd) continue;
+
+            u32 gpoIdx;
+            if (c >= totalRomClusters)
             {
-                u32 targetFileOffset = clusterSize + patchedClusterIndex * clusterSize + (patchStart - clusterStartOffset);
-                f_lseek(&sWriteGpoFile, targetFileOffset);
-                u32 writeLen = patchEnd - patchStart;
-                
-                u32 remaining = writeLen;
-                memset(sTempBuf, val, clusterSize < 4096 ? clusterSize : 4096);
-                while (remaining > 0)
-                {
-                    u32 chunk = remaining > 4096 ? 4096 : remaining;
-                    f_write(&sWriteGpoFile, sTempBuf, chunk, &bw);
-                    remaining -= chunk;
-                }
+                gpoIdx = patchedRomClusterCount + (c - totalRomClusters);
+            }
+            else
+            {
+                if (c >= 8192 || !(sCreateHeader.bitmask[c / 32] & (1u << (c % 32)))) continue;
+                gpoIdx = 0;
+                for (u32 i = 0; i < c / 32; i++)
+                    gpoIdx += gPopCountTable.PopCount(sCreateHeader.bitmask[i]);
+                gpoIdx += gPopCountTable.PopCount(sCreateHeader.bitmask[c / 32] & ((1u << (c % 32)) - 1));
+            }
+
+            u32 targetFileOffset = clusterSize + gpoIdx * clusterSize + (patchStart - clusterStartOffset);
+            UINT bw2;
+            if (f_lseek(&sWriteGpoFile, targetFileOffset) != FR_OK) return false;
+
+            u32 writeLen = patchEnd - patchStart;
+            u32 fillSize = sizeof(sTempBuf) < clusterSize ? sizeof(sTempBuf) : clusterSize;
+            memset(sTempBuf, val, fillSize);
+            u32 remaining = writeLen;
+            while (remaining > 0)
+            {
+                u32 chunk = remaining > sizeof(sTempBuf) ? (u32)sizeof(sTempBuf) : remaining;
+                if (f_write(&sWriteGpoFile, sTempBuf, chunk, &bw2) != FR_OK || bw2 != chunk) return false;
+                remaining -= chunk;
             }
         }
+        return true;
     };
 
+    bool pass2Eof = false;
     while (true)
     {
         u8 offsetBuf[3];
         if (f_read(&sIpsFile, offsetBuf, 3, &br) != FR_OK || br != 3) break;
-        u32 offset = (offsetBuf[0] << 16) | (offsetBuf[1] << 8) | offsetBuf[2];
-        if (offset == 0x454F46)
+        u32 offset = ((u32)offsetBuf[0] << 16) | ((u32)offsetBuf[1] << 8) | offsetBuf[2];
+
+        if (offset == 0x454F46 && (ipsSize - (u32)f_tell(&sIpsFile)) <= 3)
+        {
+            pass2Eof = true;
             break;
+        }
 
         u8 sizeBuf[2];
         if (f_read(&sIpsFile, sizeBuf, 2, &br) != FR_OK || br != 2) break;
-        u32 size = (sizeBuf[0] << 8) | sizeBuf[1];
+        u32 size = ((u32)sizeBuf[0] << 8) | sizeBuf[1];
 
         if (size > 0)
         {
@@ -375,9 +500,11 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
             u32 currentOffset = offset;
             while (remaining > 0)
             {
-                u32 chunk = remaining > 4096 ? 4096 : remaining;
-                f_read(&sIpsFile, sTempBuf, chunk, &br);
-                writePatchToGpo(currentOffset, sTempBuf, chunk);
+                u32 chunk = remaining > sizeof(sTempBuf) ? (u32)sizeof(sTempBuf) : remaining;
+                if (f_read(&sIpsFile, sTempBuf, chunk, &br) != FR_OK || br != chunk)
+                    return cleanupAndAbort();
+                if (!writePatchToGpo(currentOffset, sTempBuf, chunk))
+                    return cleanupAndAbort();
                 currentOffset += chunk;
                 remaining -= chunk;
             }
@@ -386,17 +513,26 @@ extern FIL gFile; // Holds the GBA ROM file object and its cltbl
         {
             u8 countBuf[2];
             if (f_read(&sIpsFile, countBuf, 2, &br) != FR_OK || br != 2) break;
-            u32 count = (countBuf[0] << 8) | countBuf[1];
-            
+            u32 count = ((u32)countBuf[0] << 8) | countBuf[1];
+            if (count == 0) return cleanupAndAbort();
+
             u8 val;
-            f_read(&sIpsFile, &val, 1, &br);
-            
-            writeRleToGpo(offset, val, count);
+            if (f_read(&sIpsFile, &val, 1, &br) != FR_OK || br != 1) break;
+
+            if (!writeRleToGpo(offset, val, count))
+                return cleanupAndAbort();
         }
     }
 
-    f_lseek(&sWriteGpoFile, 0);
-    f_write(&sWriteGpoFile, &sCreateHeader, sizeof(sCreateHeader), &bw);
+    // A truncated IPS (no EOF marker in Pass 2) must not commit the GPO
+    if (!pass2Eof) return cleanupAndAbort();
+
+    // Final header commit: promote placeholder magic to GPO_MAGIC
+    memcpy(sCreateHeader.magic, GPO_MAGIC, 4);
+    if (f_lseek(&sWriteGpoFile, 0) != FR_OK) return cleanupAndAbort();
+    if (f_write(&sWriteGpoFile, &sCreateHeader, sizeof(sCreateHeader), &bw) != FR_OK
+        || bw != sizeof(sCreateHeader))
+        return cleanupAndAbort();
 
     f_close(&sRomFile);
     f_close(&sIpsFile);
@@ -433,45 +569,57 @@ struct ClmtTracker
     }
 };
 
-[[gnu::section(".ewram")]] static bool mergeClusterMaps(u32 romSize, u32 clusterSize)
+[[gnu::section(".ewram")]] static bool mergeClusterMaps(u32 romSize, u32 patchedRomSize, u32 clusterSize)
 {
-    u32 totalClusters = (romSize + clusterSize - 1) / clusterSize;
-    
+    u32 totalRomClusters     = (romSize        + clusterSize - 1) / clusterSize;
+    u32 patchedTotalClusters = (patchedRomSize  + clusterSize - 1) / clusterSize;
+
+    // patchedRomClusterCount: popcount of bitmask scoped to ROM region only.
+    // Extension clusters do not set bitmask bits, so this must not count past totalRomClusters.
+    u32 patchedRomClusterCount = 0;
+    for (u32 c = 0; c < totalRomClusters; c++)
+        if (c < 8192 && (gGpoBitmask[c / 32] & (1u << (c % 32))))
+            patchedRomClusterCount++;
+
     DWORD* dest = sMergedClusterTable + 1;
     u32 tableLimit = 2048 - 2;
-    
-    u32 fragmentCount = 0;
-    u32 currentFragSize = 0;
+
+    u32 fragmentCount      = 0;
+    u32 currentFragSize    = 0;
     DWORD currentFragStartPhys = 0;
-    
     u32 patchedClusterIndex = 0;
-    
+
     ClmtTracker romTracker;
     romTracker.Init(gFile.cltbl);
-    
+
     ClmtTracker gpoTracker;
     gpoTracker.Init(sGpoClusterTable);
-    
-    for (u32 c = 0; c < totalClusters; c++)
+
+    for (u32 c = 0; c < patchedTotalClusters; c++)
     {
-        bool isPatched = c < 8192 && (gGpoBitmask[c / 32] & (1u << (c % 32)));
-        
         DWORD physCl = 0;
-        if (isPatched)
+        if (c >= totalRomClusters)
         {
-            physCl = gpoTracker.GetPhysicalCluster(1 + patchedClusterIndex);
-            patchedClusterIndex++;
+            // Extension cluster: always from GPO, sequentially after all patched ROM clusters.
+            // ClmtTracker monotone contract holds: indices are 1..P_rom then P_rom+1..P_rom+E.
+            physCl = gpoTracker.GetPhysicalCluster(1 + patchedRomClusterCount + (c - totalRomClusters));
         }
         else
         {
-            physCl = romTracker.GetPhysicalCluster(c);
+            bool isPatched = c < 8192 && (gGpoBitmask[c / 32] & (1u << (c % 32)));
+            if (isPatched)
+            {
+                physCl = gpoTracker.GetPhysicalCluster(1 + patchedClusterIndex);
+                patchedClusterIndex++;
+            }
+            else
+            {
+                physCl = romTracker.GetPhysicalCluster(c);
+            }
         }
-        
-        if (physCl == 0)
-        {
-            return false;
-        }
-        
+
+        if (physCl == 0) return false;
+
         if (currentFragSize == 0)
         {
             currentFragSize = 1;
@@ -483,30 +631,24 @@ struct ClmtTracker
         }
         else
         {
-            if ((u32)(dest - sMergedClusterTable) >= tableLimit)
-            {
-                return false;
-            }
+            if ((u32)(dest - sMergedClusterTable) >= tableLimit) return false;
             *dest++ = currentFragSize;
             *dest++ = currentFragStartPhys;
             fragmentCount++;
-            
+
             currentFragSize = 1;
             currentFragStartPhys = physCl;
         }
     }
-    
+
     if (currentFragSize > 0)
     {
-        if ((u32)(dest - sMergedClusterTable) >= tableLimit)
-        {
-            return false;
-        }
+        if ((u32)(dest - sMergedClusterTable) >= tableLimit) return false;
         *dest++ = currentFragSize;
         *dest++ = currentFragStartPhys;
         fragmentCount++;
     }
-    
+
     *dest = 0;
     sMergedClusterTable[0] = (dest - sMergedClusterTable);
     return true;
@@ -518,10 +660,9 @@ struct ClmtTracker
     if (!gLogger) return;
     gLogger->Log(LogLevel::Debug, "[GPO Test] Running mergeClusterMaps unit tests...\n");
 
-    // Backup original cltbl
     DWORD* origCltbl = gFile.cltbl;
 
-    // Mock GBA ROM cluster table (representing 1000 clusters contiguously starting at cluster 100)
+    // Mock ROM CLMT: 1000 clusters contiguous starting at physical cluster 100
     DWORD gbaCltblMock[4];
     gbaCltblMock[0] = 3;
     gbaCltblMock[1] = 1000;
@@ -529,41 +670,55 @@ struct ClmtTracker
     gbaCltblMock[3] = 0;
     gFile.cltbl = gbaCltblMock;
 
-    // Mock GPO cluster table (representing 2000 clusters contiguously starting at cluster 5000)
+    // Mock GPO CLMT: 2000 clusters contiguous starting at physical cluster 5000
     sGpoClusterTable[0] = 3;
     sGpoClusterTable[1] = 2000;
     sGpoClusterTable[2] = 5000;
     sGpoClusterTable[3] = 0;
 
-    // Test 1: Merge under limit (200 clusters, alternating)
-    // Alternate every odd cluster
+    // Test 1: Merge under limit (200 ROM clusters, every-other patched, no extension)
     memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
     for (u32 i = 0; i < 200; i++)
-    {
         if (i % 2 == 1)
-        {
             gGpoBitmask[i / 32] |= (1u << (i % 32));
-        }
-    }
-    bool res1 = mergeClusterMaps(200 * 4096, 4096);
-    gLogger->Log(LogLevel::Debug, "[GPO Test] Merge under limit (200 clusters, alternating): %s (expected: true)\n", res1 ? "PASS" : "FAIL");
+    bool res1 = mergeClusterMaps(200 * 4096, 200 * 4096, 4096);
+    gLogger->Log(LogLevel::Debug, "[GPO Test] 1 - Merge under limit (no extension): %s\n", res1 ? "PASS" : "FAIL");
 
-    // Test 2: Merge over limit to trigger overflow
-    // Alternating 1100 clusters produces ~1100 fragments; limit is 1023, so this must overflow.
+    // Test 2: Merge over limit triggers overflow (alternating 1100 clusters ~= 1100 fragments, limit 1023)
     memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
     for (u32 i = 0; i < 1100; i++)
-    {
         if (i % 2 == 1)
-        {
             gGpoBitmask[i / 32] |= (1u << (i % 32));
-        }
-    }
-    bool res2 = mergeClusterMaps(1100 * 4096, 4096);
-    gLogger->Log(LogLevel::Debug, "[GPO Test] Merge over limit (1100 clusters, alternating): %s (expected: false)\n", !res2 ? "PASS" : "FAIL");
+    bool res2 = mergeClusterMaps(1100 * 4096, 1100 * 4096, 4096);
+    gLogger->Log(LogLevel::Debug, "[GPO Test] 2 - Merge overflow (expected false): %s\n", !res2 ? "PASS" : "FAIL");
 
-    // Restore original state
+    // Test 3: ROM extension -- 100 ROM clusters, 10 extension clusters (patchedRomSize = 110 clusters)
+    // GPO CLMT has 2000 clusters; 100 patched ROM + 10 extension = 110 needed -- fits.
+    // All 100 ROM clusters are patched (bitmask all 1s in [0..99]).
+    memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
+    for (u32 i = 0; i < 100; i++)
+        gGpoBitmask[i / 32] |= (1u << (i % 32));
+    bool res3 = mergeClusterMaps(100 * 4096, 110 * 4096, 4096);
+    gLogger->Log(LogLevel::Debug, "[GPO Test] 3 - ROM extension (100 ROM + 10 ext): %s\n", res3 ? "PASS" : "FAIL");
+
+    // Test 4: ROM truncation -- 100 ROM clusters, patchedRomSize = 50 clusters. Merge stops at 50.
+    memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
+    for (u32 i = 0; i < 50; i++)
+        gGpoBitmask[i / 32] |= (1u << (i % 32));
+    bool res4 = mergeClusterMaps(100 * 4096, 50 * 4096, 4096);
+    gLogger->Log(LogLevel::Debug, "[GPO Test] 4 - ROM truncation (100 ROM -> 50): %s\n", res4 ? "PASS" : "FAIL");
+
+    // Test 5: Unchanged size (patchedRomSize == romSize) -- identical to pre-extension behavior.
+    memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
+    for (u32 i = 0; i < 200; i++)
+        if (i % 2 == 1)
+            gGpoBitmask[i / 32] |= (1u << (i % 32));
+    bool res5 = mergeClusterMaps(200 * 4096, 200 * 4096, 4096);
+    gLogger->Log(LogLevel::Debug, "[GPO Test] 5 - Unchanged size: %s\n", res5 ? "PASS" : "FAIL");
+
     gFile.cltbl = origCltbl;
     memset(gGpoBitmask, 0, sizeof(gGpoBitmask));
+    gLogger->Log(LogLevel::Debug, "[GPO Test] Done.\n");
 }
 #endif
 
@@ -664,7 +819,10 @@ extern "C" [[gnu::section(".ewram")]] bool gpo_init(const char* romPath)
     log_debug(romPath, "sGpoClusterTable[0] size after CREATE_LINKMAP:", sGpoClusterTable[0]);
 #endif
 
-    if (!mergeClusterMaps(romSize, clusterSize))
+    u32 activeRomSize = sVerifyHeader.patchedRomSize > 0
+        ? sVerifyHeader.patchedRomSize : romSize;
+
+    if (!mergeClusterMaps(romSize, activeRomSize, clusterSize))
     {
 #ifndef NDEBUG
         log_debug(romPath, "mergeClusterMaps failed!");
@@ -673,6 +831,10 @@ extern "C" [[gnu::section(".ewram")]] bool gpo_init(const char* romPath)
         return false;
     }
 
+    // Update SdCache bounds before swapping the CLMT; SdCache uses gFile.obj.objsize as
+    // the upper bound for read validation. Must be set before gFile.cltbl so that the
+    // first f_read after the swap sees the correct limit.
+    gFile.obj.objsize = activeRomSize;
     gFile.cltbl = sMergedClusterTable;
 
 #ifndef NDEBUG
@@ -687,26 +849,44 @@ extern "C" [[gnu::section(".ewram")]] bool gpo_init(const char* romPath)
 // After the linear chunk is loaded via f_read, FatFS serves cluster 0 from gFile.obj.sclust
 // (bypassing the merged CLMT) because fptr==0 triggers the sclust fallback.  Any IPS patch
 // that touches cluster 0 is therefore not applied.  This function corrects that by reading
-// every patched cluster that falls inside the linear window directly from gGpoFile, whose
-// own CLMT (sGpoClusterTable) has no fptr==0 ambiguity for these seeks.
+// every patched cluster that falls inside the linear window directly from gGpoFile.
+// Extension clusters inside the window (only possible on ROMs < 2MB) are also loaded here.
 extern "C" [[gnu::section(".ewram")]] void gpo_patchLinearChunk(u32 clusterSize, u32 linearChunkSize)
 {
-    u32 maxLinearCluster = linearChunkSize / clusterSize;
-    u32 limit = maxLinearCluster < 8192u ? maxLinearCluster : 8192u;
-    u32 patchedIndex = 0;
+    u32 romSize          = sVerifyHeader.romSize;
+    u32 patchedRomSize   = sVerifyHeader.patchedRomSize > 0
+                           ? sVerifyHeader.patchedRomSize : (u32)gFile.obj.objsize;
+    u32 totalRomClusters     = (romSize       + clusterSize - 1) / clusterSize;
+    u32 patchedTotalClusters = (patchedRomSize + clusterSize - 1) / clusterSize;
 
+    // Precompute P_rom for extension cluster GPO offset calculation
+    u32 patchedRomClusterCount = 0;
+    for (u32 c = 0; c < totalRomClusters; c++)
+        if (c < 8192 && (gGpoBitmask[c / 32] & (1u << (c % 32))))
+            patchedRomClusterCount++;
+
+    u32 maxLinearCluster = linearChunkSize / clusterSize;
+    u32 limit = maxLinearCluster < patchedTotalClusters ? maxLinearCluster : patchedTotalClusters;
+    if (limit > 8192u) limit = 8192u;  // bitmask has 8192 entries max
+
+    u32 patchedIndex = 0;
     for (u32 c = 0; c < limit; c++)
     {
-        if (gGpoBitmask[c / 32] & (1u << (c % 32)))
+        if (c >= totalRomClusters)
         {
-            // GPO file layout: one header cluster (padded), then patched ROM clusters in order.
-            // patchedIndex 0 -> GPO file offset clusterSize (first data cluster).
+            // Extension cluster: sequential in GPO after all patched ROM clusters
+            u32 gpoFileOffset = clusterSize * (1u + patchedRomClusterCount + (c - totalRomClusters));
+            UINT br;
+            if (f_lseek(&gGpoFile, gpoFileOffset) == FR_OK)
+                f_read(&gGpoFile, (void*)(ROM_LINEAR_DS_ADDRESS + c * clusterSize), clusterSize, &br);
+        }
+        else if (c < 8192 && (gGpoBitmask[c / 32] & (1u << (c % 32))))
+        {
+            // Patched ROM cluster: sequential in GPO after the header cluster
             u32 gpoFileOffset = clusterSize * (1u + patchedIndex);
             UINT br;
             if (f_lseek(&gGpoFile, gpoFileOffset) == FR_OK)
-            {
                 f_read(&gGpoFile, (void*)(ROM_LINEAR_DS_ADDRESS + c * clusterSize), clusterSize, &br);
-            }
             patchedIndex++;
         }
     }
