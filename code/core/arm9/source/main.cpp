@@ -88,6 +88,12 @@ static void setupLogger()
         gLogger = &sNullLogger;
 }
 
+static void haltWithErrorScreen(u16 bgColor)
+{
+    GFX_PLTT_BG_MAIN[0] = bgColor;
+    while (1);
+}
+
 static bool mountDldi()
 {
     FRESULT res = f_mount(&gFatFs, "fat:", 1);
@@ -196,7 +202,11 @@ static void loadGbaRom(const char* romPath)
     memset(&gFile, 0, sizeof(gFile));
     f_open(&gFile, romPath, FA_OPEN_EXISTING | FA_READ);
     sdc_init();
-    bool gpoActive = gpo_init(romPath);
+    sSplashScreen->EnterBusyLoop();
+    GpoInitResult gpoResult = gpo_init(romPath);
+    if (gpoResult == GpoInitResult::FatalMismatch)
+        haltWithErrorScreen(0x1F | (0x1F << 5)); // yellow: UPS patch CRC32 doesn't match this ROM
+    bool gpoActive = gpoResult == GpoInitResult::Active;
     f_read(&gFile, &gRomHeader, sizeof(GbaHeader), &br);
     f_lseek(&gFile, ROM_LINEAR_GBA_ADDRESS - 0x08000000);
     f_read(&gFile, (void*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, &br);
@@ -481,8 +491,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
 
     if (!mountResult)
     {
-        GFX_PLTT_BG_MAIN[0] = 0x1F << 10;
-        while (1);
+        haltWithErrorScreen(0x1F << 10); // blue: SD/DLDI mount failure
     }
 
     // if (Environment::SupportsAgbSemihosting())
@@ -508,6 +517,7 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
     handleSave(romPath);
     SelfModifyingPatches().ApplyPatches(gAppSettingsService.GetAppSettings().runSettings);
 
+    sSplashScreen->ExitBusyLoop();
     waitSplashScreenAnimation();
     stopSplashScreenAnimation();
     delete sSplashScreen;
