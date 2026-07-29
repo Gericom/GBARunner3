@@ -9,6 +9,7 @@
             "0x087F6CB0",
             "0x087F6CBC",
             "0x087F6CC8"
-        ]
+        ],
+        "enableWramICache": false
     }
 }
