@@ -31,6 +31,15 @@
 #define FLASH_1MV103_OFFSET_FL_MAXTIME      0x24
 #define FLASH_1MV103_OFFSET_FLASH           0x28
 
+// offsets relative to the start of IdentifyFlash
+#define FLASH_1MV103_GCC_OFFSET_PROG_BYTE       0x74
+#define FLASH_1MV103_GCC_OFFSET_PROG_SECTOR     0x78
+#define FLASH_1MV103_GCC_OFFSET_ERASE_CHIP      0x7C
+#define FLASH_1MV103_GCC_OFFSET_ERASE_SECTOR    0x80
+#define FLASH_1MV103_GCC_OFFSET_POLLING_SR      0x84
+#define FLASH_1MV103_GCC_OFFSET_FL_MAXTIME      0x88
+#define FLASH_1MV103_GCC_OFFSET_FLASH           0x8C
+
 struct flash_v120_sector
 {
     u32 size;

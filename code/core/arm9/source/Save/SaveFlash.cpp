@@ -21,6 +21,12 @@ static const u32 sReadFlash512V130Sig[] = { 0xB0A0B5F0u, 0x1C161C0Du, 0x04031C1F
 static const u32 sVerifyFlash512V130Sig[] = { 0xB0C0B570u, 0x1C161C0Du, 0x0C140402u, 0x6800480Eu };
 static const u32 sVerifyFlashSector512V130Sig[] = { 0xB0C0B530u, 0x04031C0Du, 0x4A0F0C1Cu, 0x490F8810u };
 
+// FLASH1M_V103 library as compiled by modern gcc (pokeemerald-expansion based hacks)
+static const u32 sIdentifyFlash1MV103GccSig[] = { 0x4A192103u, 0x430B8813u, 0x8013B510u, 0xFD7CF7FFu };
+static const u32 sReadFlash1MV103GccSig[] = { 0x46C6B5F0u, 0xB5002403u, 0x04000017u, 0x46984A23u };
+static const u32 sVerifyFlashSector1MV103GccSig[] = { 0x2103468Cu, 0x4A20B570u, 0x430B8813u, 0x8013B0C0u };
+static const u32 sVerifyFlash1MV103GccSig[] = { 0x000FB5F0u, 0x04002180u, 0x469C0C03u, 0x681E4B1Fu };
+
 struct flash_patchinfo_t
 {
     u32* progSectorPtr;
@@ -340,8 +346,63 @@ bool flash_patch1MV102(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRo
     return false;
 }
 
+static bool isIWramPointer(const u32* ptr)
+{
+    return (u32)ptr - 0x03000000u < 0x8000u;
+}
+
+static const u32* findInLinearRom(const u32* signature)
+{
+    return mem_fastSearch16((const u32*)ROM_LINEAR_DS_ADDRESS, ROM_LINEAR_SIZE, signature);
+}
+
+static bool tryPatchFlash1MV103Gcc()
+{
+    const u8* identify = (const u8*)findInLinearRom(sIdentifyFlash1MV103GccSig);
+    if (!identify ||
+        !findInLinearRom(sReadFlash1MV103GccSig) ||
+        !findInLinearRom(sVerifyFlashSector1MV103GccSig) ||
+        !findInLinearRom(sVerifyFlash1MV103GccSig))
+    {
+        return false;
+    }
+
+    // the iwram variables are not referenced after the version tag, so take them from the IdentifyFlash literal pool
+    flash_patchinfo_t patchInfo;
+    patchInfo.progBytePtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_PROG_BYTE);
+    patchInfo.progSectorPtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_PROG_SECTOR);
+    patchInfo.eraseChipPtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_ERASE_CHIP);
+    patchInfo.eraseSectorPtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_ERASE_SECTOR);
+    patchInfo.pollingSrPtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_POLLING_SR);
+    patchInfo.flMaxTimePtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_FL_MAXTIME);
+    patchInfo.flashPtr = *(u32**)(identify + FLASH_1MV103_GCC_OFFSET_FLASH);
+
+    if (!isIWramPointer(patchInfo.progBytePtr) ||
+        !isIWramPointer(patchInfo.progSectorPtr) ||
+        !isIWramPointer(patchInfo.eraseChipPtr) ||
+        !isIWramPointer(patchInfo.eraseSectorPtr) ||
+        !isIWramPointer(patchInfo.pollingSrPtr) ||
+        !isIWramPointer(patchInfo.flMaxTimePtr) ||
+        !isIWramPointer(patchInfo.flashPtr))
+    {
+        return false;
+    }
+
+    sPatchInfo = patchInfo;
+    return sav_tryPatchFunction(sIdentifyFlash1MV103GccSig, 0, (void*)identifyFlash1M) &&
+        sav_tryPatchFunction(sReadFlash1MV103GccSig, 1, (void*)readFlash) &&
+        sav_tryPatchFunction(sVerifyFlashSector1MV103GccSig, 2, (void*)verifyFlashSector) &&
+        sav_tryPatchFunction(sVerifyFlash1MV103GccSig, 3, (void*)verifyFlash);
+}
+
 bool flash_patch1MV103(const SaveTypeInfo* saveTypeInfo, FIL* romFile, u32 tagRomAddress, u8* tempBuffer)
 {
+    if (tryPatchFlash1MV103Gcc())
+    {
+        initializeFlash1M();
+        return true;
+    }
+
     if (f_lseek(romFile, tagRomAddress + ((saveTypeInfo->tagLength + 3) & ~3)) != FR_OK)
     {
         return false;

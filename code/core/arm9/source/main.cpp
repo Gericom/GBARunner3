@@ -29,6 +29,7 @@
 #include "Peripherals/Sound/GbaSound9.h"
 #include "Patches/HarvestMoonPatches.h"
 #include "Patches/BadMixerPatch.h"
+#include "Patches/PokeemeraldExpansionPatches.h"
 #include "Application/Settings/AppSettingsService.h"
 #include "GbaHeader.h"
 #include "MemoryEmulator/MemoryLoadStore.h"
@@ -498,6 +499,10 @@ extern "C" void gbaRunnerMain(int argc, char* argv[])
         romExtension[4] = '\0';
     }
     loadGameSpecificSettings();
+    if (PokeemeraldExpansionPatches().TryApplyPatches(gAppSettingsService.GetAppSettings().runSettings))
+    {
+        gLogger->Log(LogLevel::Debug, "pokeemerald-expansion jit patch addresses applied\n");
+    }
     handleSave(romPath);
     SelfModifyingPatches().ApplyPatches(gAppSettingsService.GetAppSettings().runSettings);
 
